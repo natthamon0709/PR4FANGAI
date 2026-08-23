@@ -1,0 +1,161 @@
+{
+  "name": "PR4Fang AI — LINE OA Chatbot & Google Sheets Sync Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pr4fang-line-webhook",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "node-line-webhook",
+      "name": "LINE Webhook Inbound",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/v1/n8n/verify-line-user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "fang_ai_n8n_live_sec_key_2026"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "line_user_id",
+              "value": "={{ $json.body.events[0].source.userId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-verify-user",
+      "name": "PR4Fang Auth & Role Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "547794364",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "node-google-sheets",
+      "name": "Read Master Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-pro",
+        "options": {
+          "systemMessage": "=คุณคือ AI Assistant ประจำวิทยาลัยการอาชีพฝาง (PR4Fang AI)\nผู้ใช้งานปัจจุบัน: {{ $('PR4Fang Auth & Role Check').item.json.user.first_name }} {{ $('PR4Fang Auth & Role Check').item.json.user.last_name }}\nสังกัด: {{ $('PR4Fang Auth & Role Check').item.json.user.department_name }} ({{ $('PR4Fang Auth & Role Check').item.json.user.sub_department_name }})\nสิทธิ์: {{ $('PR4Fang Auth & Role Check').item.json.user.role }}\nจงตอบคำถามอย่างสุภาพ ถูกต้องตามระเบียบของวิทยาลัยการอาชีพฝาง"
+        },
+        "prompt": "={{ $('LINE Webhook Inbound').item.json.body.events[0].message.text }}"
+      },
+      "id": "node-ai-agent",
+      "name": "Fang AI Reasoning Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_LINE_CHANNEL_ACCESS_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"replyToken\": \"{{ $('LINE Webhook Inbound').item.json.body.events[0].replyToken }}\",\n  \"messages\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{{ $json.output }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "node-line-reply",
+      "name": "Reply to LINE User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 300]
+    }
+  ],
+  "connections": {
+    "LINE Webhook Inbound": {
+      "main": [
+        [
+          {
+            "node": "PR4Fang Auth & Role Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PR4Fang Auth & Role Check": {
+      "main": [
+        [
+          {
+            "node": "Read Master Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Master Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Fang AI Reasoning Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fang AI Reasoning Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to LINE User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
