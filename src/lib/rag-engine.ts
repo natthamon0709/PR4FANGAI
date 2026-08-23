@@ -388,16 +388,16 @@ async function generateGroundedAnswer(
       };
 
       // Map and try candidate models resiliently
-      const primaryModel = config.model_name || 'gemini-2.5-flash';
+      const primaryModel = config.model_name || 'gemini-3.6-flash';
       const candidateModels = Array.from(new Set([
+        'gemini-3.6-flash',
+        'gemini-3.7-flash',
+        'gemini-flash-latest',
         primaryModel,
         'gemini-2.5-flash',
         'gemini-2.0-flash',
-        'gemini-1.5-flash-latest',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro-latest',
-        'gemini-pro'
-      ]));
+        'gemini-1.5-flash'
+      ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
         try {
@@ -405,7 +405,7 @@ async function generateGroundedAnswer(
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(promptPayload),
-            signal: AbortSignal.timeout(6000)
+            signal: AbortSignal.timeout(8000)
           });
 
           if (res.ok) {
@@ -418,7 +418,7 @@ async function generateGroundedAnswer(
           } else {
             const errText = await res.text();
             console.warn(`Gemini API (${modelId}) returned ${res.status}:`, errText);
-            break;
+            continue;
           }
         } catch (callErr) {
           console.warn(`Gemini API (${modelId}) error:`, callErr);
@@ -532,8 +532,9 @@ async function generateGroundedAnswer(
     }
   }
 
-  const deptInfo = primarySource.department_name ? ` (${primarySource.department_name})` : '';
-  const answer = `ตามข้อมูลจาก ${primarySource.title}${deptInfo}:\n\n${answerBody}\n\nหากท่านต้องการสอบถามรายละเอียดเพิ่มเติม สามารถติดต่อได้ที่${primarySource.sub_department_name || primarySource.department_name || 'วิทยาลัยการอาชีพฝาง'}`;
+  const deptContact = primarySource.sub_department_name || primarySource.department_name || 'งานบริหารงานทั่วไป';
+  const cleanBody = answerBody.replace(/^ตามข้อมูลจาก.*:\s*/i, '').trim();
+  const answer = `${cleanBody}\n\nหากท่านต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ที่${deptContact}ครับ`;
 
   return answer;
 }
