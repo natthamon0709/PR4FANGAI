@@ -326,6 +326,8 @@ function initSheetHeaders(sheet, name) {
     ]);
   } else if (name === 'Drive_Media') {
     sheet.appendRow(['Folder_ID', 'File_ID', 'Person_Or_File_Name', 'Image_Direct_URL', 'Department_Title', 'Updated_At']);
+  } else if (name === 'Master_Users' || name === 'master_users') {
+    sheet.appendRow(['User ID', 'ชื่อ', 'นามสกุล', 'อีเมล', 'เบอร์โทรศัพท์', 'รหัสฝ่าย (Department Code)', 'ชื่องาน/แผนกย่อย', 'บทบาท (Role)', 'สถานะ (Status)', 'LINE User ID', 'เข้าสู่ระบบล่าสุด', 'อัปเดตล่าสุด']);
   } else if (name === 'AI_Query_Logs') {
     sheet.appendRow(['Timestamp', 'Log_ID', 'LINE_User_ID', 'Question', 'Confidence', 'AI_Answer', 'Status', 'Response_Time_ms']);
   } else if (name === 'Knowledge_Gaps') {

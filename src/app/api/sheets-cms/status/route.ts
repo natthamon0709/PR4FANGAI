@@ -29,12 +29,7 @@ export async function GET(req: NextRequest) {
     const isAdmin = session.role === 'administrator';
 
     // Fetch Connection Settings
-    const settingsRows = db.prepare('SELECT key, value FROM system_settings WHERE key IN (?, ?, ?, ?)').all(
-      'google_sheets_id',
-      'google_sheets_sync_status',
-      'google_sheets_last_synced',
-      'google_account_email'
-    ) as { key: string; value: string }[];
+    const settingsRows = db.prepare('SELECT key, value FROM system_settings').all() as { key: string; value: string }[];
 
     const settings: Record<string, string> = {};
     settingsRows.forEach(r => { settings[r.key] = r.value; });
