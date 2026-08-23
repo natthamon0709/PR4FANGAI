@@ -345,6 +345,52 @@ function initTables(db: Database.Database) {
       expires_at TEXT NOT NULL,
       FOREIGN KEY (master_user_id) REFERENCES master_users(user_id)
     );
+
+    -- Phase 7: Analytics & Reports Tables
+    CREATE TABLE IF NOT EXISTS report_snapshots (
+      snapshot_id TEXT PRIMARY KEY,
+      metric_key TEXT NOT NULL,
+      scope TEXT NOT NULL CHECK (scope IN ('global','department')) DEFAULT 'global',
+      department_id TEXT,
+      period_type TEXT NOT NULL CHECK (period_type IN ('daily','weekly','monthly')) DEFAULT 'daily',
+      period_date TEXT NOT NULL,
+      metric_value REAL NOT NULL DEFAULT 0.00,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (department_id) REFERENCES departments(department_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS scheduled_report_configs (
+      config_id TEXT PRIMARY KEY,
+      report_type TEXT NOT NULL CHECK (report_type IN ('usage','knowledge','ai_performance','line','custom')) DEFAULT 'usage',
+      frequency TEXT NOT NULL CHECK (frequency IN ('weekly','monthly')) DEFAULT 'monthly',
+      recipients TEXT NOT NULL DEFAULT '[]',
+      format TEXT NOT NULL CHECK (format IN ('pdf','xlsx')) DEFAULT 'pdf',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      last_sent_at TEXT,
+      created_by TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (created_by) REFERENCES master_users(user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS custom_report_definitions (
+      definition_id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      metrics TEXT NOT NULL DEFAULT '[]',
+      filters TEXT NOT NULL DEFAULT '{}',
+      created_by TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (created_by) REFERENCES master_users(user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS report_export_logs (
+      log_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      report_type TEXT NOT NULL,
+      format TEXT NOT NULL CHECK (format IN ('pdf','xlsx')),
+      filter_summary TEXT,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (user_id) REFERENCES master_users(user_id)
+    );
   `);
 
   // Safe migrations for newly added columns
@@ -369,7 +415,6 @@ function initTables(db: Database.Database) {
   }
 
   // Seed Default LINE Channel Config if table is empty
-  // Seed Default LINE Channel Config if table is empty (unconfigured initially)
   const lineConfigCount = (db.prepare('SELECT COUNT(*) as c FROM line_channel_configs').get() as any).c;
   if (lineConfigCount === 0) {
     db.prepare(`
@@ -409,14 +454,49 @@ function initTables(db: Database.Database) {
   }
 
   // Ensure LINE_Configs is in sheet_sync_configs
-
-  // Ensure LINE_Configs is in sheet_sync_configs
   const hasLineConfigSync = db.prepare("SELECT COUNT(*) as c FROM sheet_sync_configs WHERE sheet_name = 'LINE_Configs'").get() as any;
   if (hasLineConfigSync.c === 0) {
     db.prepare(`
       INSERT INTO sheet_sync_configs (config_id, sheet_name, google_sheet_id, google_tab_gid, target_table, field_mapping, sync_direction, is_active)
       VALUES ('sync-cfg-005', 'LINE_Configs', '1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs', '0', 'line_channel_configs', '{}', 'two_way', 1)
     `).run();
+  }
+
+  // Seed default Scheduled Reports if empty
+  const schedCount = (db.prepare('SELECT COUNT(*) as c FROM scheduled_report_configs').get() as any).c;
+  if (schedCount === 0) {
+    db.prepare(`
+      INSERT INTO scheduled_report_configs (config_id, report_type, frequency, recipients, format, is_active, created_by, created_at)
+      VALUES 
+        ('sched-001', 'ai_performance', 'monthly', '["director@fang.ac.th", "academic@fang.ac.th"]', 'pdf', 1, 'usr-admin-001', datetime('now', 'localtime')),
+        ('sched-002', 'usage', 'weekly', '["admin@fang.ac.th"]', 'xlsx', 1, 'usr-admin-001', datetime('now', 'localtime'))
+    `).run();
+  }
+
+  // Seed default Report Snapshots for historical charts if empty
+  const snapCount = (db.prepare('SELECT COUNT(*) as c FROM report_snapshots').get() as any).c;
+  if (snapCount < 10) {
+    const insertStmt = db.prepare(`
+      INSERT OR REPLACE INTO report_snapshots (snapshot_id, metric_key, scope, department_id, period_type, period_date, metric_value, created_at)
+      VALUES (?, ?, ?, ?, 'daily', ?, ?, datetime('now', 'localtime'))
+    `);
+    const now = new Date();
+    const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+    for (let i = 30; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const dayFactor = (30 - i) + Math.sin(i) * 5;
+      const qCount = Math.max(12, Math.round(35 + dayFactor * 2.2 + (i % 7 === 0 ? -15 : 10)));
+      const activeUsers = Math.max(5, Math.round(18 + (i % 5)));
+      const confidence = Math.min(0.96, Math.max(0.72, 0.82 + (Math.sin(i * 0.8) * 0.08)));
+      const followers = 140 + Math.round((30 - i) * 3.5);
+
+      insertStmt.run(`snap-q-${dateStr}`, 'ai_question_count', 'global', null, dateStr, qCount);
+      insertStmt.run(`snap-u-${dateStr}`, 'active_users', 'global', null, dateStr, activeUsers);
+      insertStmt.run(`snap-c-${dateStr}`, 'avg_confidence', 'global', null, dateStr, Math.round(confidence * 100) / 100);
+      insertStmt.run(`snap-f-${dateStr}`, 'follower_count', 'global', null, dateStr, followers);
+    }
   }
 }
 
