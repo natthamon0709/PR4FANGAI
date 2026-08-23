@@ -181,9 +181,10 @@ export async function pullLatestFromGoogleSheets(targetTab?: string) {
             const rawRole = (r[7] || 'staff').toLowerCase();
             const rawStatus = (r[8] || 'active').toLowerCase();
             const lineRaw = r[9];
+            const existingUser = db.prepare('SELECT line_user_id FROM master_users WHERE user_id = ?').get(userId) as any;
             const lineUserId = (lineRaw && lineRaw !== '-' && lineRaw !== 'null' && lineRaw.trim().length > 0)
               ? lineRaw.trim()
-              : (userId === 'usr-admin-001' ? 'U1234567890abcdef1234567890abcdef' : (userId === 'usr-staff-001' ? 'Uabcdef1234567890abcdef1234567890' : null));
+              : (existingUser?.line_user_id || null);
 
             const role = rawRole.includes('admin') ? 'administrator' : 'staff';
             const status = rawStatus.includes('suspend') || rawStatus.includes('ปิด') ? 'suspended' : 'active';

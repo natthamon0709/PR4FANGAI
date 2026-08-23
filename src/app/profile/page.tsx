@@ -240,7 +240,15 @@ export default function ProfilePage() {
           onLinkSuccess={() => {
             fetch('/api/auth/me')
               .then(r => r.json())
-              .then(d => setCurrentUser(d.user));
+              .then(d => {
+                if (d && d.user) {
+                  setCurrentUser(d.user);
+                  setFormData(prev => ({
+                    ...prev,
+                    line_user_id: d.user.line_user_id || ''
+                  }));
+                }
+              });
           }}
         />
       </div>

@@ -38,19 +38,25 @@ export default function AccountLinkCodeCard({
     }
   }, [currentLineUserId]);
 
+  // Auto poll linking status every 2.5 seconds
   useEffect(() => {
-    if (timeLeft <= 0 || !request) return;
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
+    if (currentLineUserId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/line-oa/account-link', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.is_linked && data.line_user_id) {
+            clearInterval(pollInterval);
+            if (onLinkSuccess) onLinkSuccess();
+          }
         }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [request]);
+      } catch (err) {}
+    }, 2500);
+
+    return () => clearInterval(pollInterval);
+  }, [currentLineUserId, onLinkSuccess]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
