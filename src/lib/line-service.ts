@@ -121,7 +121,13 @@ export function validateLineSignature(bodyString: string, signature: string, cha
   }
 }
 
-/**
+export function isValidReplyToken(token?: string): boolean {
+  if (!token || typeof token !== 'string') return false;
+  if (token === 'dummy-reply-token') return false;
+  if (/^[0f]{32}$/i.test(token)) return false; // 0000... or ffff... LINE verify tokens
+  return token.trim().length >= 10;
+}
+
 /**
  * Send REAL message reply via LINE Messaging API (https://api.line.me/v2/bot/message/reply)
  * Supports both Text and Image (e.g. Google Drive Personnel / Map photos) with Push fallback
@@ -159,7 +165,7 @@ export async function sendLineReplyMessage(
     let replySuccess = false;
 
     // 1. Reply with text and image if replyToken is valid
-    if (replyToken && replyToken !== 'dummy-reply-token' && replyToken !== '00000000000000000000000000000000') {
+    if (isValidReplyToken(replyToken)) {
       const replyMessages: any[] = [textMessage];
       if (imageMessage) replyMessages.push(imageMessage);
 
@@ -608,7 +614,7 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
     }
 
     let replySuccess = false;
-    if (replyToken && replyToken !== 'dummy-reply-token' && replyToken !== '00000000000000000000000000000000') {
+    if (isValidReplyToken(replyToken)) {
       try {
         const rawToken = getRawLineChannelAccessToken();
         if (rawToken) {
