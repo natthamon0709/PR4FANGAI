@@ -90,6 +90,26 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       params.id
     );
 
+    // Push update to Google Sheets
+    try {
+      const { pushToGoogleSheets } = await import('@/lib/google-sheets-sync');
+      const deptRow = db.prepare('SELECT name FROM departments WHERE department_id = ?').get(newDept) as any;
+      const subDeptRow = db.prepare('SELECT name FROM sub_departments WHERE sub_department_id = ?').get(newSubDept) as any;
+
+      pushToGoogleSheets('Master_Users', 'update', {
+        user_id: params.id,
+        first_name: (first_name ? first_name.trim() : existing.first_name),
+        last_name: (last_name ? last_name.trim() : existing.last_name),
+        email: existing.email,
+        phone: (phone !== undefined ? (phone ? phone.trim() : null) : existing.phone),
+        department_name: deptRow?.name || newDept,
+        sub_department_name: subDeptRow?.name || newSubDept,
+        role: newRole,
+        status: newStatus,
+        line_user_id: (line_user_id !== undefined ? (line_user_id ? line_user_id.trim() : null) : existing.line_user_id)
+      }).catch(err => console.error('Push update to Google Sheets error:', err));
+    } catch {}
+
     triggerN8nWebhook('user.updated', {
       user_id: params.id,
       role: newRole,
@@ -117,11 +137,21 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 
     const db = getDb();
+    const existing = db.prepare('SELECT * FROM master_users WHERE user_id = ?').get(params.id) as any;
     const result = db.prepare('DELETE FROM master_users WHERE user_id = ?').run(params.id);
 
     if (result.changes === 0) {
       return NextResponse.json({ error: 'ไม่พบบัญชีผู้ใช้งานที่ต้องการลบ' }, { status: 404 });
     }
+
+    // Push deletion to Google Sheets
+    try {
+      const { pushToGoogleSheets } = await import('@/lib/google-sheets-sync');
+      pushToGoogleSheets('Master_Users', 'delete', {
+        user_id: params.id,
+        email: existing?.email
+      }).catch(err => console.error('Push delete to Google Sheets error:', err));
+    } catch {}
 
     triggerN8nWebhook('user.deleted', { user_id: params.id });
 

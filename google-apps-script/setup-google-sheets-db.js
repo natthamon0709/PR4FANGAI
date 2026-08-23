@@ -372,6 +372,110 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (sheetName === "Master_Users" || sheetName === "master_users") {
+      let sheet = ss.getSheetByName("Master_Users");
+      if (!sheet) {
+        setupMasterUsersTab(ss);
+        sheet = ss.getSheetByName("Master_Users");
+      }
+
+      const userId = record.user_id || ("usr-staff-" + Math.floor(100 + Math.random() * 900));
+      const email = (record.email || "").toLowerCase().trim();
+      const lastRow = sheet.getLastRow();
+      let foundRow = -1;
+
+      for (let r = 2; r <= lastRow; r++) {
+        const idVal = sheet.getRange(r, 1).getValue().toString().trim();
+        const emailVal = sheet.getRange(r, 4).getValue().toString().trim().toLowerCase();
+        if ((userId && idVal === userId) || (email && emailVal === email)) {
+          foundRow = r;
+          break;
+        }
+      }
+
+      if (action === "delete") {
+        if (foundRow > 1) {
+          sheet.deleteRow(foundRow);
+        }
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "success",
+          message: "ลบผู้ใช้ " + userId + " ออกจาก Google Sheet สำเร็จ"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      const userRow = [
+        userId,
+        record.first_name || "",
+        record.last_name || "",
+        email,
+        record.phone || "",
+        record.department_code || record.department_name || "RES",
+        record.sub_department_name || "",
+        record.role || "staff",
+        record.status || "active",
+        record.line_user_id || "",
+        record.last_login_at || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss"),
+        Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss")
+      ];
+
+      if (foundRow > 1) {
+        sheet.getRange(foundRow, 1, 1, userRow.length).setValues([userRow]);
+      } else {
+        sheet.appendRow(userRow);
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "บันทึก/อัปเดต Master_Users ใน Google Sheet สำเร็จ"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (sheetName === "Knowledge_Base" || sheetName === "knowledge_items") {
+      let sheet = ss.getSheetByName("Knowledge_Base");
+      if (!sheet) {
+        setupKnowledgeBaseTab(ss);
+        sheet = ss.getSheetByName("Knowledge_Base");
+      }
+
+      const row29 = [
+        record.knowledge_id || ("KB-" + Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd") + "-" + Math.floor(100 + Math.random() * 900)),
+        record.created_at || Utilities.formatDate(new Date(), "GMT+7", "M/d/yyyy H:m"),
+        record.updated_at || Utilities.formatDate(new Date(), "GMT+7", "M/d/yyyy H:m"),
+        record.form_response_id || "WEB-APP",
+        record.email || "",
+        record.full_name || "",
+        record.class_room || "-",
+        record.record_date || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd"),
+        record.department || "",
+        record.section || "",
+        record.content_type || "ข้อมูล,เอกสาร",
+        record.title || "",
+        record.description || record.content || "",
+        record.status || "Published",
+        record.target_group || "ปวช. , ปวส. , ผู้ปกครอง",
+        record.publish_start || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd"),
+        record.publish_end || "-",
+        record.keywords || record.keyword || "",
+        record.faq || (record.content_type === "FAQ" ? ("Q: " + record.title) : "-"),
+        record.faq_answer || (record.content_type === "FAQ" ? ("A: " + (record.description || record.content)) : "-"),
+        record.drive_url || "-",
+        record.website_url || "-",
+        record.source || "วิทยาลัยการอาชีพฝาง",
+        record.officer || record.full_name || "",
+        record.officer_email || record.email || "",
+        record.officer_tel || "053-451234",
+        record.sync_status || "Synced",
+        record.external_id || "-",
+        record.note || record.notes || "-"
+      ];
+      sheet.appendRow(row29);
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "บันทึก Knowledge_Base ใน Google Sheet สำเร็จ"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
       message: "ดำเนินการสำเร็จ"

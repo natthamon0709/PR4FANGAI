@@ -86,6 +86,59 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
+    // สำหรับแท็บ Master_Users: จัดการเพิ่ม/แก้ไข/ลบ ข้อมูลผู้ใช้งานตรงตาม 12 คอลัมน์
+    if (sheetName === 'Master_Users' || sheetName === 'master_users') {
+      var userId = record.user_id || ('usr-staff-' + Math.floor(100 + Math.random() * 900));
+      var email = record.email || '';
+      var lastRow = sheet.getLastRow();
+      var foundRow = -1;
+
+      for (var r = 2; r <= lastRow; r++) {
+        var idVal = sheet.getRange(r, 1).getValue().toString().trim();
+        var emailVal = sheet.getRange(r, 4).getValue().toString().trim().toLowerCase();
+        if ((userId && idVal === userId) || (email && emailVal === email.toLowerCase())) {
+          foundRow = r;
+          break;
+        }
+      }
+
+      if (data.action === 'delete') {
+        if (foundRow > 1) {
+          sheet.deleteRow(foundRow);
+        }
+        return ContentService.createTextOutput(JSON.stringify({
+          status: 'success',
+          message: 'ลบผู้ใช้ ' + userId + ' ออกจาก Google Sheet สำเร็จ'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      var userRow = [
+        userId,
+        record.first_name || '',
+        record.last_name || '',
+        email,
+        record.phone || '',
+        record.department_code || record.department_name || 'RES',
+        record.sub_department_name || '',
+        record.role || 'staff',
+        record.status || 'active',
+        record.line_user_id || '',
+        record.last_login_at || Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss'),
+        Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss')
+      ];
+
+      if (foundRow > 1) {
+        sheet.getRange(foundRow, 1, 1, userRow.length).setValues([userRow]);
+      } else {
+        sheet.appendRow(userRow);
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        message: 'บันทึก/อัปเดต Master_Users ใน Google Sheet สำเร็จ'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // สำหรับแท็บระบบอื่นๆ
     if (sheetName === 'AI_Query_Logs') {
       sheet.appendRow([
