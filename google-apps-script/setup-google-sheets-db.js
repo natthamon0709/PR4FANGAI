@@ -29,11 +29,33 @@ function onOpen() {
     SpreadsheetApp.getUi()
       .createMenu("⚙️ PR4Fang AI")
       .addItem("🚀 ตรวจสอบและสร้างชีทที่ยังขาด (ครบ 8 แท็บ)", "initAllDatabaseTabs")
+      .addItem("✍️ ทดสอบบันทึก LINE ID เข้า Master_Users ทันที", "testDirectWrite")
       .addItem("🔄 ซิงค์ข้อมูลทั้งหมดเข้าสู่ PR4Fang AI", "syncAllDataToApp")
       .addToUi();
   } catch (e) {
     Logger.log("Running without UI context");
   }
+}
+
+/**
+ * ฟังก์ชันทดสอบเขียน LINE User ID ลงตาราง Master_Users โดยตรงในคลิกเดียว
+ */
+function testDirectWrite() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("Master_Users");
+  if (!sheet) {
+    setupMasterUsersTab(ss);
+    sheet = ss.getSheetByName("Master_Users");
+  }
+  
+  // อัปเดตคอลัมน์ J (LINE User ID) ของแถวที่ 2 (usr-admin-001)
+  sheet.getRange(2, 10).setValue("U2c77be4b5ede58b5ad920a19c1ef3f4e");
+  sheet.getRange(2, 12).setValue(Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss"));
+  
+  Logger.log("✅ บันทึก LINE User ID (U2c77be4b5ede58b5ad920a19c1ef3f4e) ลงในแถวที่ 2 คอลัมน์ J สำเร็จแล้ว!");
+  try {
+    SpreadsheetApp.getUi().alert("✅ บันทึก LINE User ID ลงในตาราง Master_Users เรียบร้อยแล้ว!");
+  } catch (e) {}
 }
 
 /**
