@@ -648,11 +648,13 @@ export async function pullLatestFromGoogleSheets(targetTab?: string) {
               const gapId = r[1]?.trim() || `gap-${i + 1}`;
               const qText = r[2]?.trim() || '';
               const askCount = parseInt(r[3] || '1') || 1;
-              const deptGuess = r[4]?.trim() || null;
+              const rawDeptGuess = r[4]?.trim() || null;
               const status = r[5]?.trim() || 'open';
 
+              const validDeptId = rawDeptGuess ? getDeptId(rawDeptGuess) : null;
+
               if (qText) {
-                upsertGap.run(gapId, qText, askCount, status, deptGuess, timestamp);
+                upsertGap.run(gapId, qText, askCount, status, validDeptId, timestamp);
                 validGapIds.push(gapId);
                 count++;
               }
