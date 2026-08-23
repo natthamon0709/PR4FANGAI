@@ -13,9 +13,10 @@ interface AiProviderSelectorProps {
 
 const PROVIDER_MODELS: Record<AiProvider, { id: string; name: string; tag: string; desc: string }[]> = {
   gemini: [
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', tag: 'แนะนำ (Recommended)', desc: 'ประมวลผลรวดเร็ว เสถียรสูง แม่นยำ เหมาะสำหรับระบบตอบคำถามอัตโนมัติ' },
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', tag: 'Ultra Fast', desc: 'รุ่นใหม่ล่าสุด ตอบสนองรวดเร็วเป็นพิเศษ' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', tag: 'High Reasoning', desc: 'การคิดวิเคราะห์เชิงลึก สำหรับสังเคราะห์เอกสารระเบียบที่มีความซับซ้อน' }
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', tag: 'แนะนำความเร็วสูง (Recommended Fast)', desc: 'ตอบสนองรวดเร็วใน 0.8 วินาที เสถียรสูง เหมาะสำหรับ LINE OA' },
+    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', tag: 'High Intelligence', desc: 'รุ่นประมวลผลความรู้เชิงลึก สังเคราะห์ภาษาเป็นธรรมชาติ' },
+    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite', tag: 'Ultra Fast', desc: 'ตอบสนองฉับไว ประหยัดโควตา API' },
+    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', tag: 'Latest Version', desc: 'เชื่อมต่อเวอร์ชันล่าสุดอัตโนมัติ' }
   ],
   openai: [
     { id: 'gpt-4o-mini', name: 'GPT-4o Mini', tag: 'Fast & Efficient', desc: 'ตอบสนองไว คุ้มค่า เหมาะสำหรับคำถามทั่วไป' },

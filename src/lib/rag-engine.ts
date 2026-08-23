@@ -387,16 +387,15 @@ async function generateGroundedAnswer(
         }
       };
 
-      // Map and try candidate models resiliently
-      const primaryModel = config.model_name || 'gemini-3.6-flash';
+      // Map and try candidate models resiliently (Fast models first to avoid timeouts)
+      const primaryModel = config.model_name || 'gemini-3.5-flash-lite';
       const candidateModels = Array.from(new Set([
-        'gemini-3.6-flash',
-        'gemini-3.7-flash',
-        'gemini-flash-latest',
         primaryModel,
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash'
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-3.6-flash',
+        'gemini-flash-latest'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -405,15 +404,15 @@ async function generateGroundedAnswer(
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(promptPayload),
-            signal: AbortSignal.timeout(8000)
+            signal: AbortSignal.timeout(4500)
           });
 
           if (res.ok) {
             const data = await res.json();
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text && text.trim().length > 0) return cleanFaqArtifacts(text.trim());
-          } else if (res.status === 404) {
-            // Model not available on this API version or key tier, try next candidate
+          } else if (res.status === 404 || res.status === 503 || res.status === 429) {
+            // Model unavailable or overloaded (503/429), failover immediately to next fast candidate
             continue;
           } else {
             const errText = await res.text();
@@ -421,7 +420,8 @@ async function generateGroundedAnswer(
             continue;
           }
         } catch (callErr) {
-          console.warn(`Gemini API (${modelId}) error:`, callErr);
+          // If timeout, seamlessly continue to next candidate
+          continue;
         }
       }
     } catch (err) {
