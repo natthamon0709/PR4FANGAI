@@ -16,6 +16,8 @@ import {
   Smartphone,
   Send,
   LayoutGrid,
+  Settings,
+  UserCheck,
   X,
   LucideIcon
 } from 'lucide-react';
@@ -91,6 +93,13 @@ export default function SidebarNav({
       title: 'สถิติและรายงาน',
       items: [
         { label: 'สถิติและรายงานผล', href: '/analytics', icon: BarChart3, badge: 'Phase 7' },
+      ],
+    },
+    {
+      title: 'การตั้งค่าระบบ (Phase 8)',
+      items: [
+        { label: 'ตั้งค่าระบบส่วนกลาง', href: '/settings', icon: Settings, adminOnly: true, badge: 'Phase 8' },
+        { label: 'การตั้งค่าส่วนตัว', href: '/settings/my-preferences', icon: UserCheck },
       ],
     },
   ];

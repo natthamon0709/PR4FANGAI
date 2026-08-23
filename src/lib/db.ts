@@ -391,12 +391,159 @@ function initTables(db: Database.Database) {
       created_at TEXT DEFAULT (datetime('now', 'localtime')),
       FOREIGN KEY (user_id) REFERENCES master_users(user_id)
     );
+
+    -- Phase 8: System Settings Tables
+    CREATE TABLE IF NOT EXISTS college_profile (
+      profile_id TEXT PRIMARY KEY,
+      name_th TEXT NOT NULL,
+      name_en TEXT,
+      logo_url TEXT,
+      address TEXT,
+      phone TEXT,
+      email TEXT,
+      website TEXT,
+      timezone TEXT NOT NULL DEFAULT 'Asia/Bangkok',
+      updated_by TEXT,
+      updated_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (updated_by) REFERENCES master_users(user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS security_policies (
+      policy_id TEXT PRIMARY KEY,
+      password_min_length INTEGER NOT NULL DEFAULT 8,
+      password_require_complexity INTEGER NOT NULL DEFAULT 1,
+      max_login_attempts INTEGER NOT NULL DEFAULT 5,
+      lockout_duration_minutes INTEGER NOT NULL DEFAULT 15,
+      session_timeout_hours INTEGER NOT NULL DEFAULT 2,
+      updated_by TEXT,
+      updated_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (updated_by) REFERENCES master_users(user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS notification_rules (
+      rule_id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL UNIQUE CHECK (event_type IN ('pending_review','knowledge_approved','knowledge_sent_back','sync_error','sync_conflict')),
+      notify_roles TEXT NOT NULL DEFAULT '["administrator"]',
+      notify_channels TEXT NOT NULL DEFAULT '["in_app"]',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS system_audit_logs (
+      log_id TEXT PRIMARY KEY,
+      actor_user_id TEXT,
+      action TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_id TEXT,
+      detail TEXT DEFAULT '{}',
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (actor_user_id) REFERENCES master_users(user_id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS backup_jobs (
+      backup_id TEXT PRIMARY KEY,
+      triggered_by TEXT NOT NULL CHECK (triggered_by IN ('manual','scheduled')) DEFAULT 'manual',
+      status TEXT NOT NULL CHECK (status IN ('processing','success','failed')) DEFAULT 'processing',
+      file_url TEXT,
+      file_size INTEGER DEFAULT 0,
+      created_by TEXT,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (created_by) REFERENCES master_users(user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id TEXT PRIMARY KEY,
+      in_app_notifications INTEGER NOT NULL DEFAULT 1,
+      line_notifications INTEGER NOT NULL DEFAULT 1,
+      email_notifications INTEGER NOT NULL DEFAULT 0,
+      event_types TEXT NOT NULL DEFAULT '["pending_review","knowledge_approved","knowledge_sent_back","sync_error"]',
+      updated_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (user_id) REFERENCES master_users(user_id) ON DELETE CASCADE
+    );
   `);
 
   // Safe migrations for newly added columns
+  try { db.prepare('ALTER TABLE departments ADD COLUMN display_order INTEGER DEFAULT 0').run(); } catch {}
+  try { db.prepare('ALTER TABLE departments ADD COLUMN is_active INTEGER DEFAULT 1').run(); } catch {}
+  try { db.prepare('ALTER TABLE sub_departments ADD COLUMN display_order INTEGER DEFAULT 0').run(); } catch {}
+  try { db.prepare('ALTER TABLE sub_departments ADD COLUMN is_active INTEGER DEFAULT 1').run(); } catch {}
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_display_name TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_basic_id TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_picture_url TEXT').run(); } catch {}
+
+  // Seed Default College Profile if empty
+  const profileCount = (db.prepare('SELECT COUNT(*) as c FROM college_profile').get() as any).c;
+  if (profileCount === 0) {
+    db.prepare(`
+      INSERT INTO college_profile (
+        profile_id, name_th, name_en, logo_url, address, phone, email, website, timezone, updated_by, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Asia/Bangkok', 'usr-admin-001', datetime('now', 'localtime'))
+    `).run(
+      'prof-fang-001',
+      'วิทยาลัยการอาชีพฝาง',
+      'Fang Industrial and Community Education College',
+      '/img/logofve.png',
+      'เลขที่ 253 หมู่ 4 ถนนโชตนา ต.เวียง อ.ฝาง จ.เชียงใหม่ 50110',
+      '053-453009',
+      'fang_icec@vec.mail.go.th',
+      'https://www.fve.ac.th'
+    );
+  }
+
+  // Seed Default Security Policy if empty
+  const secPolicyCount = (db.prepare('SELECT COUNT(*) as c FROM security_policies').get() as any).c;
+  if (secPolicyCount === 0) {
+    db.prepare(`
+      INSERT INTO security_policies (
+        policy_id, password_min_length, password_require_complexity,
+        max_login_attempts, lockout_duration_minutes, session_timeout_hours,
+        updated_by, updated_at
+      ) VALUES ('sec-policy-001', 8, 1, 5, 15, 2, 'usr-admin-001', datetime('now', 'localtime'))
+    `).run();
+  }
+
+  // Seed Default Notification Rules if empty
+  const notifRulesCount = (db.prepare('SELECT COUNT(*) as c FROM notification_rules').get() as any).c;
+  if (notifRulesCount === 0) {
+    const rules = [
+      { id: 'rule-01', event: 'pending_review', roles: '["administrator"]', channels: '["in_app","line"]' },
+      { id: 'rule-02', event: 'knowledge_approved', roles: '["staff"]', channels: '["in_app","line"]' },
+      { id: 'rule-03', event: 'knowledge_sent_back', roles: '["staff"]', channels: '["in_app","line"]' },
+      { id: 'rule-04', event: 'sync_error', roles: '["administrator"]', channels: '["in_app","email"]' },
+      { id: 'rule-05', event: 'sync_conflict', roles: '["administrator"]', channels: '["in_app"]' }
+    ];
+    const insertRule = db.prepare('INSERT INTO notification_rules (rule_id, event_type, notify_roles, notify_channels, is_active) VALUES (?, ?, ?, ?, 1)');
+    rules.forEach(r => insertRule.run(r.id, r.event, r.roles, r.channels));
+  }
+
+  // Seed Default User Preferences if empty
+  const prefCount = (db.prepare('SELECT COUNT(*) as c FROM user_preferences').get() as any).c;
+  if (prefCount === 0) {
+    db.prepare(`
+      INSERT OR IGNORE INTO user_preferences (user_id, in_app_notifications, line_notifications, email_notifications, event_types)
+      VALUES 
+        ('usr-admin-001', 1, 1, 0, '["pending_review","knowledge_approved","knowledge_sent_back","sync_error","sync_conflict"]'),
+        ('usr-staff-001', 1, 1, 0, '["knowledge_approved","knowledge_sent_back"]')
+    `).run();
+  }
+
+  // Seed initial backup job if empty
+  const backupCount = (db.prepare('SELECT COUNT(*) as c FROM backup_jobs').get() as any).c;
+  if (backupCount === 0) {
+    db.prepare(`
+      INSERT INTO backup_jobs (backup_id, triggered_by, status, file_url, file_size, created_by, created_at)
+      VALUES ('backup-init-001', 'scheduled', 'success', '/api/settings/backup/backup-init-001/download', 148200, 'usr-admin-001', datetime('now', 'localtime'))
+    `).run();
+  }
+
+  // Seed initial system audit log if empty
+  const sysAuditCount = (db.prepare('SELECT COUNT(*) as c FROM system_audit_logs').get() as any).c;
+  if (sysAuditCount === 0) {
+    db.prepare(`
+      INSERT INTO system_audit_logs (log_id, actor_user_id, action, target_type, target_id, detail, created_at)
+      VALUES ('sys-log-001', 'usr-admin-001', 'init_system_settings', 'system', 'system', '{"message":"เริ่มต้นระบบการตั้งค่าส่วนกลาง PR4Fang AI KMS"}', datetime('now', 'localtime'))
+    `).run();
+  }
 
   // Seed Default AI Config if table is empty
   const configCount = (db.prepare('SELECT COUNT(*) as c FROM ai_engine_configs').get() as any).c;
