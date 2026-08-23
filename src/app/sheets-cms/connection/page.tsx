@@ -397,6 +397,26 @@ function initSheetHeaders(sheet, name) {
     }
   }
 
+  const [pushingAllUsers, setPushingAllUsers] = useState(false);
+
+  async function handlePushAllUsers() {
+    setPushingAllUsers(true);
+    setAlertMsg(null);
+    try {
+      const res = await fetch('/api/integrations/google-sheets/export', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAlertMsg({ type: 'success', text: `✅ ${data.message}` });
+      } else {
+        setAlertMsg({ type: 'error', text: data.error || 'เกิดข้อผิดพลาดในการส่งข้อมูล' });
+      }
+    } catch (e: any) {
+      setAlertMsg({ type: 'error', text: e.message });
+    } finally {
+      setPushingAllUsers(false);
+    }
+  }
+
   function handleCopyScriptCode() {
     navigator.clipboard.writeText(APPS_SCRIPT_TEMPLATE);
     setCopiedCode(true);
@@ -500,6 +520,17 @@ function initSheetHeaders(sheet, name) {
               >
                 {savingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 <span>บันทึก URL</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePushAllUsers}
+                disabled={pushingAllUsers}
+                className="h-11 px-5 rounded-xl bg-secondary text-secondary-dark hover:bg-secondary/80 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+                title="ส่งข้อมูลผู้ใช้งานทั้งหมดในระบบขึ้น Google Sheet ทันที"
+              >
+                {pushingAllUsers ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                <span>ส่งออกผู้ใช้ทั้งหมดขึ้น Sheet ทันที</span>
               </button>
             </div>
 
