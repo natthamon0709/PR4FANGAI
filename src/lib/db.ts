@@ -1,22 +1,60 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-
-const DB_DIR = path.join(process.cwd(), 'data');
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
-}
-
-const DB_PATH = path.join(DB_DIR, 'pr4fang.db');
+import bcrypt from 'bcryptjs';
 
 // Singleton database instance
 let dbInstance: Database.Database | null = null;
 
+function getDbPath(): string {
+  const isServerless = Boolean(
+    process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.LAMBDA_TASK_ROOT
+  );
+
+  if (isServerless) {
+    const tmpDir = '/tmp';
+    const tmpDbPath = path.join(tmpDir, 'pr4fang.db');
+    const bundledDbPath = path.join(process.cwd(), 'data', 'pr4fang.db');
+
+    if (!fs.existsSync(tmpDbPath)) {
+      if (fs.existsSync(bundledDbPath)) {
+        try {
+          fs.copyFileSync(bundledDbPath, tmpDbPath);
+          if (fs.existsSync(bundledDbPath + '-wal')) {
+            try { fs.copyFileSync(bundledDbPath + '-wal', tmpDbPath + '-wal'); } catch {}
+          }
+          if (fs.existsSync(bundledDbPath + '-shm')) {
+            try { fs.copyFileSync(bundledDbPath + '-shm', tmpDbPath + '-shm'); } catch {}
+          }
+        } catch (err) {
+          console.warn('Failed to copy bundled db to /tmp:', err);
+        }
+      }
+    }
+    return tmpDbPath;
+  }
+
+  const localDbDir = path.join(process.cwd(), 'data');
+  if (!fs.existsSync(localDbDir)) {
+    try {
+      fs.mkdirSync(localDbDir, { recursive: true });
+    } catch {}
+  }
+  return path.join(localDbDir, 'pr4fang.db');
+}
+
 export function getDb(): Database.Database {
   if (!dbInstance) {
-    dbInstance = new Database(DB_PATH);
-    dbInstance.pragma('journal_mode = WAL');
-    dbInstance.pragma('foreign_keys = ON');
+    const dbPath = getDbPath();
+    dbInstance = new Database(dbPath);
+    try {
+      dbInstance.pragma('journal_mode = WAL');
+    } catch {}
+    try {
+      dbInstance.pragma('foreign_keys = ON');
+    } catch {}
     initTables(dbInstance);
   }
   return dbInstance;
@@ -470,6 +508,95 @@ function initTables(db: Database.Database) {
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_display_name TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_basic_id TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_picture_url TEXT').run(); } catch {}
+
+  // 1. Seed Departments & Sub-departments if empty
+  const deptCount = (db.prepare('SELECT COUNT(*) as c FROM departments').get() as any).c;
+  if (deptCount === 0) {
+    const departmentsData = [
+      { id: 'dept-01-resource', code: 'RES', name: 'ฝ่ายบริหารทรัพยากร' },
+      { id: 'dept-02-planning', code: 'PLN', name: 'ฝ่ายแผนงานและความร่วมมือ' },
+      { id: 'dept-03-student', code: 'STD', name: 'ฝ่ายพัฒนากิจการนักเรียนนักศึกษา' },
+      { id: 'dept-04-academic', code: 'ACD', name: 'ฝ่ายวิชาการ' }
+    ];
+    const insertDept = db.prepare('INSERT INTO departments (department_id, code, name) VALUES (?, ?, ?)');
+    departmentsData.forEach(d => insertDept.run(d.id, d.code, d.name));
+
+    const subDepartmentsData = [
+      { id: 'sub-01-01', deptId: 'dept-01-resource', code: 'RES-GEN', name: 'งานบริหารงานทั่วไป' },
+      { id: 'sub-01-02', deptId: 'dept-01-resource', code: 'RES-HR', name: 'งานบริหารและพัฒนาทรัพยากรบุคคล' },
+      { id: 'sub-01-03', deptId: 'dept-01-resource', code: 'RES-FIN', name: 'งานการเงิน' },
+      { id: 'sub-01-04', deptId: 'dept-01-resource', code: 'RES-ACC', name: 'งานการบัญชี' },
+      { id: 'sub-01-05', deptId: 'dept-01-resource', code: 'RES-SUP', name: 'งานพัสดุ' },
+      { id: 'sub-01-06', deptId: 'dept-01-resource', code: 'RES-BLD', name: 'งานอาคารสถานที่' },
+      { id: 'sub-01-07', deptId: 'dept-01-resource', code: 'RES-VEH', name: 'งานยานพาหนะ' },
+      { id: 'sub-01-08', deptId: 'dept-01-resource', code: 'RES-PR', name: 'งานประชาสัมพันธ์' },
+      { id: 'sub-02-01', deptId: 'dept-02-planning', code: 'PLN-BGT', name: 'งานวางแผนและงบประมาณ' },
+      { id: 'sub-02-02', deptId: 'dept-02-planning', code: 'PLN-DIG', name: 'งานศูนย์ข้อมูลสารสนเทศและดิจิทัล' },
+      { id: 'sub-02-03', deptId: 'dept-02-planning', code: 'PLN-COP', name: 'งานความร่วมมือ' },
+      { id: 'sub-02-04', deptId: 'dept-02-planning', code: 'PLN-RND', name: 'งานวิจัย พัฒนา นวัตกรรมและสิ่งประดิษฐ์' },
+      { id: 'sub-02-05', deptId: 'dept-02-planning', code: 'PLN-QA', name: 'งานประกันคุณภาพและมาตรฐานการศึกษา' },
+      { id: 'sub-03-01', deptId: 'dept-03-student', code: 'STD-ACT', name: 'งานกิจกรรมนักเรียนนักศึกษา' },
+      { id: 'sub-03-02', deptId: 'dept-03-student', code: 'STD-ADV', name: 'งานครูที่ปรึกษา' },
+      { id: 'sub-03-03', deptId: 'dept-03-student', code: 'STD-DIS', name: 'งานปกครองและสวัสดิการนักเรียนนักศึกษา' },
+      { id: 'sub-03-04', deptId: 'dept-03-student', code: 'STD-GUD', name: 'งานแนะแนวอาชีพและการมีงานทำ' },
+      { id: 'sub-03-05', deptId: 'dept-03-student', code: 'STD-SPJ', name: 'งานโครงการพิเศษและการบริการชุมชน' },
+      { id: 'sub-04-01', deptId: 'dept-04-academic', code: 'ACD-CUR', name: 'งานพัฒนาหลักสูตรการเรียนการสอน' },
+      { id: 'sub-04-02', deptId: 'dept-04-academic', code: 'ACD-EVA', name: 'งานวัดผลและประเมินผล' },
+      { id: 'sub-04-03', deptId: 'dept-04-academic', code: 'ACD-LIB', name: 'งานวิทยบริการและห้องสมุด' },
+      { id: 'sub-04-04', deptId: 'dept-04-academic', code: 'ACD-DVE', name: 'งานอาชีวศึกษาระบบทวิภาคี' },
+      { id: 'sub-04-05', deptId: 'dept-04-academic', code: 'ACD-REG', name: 'งานทะเบียน' }
+    ];
+    const insertSubDept = db.prepare('INSERT INTO sub_departments (sub_department_id, department_id, code, name) VALUES (?, ?, ?, ?)');
+    subDepartmentsData.forEach(s => insertSubDept.run(s.id, s.deptId, s.code, s.name));
+  }
+
+  // 2. Seed Master Users if empty
+  const userCount = (db.prepare('SELECT COUNT(*) as c FROM master_users').get() as any).c;
+  if (userCount === 0) {
+    const adminHash = bcrypt.hashSync('Admin@12345', 12);
+    const staffHash = bcrypt.hashSync('Fang@2026', 12);
+    const insertUser = db.prepare(`
+      INSERT INTO master_users (
+        user_id, first_name, last_name, email, password_hash,
+        phone, department_id, sub_department_id, role, status,
+        avatar_url, line_user_id, failed_login_count, last_login_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 0, datetime('now', 'localtime'))
+    `);
+    insertUser.run('usr-admin-001', 'ผู้ดูแลระบบ', 'ศูนย์ดิจิทัลฯ', 'admin@fang.ac.th', adminHash, '053451234', 'dept-02-planning', 'sub-02-02', 'administrator', 'active', 'U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6');
+    insertUser.run('usr-staff-001', 'สมชาย', 'ใจดี', 'somchai@fang.ac.th', staffHash, '0898765432', 'dept-01-resource', 'sub-01-02', 'staff', 'active', 'U2233445566778899aabbccddeeff0011');
+  }
+
+  // 3. Seed System Settings if empty
+  const settingCount = (db.prepare('SELECT COUNT(*) as c FROM system_settings').get() as any).c;
+  if (settingCount === 0) {
+    const defaultSettings = [
+      { key: 'site_name', value: 'PR4Fang AI - ระบบจัดการองค์ความรู้' },
+      { key: 'college_name', value: 'วิทยาลัยการอาชีพฝาง' },
+      { key: 'google_sheets_id', value: '1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs' },
+      { key: 'google_apps_script_url', value: 'https://script.google.com/macros/s/AKfycbxUI67uapRoJ5uuW6lofbVvGmPpY0x3T5-0uTv1QvCLkKmT-ZGLt76DVJGzM6NS49Yi/exec' },
+      { key: 'google_account_email', value: 'pr4fang-sync@fang-ai-2026.iam.gserviceaccount.com' },
+      { key: 'google_sheets_sync_status', value: 'synced' },
+      { key: 'google_sheets_last_synced', value: new Date().toISOString() },
+      { key: 'n8n_api_key', value: 'fang_ai_n8n_live_sec_key_2026' }
+    ];
+    const insertSetting = db.prepare('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)');
+    defaultSettings.forEach(s => insertSetting.run(s.key, s.value));
+  }
+
+  // 4. Seed Sheet Sync Configs if empty
+  const syncConfigCount = (db.prepare('SELECT COUNT(*) as c FROM sheet_sync_configs').get() as any).c;
+  if (syncConfigCount === 0) {
+    const SPREADSHEET_ID = '1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs';
+    const sheetConfigs = [
+      { id: 'sync-cfg-001', name: 'Master_Users', gid: '0', table: 'master_users' },
+      { id: 'sync-cfg-002', name: 'Knowledge_Base', gid: '0', table: 'knowledge_items' },
+      { id: 'sync-cfg-003', name: 'Knowledge_Gaps', gid: '0', table: 'knowledge_gap_logs' },
+      { id: 'sync-cfg-004', name: 'AI_Query_Logs', gid: '0', table: 'ai_query_logs' },
+      { id: 'sync-cfg-005', name: 'LINE_Configs', gid: '0', table: 'line_channel_configs' }
+    ];
+    const insertSync = db.prepare('INSERT OR REPLACE INTO sheet_sync_configs (config_id, sheet_name, google_sheet_id, google_tab_gid, target_table, field_mapping, sync_direction, is_active) VALUES (?, ?, ?, ?, ?, "{}", "two_way", 1)');
+    sheetConfigs.forEach(sc => insertSync.run(sc.id, sc.name, SPREADSHEET_ID, sc.gid, sc.table));
+  }
 
   // Seed Default College Profile if empty
   const profileCount = (db.prepare('SELECT COUNT(*) as c FROM college_profile').get() as any).c;
