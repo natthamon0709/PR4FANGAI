@@ -12,7 +12,8 @@ const COOKIE_NAME = 'pr4fang_session';
 
 export const MAX_FAILED_ATTEMPTS = 5;
 export const LOCKOUT_DURATION_MINUTES = 15;
-export const SESSION_DURATION_HOURS = 2;
+export const SESSION_DURATION_HOURS = 24; // 24 ชั่วโมง
+export const REMEMBER_ME_DURATION_DAYS = 30; // 30 วันสำหรับ จดจำการเข้าสู่ระบบ
 
 // 1. Password utilities
 export async function hashPassword(password: string): Promise<string> {
@@ -24,11 +25,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 // 2. JWT Session utilities
-export async function createSessionToken(user: SessionUser): Promise<string> {
+export async function createSessionToken(user: SessionUser, rememberMe = false): Promise<string> {
+  const expiration = rememberMe ? `${REMEMBER_ME_DURATION_DAYS}d` : `${SESSION_DURATION_HOURS}h`;
   return new SignJWT({ user })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DURATION_HOURS}h`)
+    .setExpirationTime(expiration)
     .sign(secretKey);
 }
 

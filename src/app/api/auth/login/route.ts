@@ -7,7 +7,9 @@ import {
   handleSuccessfulLogin, 
   logLoginAttempt,
   COOKIE_NAME,
-  MAX_FAILED_ATTEMPTS
+  MAX_FAILED_ATTEMPTS,
+  SESSION_DURATION_HOURS,
+  REMEMBER_ME_DURATION_DAYS
 } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -86,10 +88,10 @@ export async function POST(req: NextRequest) {
       line_user_id: user.line_user_id
     };
 
-    const token = await createSessionToken(sessionPayload);
+    const token = await createSessionToken(sessionPayload, !!rememberMe);
 
-    // 2 hours maxAge or 7 days if rememberMe
-    const maxAgeSeconds = rememberMe ? 7 * 24 * 60 * 60 : 2 * 60 * 60;
+    // 24 hours (86,400s) default or 30 days (2,592,000s) if rememberMe
+    const maxAgeSeconds = rememberMe ? REMEMBER_ME_DURATION_DAYS * 24 * 60 * 60 : SESSION_DURATION_HOURS * 60 * 60;
 
     const response = NextResponse.json({
       success: true,
