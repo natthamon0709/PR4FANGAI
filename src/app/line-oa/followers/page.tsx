@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { safeFetchJson } from '@/lib/api-client';
 import FollowerTable from '@/components/line/FollowerTable';
 import SessionAlert from '@/components/SessionAlert';
 import { SessionUser } from '@/types';
@@ -23,25 +24,24 @@ export default function FollowersPage() {
 
   const loadFollowers = async () => {
     try {
-      const userRes = await fetch('/api/auth/me', { cache: 'no-store' });
-      if (!userRes.ok) {
+      const userRes = await safeFetchJson('/api/auth/me');
+      if (!userRes.ok || !userRes.data?.user) {
         router.push('/login');
         return;
       }
-      const userData = await userRes.json();
-      setCurrentUser(userData.user);
+      const user = userRes.data.user;
+      setCurrentUser(user);
 
-      if (userData.user.role !== 'administrator') {
+      if (user.role !== 'administrator') {
         router.push('/line-oa');
         return;
       }
 
       const params = new URLSearchParams({ search, status: statusFilter });
-      const res = await fetch(`/api/line-oa/followers?${params.toString()}`, { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        setFollowers(data.followers || []);
-        setBotInfo(data.botInfo || null);
+      const res = await safeFetchJson(`/api/line-oa/followers?${params.toString()}`);
+      if (res.ok && res.data) {
+        setFollowers(res.data.followers || []);
+        setBotInfo(res.data.botInfo || null);
       }
     } catch (err: any) {
       console.error(err);
@@ -59,23 +59,22 @@ export default function FollowersPage() {
     setAlertMsg(null);
 
     try {
-      const res = await fetch('/api/line-oa/followers', {
+      const res = await safeFetchJson('/api/line-oa/followers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'sync_line_api' })
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok && res.data?.success) {
         setAlertMsg({
           type: 'success',
-          text: `✅ ${data.message}`
+          text: `✅ ${res.data.message}`
         });
         await loadFollowers();
       } else {
         setAlertMsg({
           type: 'error',
-          text: `❌ ${data.error || 'ไม่สามารถดึงข้อมูลจาก LINE API ได้'}`
+          text: `❌ ${res.data?.error || res.error || 'ไม่สามารถดึงข้อมูลจาก LINE API ได้'}`
         });
       }
     } catch (err: any) {
@@ -90,13 +89,26 @@ export default function FollowersPage() {
     setAlertMsg(null);
 
     try {
-      const res = await fetch('/api/sheets-cms/sync-all', { method: 'POST' });
-      if (res.ok) {
-        setAlertMsg({ type: 'success', text: '✅ ซิงค์ข้อมูลผู้ติดตามกับ Google Sheet เรียบร้อยแล้ว' });
+      const res = await safeFetchJson('/api/line-oa/followers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync_from_sheet' })
+      });
+
+      if (res.ok && res.data?.success) {
+        setAlertMsg({
+          type: 'success',
+          text: `✅ ${res.data.message}`
+        });
         await loadFollowers();
+      } else {
+        setAlertMsg({
+          type: 'error',
+          text: `❌ ${res.data?.error || res.error || 'ไม่สามารถซิงค์ข้อมูลจาก Google Sheets ได้'}`
+        });
       }
     } catch (err: any) {
-      setAlertMsg({ type: 'error', text: err.message });
+      setAlertMsg({ type: 'error', text: `เกิดข้อผิดพลาด: ${err.message}` });
     } finally {
       setSyncingSheet(false);
     }

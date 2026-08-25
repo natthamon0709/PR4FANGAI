@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { safeFetchJson } from '@/lib/api-client';
 import AnalyticsTabNav from '@/components/analytics/AnalyticsTabNav';
 import DateRangePicker from '@/components/analytics/DateRangePicker';
 import AnalyticsKpiCard from '@/components/analytics/AnalyticsKpiCard';
@@ -22,20 +23,27 @@ export default function AiPerformancePage() {
   const [data, setData] = useState<AiPerformanceResponse | null>(null);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => { if (!res.ok) router.push('/login'); return res.json(); })
-      .then(d => { if (d && d.user) setUser(d.user); });
+    async function checkAuth() {
+      const res = await safeFetchJson('/api/auth/me');
+      if (res.ok && res.data?.user) {
+        setUser(res.data.user);
+      } else {
+        router.push('/login');
+      }
+    }
+    checkAuth();
   }, [router]);
 
-  const loadData = () => {
+  const loadData = async () => {
     const params = new URLSearchParams();
     params.set('preset', preset);
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
 
-    fetch(`/api/analytics/ai-performance?${params.toString()}`)
-      .then(res => res.json())
-      .then(resData => { if (resData.success) setData(resData); });
+    const res = await safeFetchJson(`/api/analytics/ai-performance?${params.toString()}`);
+    if (res.ok && res.data?.success) {
+      setData(res.data);
+    }
   };
 
   useEffect(() => { if (user) loadData(); }, [user, preset, startDate, endDate]);

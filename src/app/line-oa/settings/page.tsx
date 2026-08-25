@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { safeFetchJson } from '@/lib/api-client';
 import LineConnectionStatusBadge from '@/components/line/LineConnectionStatusBadge';
 import WebhookUrlField from '@/components/line/WebhookUrlField';
 import SessionAlert from '@/components/SessionAlert';
@@ -30,22 +31,22 @@ export default function LineChannelSettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const userRes = await fetch('/api/auth/me', { cache: 'no-store' });
-      if (!userRes.ok) {
+      const userRes = await safeFetchJson('/api/auth/me');
+      if (!userRes.ok || !userRes.data?.user) {
         router.push('/login');
         return;
       }
-      const userData = await userRes.json();
-      setCurrentUser(userData.user);
+      const user = userRes.data.user;
+      setCurrentUser(user);
 
-      if (userData.user.role !== 'administrator') {
+      if (user.role !== 'administrator') {
         router.push('/line-oa');
         return;
       }
 
-      const settingsRes = await fetch('/api/line-oa/settings', { cache: 'no-store' });
-      if (settingsRes.ok) {
-        const data = await settingsRes.json();
+      const settingsRes = await safeFetchJson('/api/line-oa/settings');
+      if (settingsRes.ok && settingsRes.data) {
+        const data = settingsRes.data;
         if (data.config) {
           setChannelConfig(data.config);
           setChannelId(data.config.channel_id || '');
@@ -73,7 +74,7 @@ export default function LineChannelSettingsPage() {
     setAlertMsg(null);
 
     try {
-      const res = await fetch('/api/line-oa/settings', {
+      const res = await safeFetchJson('/api/line-oa/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,17 +82,16 @@ export default function LineChannelSettingsPage() {
         })
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok && res.data?.success) {
         setAlertMsg({
           type: 'success',
-          text: `✅ ${data.message} — บอท: ${data.botInfo?.displayName} (@${data.botInfo?.basicId})`
+          text: `✅ ${res.data.message} — บอท: ${res.data.botInfo?.displayName} (@${res.data.botInfo?.basicId})`
         });
         await loadSettings();
       } else {
         setAlertMsg({
           type: 'error',
-          text: `❌ ไม่สามารถเชื่อมต่อกับ LINE API ได้: ${data.error || 'กรุณาตรวจสอบ Channel Access Token'}`
+          text: `❌ ไม่สามารถเชื่อมต่อกับ LINE API ได้: ${res.data?.error || res.error || 'กรุณาตรวจสอบ Channel Access Token'}`
         });
         await loadSettings();
       }
@@ -107,18 +107,17 @@ export default function LineChannelSettingsPage() {
     setAlertMsg(null);
 
     try {
-      const res = await fetch('/api/line-oa/settings', {
+      const res = await safeFetchJson('/api/line-oa/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'pull_from_sheet' })
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setAlertMsg({ type: 'success', text: `✅ ${data.message}` });
+      if (res.ok && res.data?.success) {
+        setAlertMsg({ type: 'success', text: `✅ ${res.data.message}` });
         await loadSettings();
       } else {
-        setAlertMsg({ type: 'error', text: data.error || 'ไม่สามารถดึงข้อมูลจาก Google Sheet ได้' });
+        setAlertMsg({ type: 'error', text: res.data?.error || res.error || 'ไม่สามารถดึงข้อมูลจาก Google Sheet ได้' });
       }
     } catch (err: any) {
       setAlertMsg({ type: 'error', text: `เกิดข้อผิดพลาด: ${err.message}` });
@@ -133,28 +132,27 @@ export default function LineChannelSettingsPage() {
     setAlertMsg(null);
 
     try {
-      const res = await fetch('/api/line-oa/settings', {
+      const res = await safeFetchJson('/api/line-oa/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           channel_id: channelId,
-          channel_secret: channelSecret,
-          channel_access_token: channelToken,
+          channel_secret: channelSecret || undefined,
+          channel_access_token: channelToken || undefined,
           webhook_url: webhookUrl,
           google_apps_script_url: appsScriptUrl
         })
       });
 
-      const data = await res.json();
-      if (res.ok) {
-        if (data.warning) {
-          setAlertMsg({ type: 'error', text: data.message });
+      if (res.ok && res.data) {
+        if (res.data.warning) {
+          setAlertMsg({ type: 'error', text: res.data.message });
         } else {
-          setAlertMsg({ type: 'success', text: data.message });
+          setAlertMsg({ type: 'success', text: res.data.message });
         }
         await loadSettings();
       } else {
-        setAlertMsg({ type: 'error', text: data.error });
+        setAlertMsg({ type: 'error', text: res.data?.error || res.error || 'ไม่สามารถบันทึกการตั้งค่าได้' });
       }
     } catch (err: any) {
       setAlertMsg({ type: 'error', text: err.message });
@@ -171,20 +169,19 @@ export default function LineChannelSettingsPage() {
     setAlertMsg(null);
 
     try {
-      const res = await fetch('/api/line-oa/settings', {
+      const res = await safeFetchJson('/api/line-oa/settings', {
         method: 'DELETE'
       });
 
-      const data = await res.json();
-      if (res.ok) {
-        setAlertMsg({ type: 'success', text: data.message });
+      if (res.ok && res.data) {
+        setAlertMsg({ type: 'success', text: res.data.message || 'ล้างการตั้งค่าเรียบร้อยแล้ว' });
         setChannelId('');
         setChannelSecret('');
         setChannelToken('');
         setWebhookUrl('http://localhost:3000/api/line-oa/webhook');
         await loadSettings();
       } else {
-        setAlertMsg({ type: 'error', text: data.error });
+        setAlertMsg({ type: 'error', text: res.data?.error || res.error || 'ไม่สามารถล้างการตั้งค่าได้' });
       }
     } catch (err: any) {
       setAlertMsg({ type: 'error', text: err.message });

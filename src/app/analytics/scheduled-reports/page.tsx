@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { safeFetchJson } from '@/lib/api-client';
 import AnalyticsTabNav from '@/components/analytics/AnalyticsTabNav';
 import ScheduledReportRow from '@/components/analytics/ScheduledReportRow';
 import RecipientPicker from '@/components/analytics/RecipientPicker';
@@ -21,38 +22,33 @@ export default function ScheduledReportsPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => {
-        if (!res.ok) {
-          router.push('/login');
-          return null;
+    async function init() {
+      const res = await safeFetchJson('/api/auth/me');
+      if (res.ok && res.data?.user) {
+        if (res.data.user.role !== 'administrator') {
+          router.push('/analytics');
+          return;
         }
-        return res.json();
-      })
-      .then(d => {
-        if (d && d.user) {
-          if (d.user.role !== 'administrator') {
-            router.push('/analytics');
-            return;
-          }
-          setUser(d.user);
-        }
-      });
-    loadSchedules();
+        setUser(res.data.user);
+      } else {
+        router.push('/login');
+        return;
+      }
+      loadSchedules();
+    }
+    init();
   }, [router]);
 
-  const loadSchedules = () => {
-    fetch('/api/analytics/scheduled-reports')
-      .then(res => res.json())
-      .then(data => {
-        if (data.schedules) setSchedules(data.schedules);
-      });
+  const loadSchedules = async () => {
+    const res = await safeFetchJson('/api/analytics/scheduled-reports');
+    if (res.ok && res.data?.schedules) {
+      setSchedules(res.data.schedules);
+    }
   };
 
   const handleToggle = async (id: string, current: boolean) => {
-    await fetch(`/api/analytics/scheduled-reports/${id}`, {
+    await safeFetchJson(`/api/analytics/scheduled-reports/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: !current })
     });
     loadSchedules();
@@ -60,7 +56,7 @@ export default function ScheduledReportsPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm('คุณต้องการลบการตั้งเวลารายงานนี้ใช่หรือไม่?')) {
-      await fetch(`/api/analytics/scheduled-reports/${id}`, { method: 'DELETE' });
+      await safeFetchJson(`/api/analytics/scheduled-reports/${id}`, { method: 'DELETE' });
       loadSchedules();
     }
   };
@@ -70,7 +66,7 @@ export default function ScheduledReportsPage() {
     if (recipients.length === 0) return;
     setLoading(true);
     try {
-      await fetch('/api/analytics/scheduled-reports', {
+      await safeFetchJson('/api/analytics/scheduled-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

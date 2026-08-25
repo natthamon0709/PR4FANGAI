@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { safeFetchJson } from '@/lib/api-client';
 import AnalyticsTabNav from '@/components/analytics/AnalyticsTabNav';
 import ReportCategoryCheckboxGroup from '@/components/analytics/ReportCategoryCheckboxGroup';
 import ExportFormatSelector from '@/components/analytics/ExportFormatSelector';
@@ -21,9 +22,15 @@ export default function CustomReportExportPage() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => { if (!res.ok) router.push('/login'); return res.json(); })
-      .then(d => { if (d && d.user) setUser(d.user); });
+    async function checkAuth() {
+      const res = await safeFetchJson('/api/auth/me');
+      if (res.ok && res.data?.user) {
+        setUser(res.data.user);
+      } else {
+        router.push('/login');
+      }
+    }
+    checkAuth();
   }, [router]);
 
   const handleExport = async () => {

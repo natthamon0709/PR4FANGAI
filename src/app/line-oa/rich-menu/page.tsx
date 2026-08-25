@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { safeFetchJson } from '@/lib/api-client';
 import RichMenuMobilePreview from '@/components/line/RichMenuMobilePreview';
 import TapAreaActionForm from '@/components/line/TapAreaActionForm';
 import SessionAlert from '@/components/SessionAlert';
@@ -40,22 +41,22 @@ export default function RichMenuManagerPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const userRes = await fetch('/api/auth/me');
-        if (!userRes.ok) {
+        const userRes = await safeFetchJson('/api/auth/me');
+        if (!userRes.ok || !userRes.data?.user) {
           router.push('/login');
           return;
         }
-        const userData = await userRes.json();
-        setCurrentUser(userData.user);
+        const user = userRes.data.user;
+        setCurrentUser(user);
 
-        if (userData.user.role !== 'administrator') {
+        if (user.role !== 'administrator') {
           router.push('/line-oa');
           return;
         }
 
-        const menuRes = await fetch('/api/line-oa/rich-menu');
-        if (menuRes.ok) {
-          const data = await menuRes.json();
+        const menuRes = await safeFetchJson('/api/line-oa/rich-menu');
+        if (menuRes.ok && menuRes.data) {
+          const data = menuRes.data;
           setRichMenus(data.richMenus || []);
           if (data.richMenus?.length > 0) {
             const active = data.richMenus.find((m: LineRichMenu) => m.is_default) || data.richMenus[0];
