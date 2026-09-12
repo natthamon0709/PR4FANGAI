@@ -538,7 +538,7 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
           .trim()
           .toLowerCase();
         const normName = rawName.replace(/ศุทธิชัย/g, 'ศุทิชัย');
-        const cleanName = normName.replace(/^(นาย|นางสาว|นาง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|ว่าที่ร้อยตรีหญิง|ครู|อาจารย์|ดร\.|ผศ\.)\s*/i, '').trim();
+        const cleanName = normName.replace(/^(ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นาย|นางสาว|นาง|ครู|อาจารย์|ดร\.|ผศ\.)\s*/i, '').trim();
 
         if (rawName && (
           combinedText.includes(rawName) || 

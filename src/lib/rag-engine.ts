@@ -104,10 +104,199 @@ const THAI_SYNONYMS: Record<string, string[]> = {
   'คอม': ['เทคโนโลยีธุรกิจดิจิทัล', 'เครือข่ายคอมพิวเตอร์', 'ช่างเทคนิคคอมพิวเตอร์', 'ดิจิทัล']
 };
 
+export interface AcademicBranchEntity {
+  id: string;
+  name: string;
+  aliases: string[];
+  kmId?: string;
+}
+
+export const ACADEMIC_BRANCHES: AcademicBranchEntity[] = [
+  {
+    id: 'construction',
+    name: 'ช่างก่อสร้าง',
+    aliases: ['ช่างก่อสร้าง', 'ก่อสร้าง', 'แผนกก่อสร้าง', 'สาขาก่อสร้าง', 'สาขาวิชาช่างก่อสร้าง', 'ครูก่อสร้าง', 'ครูช่างก่อสร้าง'],
+    kmId: 'km-0014'
+  },
+  {
+    id: 'welding',
+    name: 'ช่างเชื่อมโลหะ',
+    aliases: ['ช่างเชื่อมโลหะ', 'ช่างเชื่อม', 'เชื่อมโลหะ', 'แผนกเชื่อม', 'สาขาช่างเชื่อม', 'ครูช่างเชื่อม', 'ครูเชื่อม'],
+    kmId: 'km-0015'
+  },
+  {
+    id: 'maintenance',
+    name: 'ช่างซ่อมบำรุง',
+    aliases: ['ช่างซ่อมบำรุง', 'ซ่อมบำรุง', 'แผนกซ่อมบำรุง', 'สาขาช่างซ่อมบำรุง', 'ครูซ่อมบำรุง'],
+    kmId: 'km-0016'
+  },
+  {
+    id: 'computer-tech',
+    name: 'ช่างเทคนิคคอมพิวเตอร์',
+    aliases: ['ช่างเทคนิคคอมพิวเตอร์', 'เทคนิคคอมพิวเตอร์', 'เทคนิคคอม', 'ช่างเทคนิคคอม', 'ครูเทคนิคคอม'],
+    kmId: 'km-0017'
+  },
+  {
+    id: 'electrical',
+    name: 'ช่างไฟฟ้า',
+    aliases: ['ช่างไฟฟ้า', 'ช่างไฟฟ้ากำลัง', 'ไฟฟ้ากำลัง', 'ไฟฟ้า', 'แผนกช่างไฟฟ้า', 'แผนกไฟฟ้า', 'ครูช่างไฟฟ้า', 'ครูไฟฟ้า'],
+    kmId: 'km-0018'
+  },
+  {
+    id: 'mechanical',
+    name: 'เทคนิคเครื่องกล',
+    aliases: ['เทคนิคเครื่องกล', 'ช่างยนต์', 'เครื่องกล', 'แผนกช่างยนต์', 'สาขาช่างยนต์', 'ครูช่างยนต์', 'ครูเครื่องกล'],
+    kmId: 'km-0019'
+  },
+  {
+    id: 'automotive-body',
+    name: 'เทคโนโลยีอุตสาหกรรมตัวถังและสีรถยนต์',
+    aliases: ['ตัวถังและสีรถยนต์', 'ตัวถังและสี', 'สีรถยนต์', 'ช่างสีรถยนต์', 'ตัวถังรถยนต์'],
+    kmId: 'km-0020'
+  },
+  {
+    id: 'accounting',
+    name: 'การบัญชี',
+    aliases: ['การบัญชี', 'บัญชี', 'แผนกบัญชี', 'สาขาการบัญชี', 'ครูบัญชี'],
+    kmId: 'km-0021'
+  },
+  {
+    id: 'petroleum',
+    name: 'เทคโนโลยีเครื่องมือวัดและควบคุมปิโตรเลียม',
+    aliases: ['เครื่องมือวัดและควบคุมปิโตรเลียม', 'ปิโตรเลียม', 'เครื่องมือวัด', 'ช่างปิโตรเลียม'],
+    kmId: 'km-0022'
+  },
+  {
+    id: 'general-studies',
+    name: 'สามัญสัมพันธ์',
+    aliases: ['สามัญสัมพันธ์', 'หมวดสามัญ', 'แผนกสามัญ', 'วิชาสามัญ', 'ครูสามัญ'],
+    kmId: 'km-0023'
+  },
+  {
+    id: 'digital-business',
+    name: 'เทคโนโลยีธุรกิจดิจิทัล',
+    aliases: ['เทคโนโลยีธุรกิจดิจิทัล', 'ธุรกิจดิจิทัล', 'คอมพิวเตอร์ธุรกิจ', 'คอมธุรกิจ', 'ดิจิทัล', 'ครูคอม'],
+    kmId: 'km-0010'
+  },
+  {
+    id: 'marketing',
+    name: 'การตลาด',
+    aliases: ['การตลาด', 'แผนกการตลาด', 'สาขาการตลาด', 'ครูการตลาด'],
+    kmId: 'km-0011'
+  },
+  {
+    id: 'hospitality',
+    name: 'การโรงแรม',
+    aliases: ['การโรงแรม', 'โรงแรม', 'แผนกการโรงแรม', 'สาขาการโรงแรม', 'ครูการโรงแรม'],
+    kmId: 'km-0012'
+  },
+  {
+    id: 'network-security',
+    name: 'เครือข่ายคอมพิวเตอร์และความปลอดภัย',
+    aliases: ['เครือข่ายคอมพิวเตอร์และความปลอดภัย', 'เครือข่ายคอมพิวเตอร์', 'เครือข่าย', 'cyber security', 'network security', 'network', 'ครูเครือข่าย'],
+    kmId: 'km-0013'
+  },
+  {
+    id: 'executives',
+    name: 'คณะผู้บริหารวิทยาลัยการอาชีพฝาง',
+    aliases: ['คณะผู้บริหาร', 'ผู้บริหาร', 'ผู้อำนวยการ', 'รองผู้อำนวยการ', 'ผอ', 'รองผอ'],
+    kmId: 'km-0009'
+  },
+  {
+    id: 'discipline',
+    name: 'ระเบียบวินัยและการแต่งกาย',
+    aliases: ['ระเบียบวินัย', 'การแต่งกาย', 'เครื่องแต่งกาย', 'เครื่องแบบ', 'ทรงผม', 'เนคไท', 'กางเกง', 'กระโปรง', 'ตัดคะแนน', 'ลงโทษ', 'คะแนนความประพฤติ', 'มาสาย'],
+    kmId: 'km-0007'
+  },
+  {
+    id: 'contact',
+    name: 'ช่องทางติดต่อวิทยาลัยการอาชีพฝาง',
+    aliases: ['ช่องทางติดต่อ', 'เบอร์โทร', 'เบอร์โทรศัพท์', 'โทรศัพท์', 'ติดต่อ', 'ที่อยู่', 'อีเมล', 'ติดต่อเรา', 'เบอร์ติดต่อ'],
+    kmId: 'km-0008'
+  },
+  {
+    id: 'org-structure',
+    name: 'โครงสร้างการบริหารวิทยาลัยการอาชีพฝาง',
+    aliases: ['โครงสร้างการบริหาร', 'โครงสร้างองค์กร', 'ผังการบริหาร', 'โครงสร้างวิทยาลัย'],
+    kmId: 'km-0024'
+  },
+  {
+    id: 'campus-map',
+    name: 'แผนผังวิทยาลัยการอาชีพฝาง',
+    aliases: ['แผนผังวิทยาลัย', 'แผนผัง', 'ผังวิทยาลัย', 'แผนที่', 'ผัง', 'อาคาร', 'สถานที่'],
+    kmId: 'km-0003'
+  }
+];
+
+export interface QueryIntentAnalysis {
+  cleanLow: string;
+  isTeacherQuery: boolean;
+  isRuleQuery: boolean;
+  isContactQuery: boolean;
+  isMapQuery: boolean;
+  matchedBranches: AcademicBranchEntity[];
+  personName: string | null;
+  rawTokens: string[];
+}
+
+export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
+  const clean = text.trim();
+  const cleanLow = clean.toLowerCase();
+
+  // 1. Intent Detection
+  const isTeacherQuery = /ครู|อาจารย์|บุคลากร|ผู้สอน|หัวหน้าสาขา|หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้า|ใครสอน|มีใครบ้าง|รายชื่อ|ชื่อครู|บุคลากรประจำ/i.test(cleanLow);
+  const isRuleQuery = /แต่งกาย|ทรงผม|เนคไท|ตัดคะแนน|ลงโทษ|ทัณฑ์บน|ระเบียบ|เครื่องแบบ/i.test(cleanLow);
+  const isContactQuery = /เบอร์โทร|โทรศัพท์|ติดต่อ|ติดต่อใคร|โทรหา/i.test(cleanLow);
+  const isMapQuery = /แผนผัง|ผัง|อาคาร|ห้อง|ตึก|แผนที่/i.test(cleanLow);
+
+  // 2. Branch Matching
+  const matchedBranches = ACADEMIC_BRANCHES.filter(b => 
+    b.aliases.some(alias => cleanLow.includes(alias.toLowerCase()))
+  );
+
+  // 3. Person Name Extraction (ordering prefixes from longest to shortest)
+  const strippedPerson = clean
+    .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i, '')
+    .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร)$/i, '')
+    .trim();
+  const personName = strippedPerson.length >= 3 ? strippedPerson.toLowerCase() : null;
+
+  // 4. Substantive tokens
+  const rawTokens = cleanLow
+    .replace(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length >= 2 && !QUESTION_STOPWORDS.has(t));
+
+  return {
+    cleanLow,
+    isTeacherQuery,
+    isRuleQuery,
+    isContactQuery,
+    isMapQuery,
+    matchedBranches,
+    personName,
+    rawTokens
+  };
+}
+
+export function parseFaqQuestions(content?: string): string[] {
+  if (!content) return [];
+  const faqs: string[] = [];
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])/i.test(trimmed)) {
+      const q = trimmed.replace(/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])\s*/i, '').trim();
+      if (q.length >= 4) faqs.push(q.toLowerCase());
+    }
+  }
+  return faqs;
+}
+
 /**
  * Extract comprehensive Thai search tokens, entities, and n-grams
  */
-function extractDistinctiveKeywords(text: string): string[] {
+export function extractDistinctiveKeywords(text: string): string[] {
   if (!text) return [];
   const clean = text.trim();
   const cleanLow = clean.toLowerCase().replace(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/g, ' ');
@@ -127,16 +316,10 @@ function extractDistinctiveKeywords(text: string): string[] {
   });
 
   // 2. Known Academic Departments & Branches
-  const knownBranches = [
-    'เทคโนโลยีธุรกิจดิจิทัล', 'ธุรกิจดิจิทัล', 'ดิจิทัล', 'การตลาด', 'การโรงแรม',
-    'เครือข่ายคอมพิวเตอร์และความปลอดภัย', 'เครือข่ายคอมพิวเตอร์', 'เครือข่าย', 'cyber security', 'network',
-    'ช่างก่อสร้าง', 'ก่อสร้าง', 'ช่างเชื่อมโลหะ', 'ช่างเชื่อม', 'ช่างซ่อมบำรุง', 'ช่างเทคนิคคอมพิวเตอร์', 'เทคนิคคอมพิวเตอร์',
-    'ช่างไฟฟ้ากำลัง', 'ช่างไฟฟ้า', 'ไฟฟ้ากำลัง', 'เทคนิคเครื่องกล', 'ช่างยนต์', 'ตัวถังและสีรถยนต์', 'ตัวถังและสี',
-    'การบัญชี', 'บัญชี', 'ปิโตรเลียม', 'เครื่องมือวัดและควบคุมปิโตรเลียม', 'สามัญสัมพันธ์', 'บริหารทรัพยากร', 'วิชาการ',
-    'พัฒนากิจการนักเรียนนักศึกษา', 'แผนงานและความร่วมมือ', 'ผังวิทยาลัย', 'แผนผัง', 'fve star'
-  ];
-  knownBranches.forEach(b => {
-    if (cleanLow.includes(b)) distinctive.add(b);
+  ACADEMIC_BRANCHES.forEach(b => {
+    b.aliases.forEach(alias => {
+      if (cleanLow.includes(alias.toLowerCase())) distinctive.add(alias.toLowerCase());
+    });
   });
 
   // 3. Known Roles & Queries
@@ -150,8 +333,8 @@ function extractDistinctiveKeywords(text: string): string[] {
 
   // 4. Extract stripped person names
   const strippedName = clean
-    .replace(/^(ใครเป็น|นาย|นางสาว|นาง|ว่าที่ร้อยตรี|ว่าที่ ร.ต.|ครู|อาจารย์)\s*/i, '')
-    .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร)$/i, '')
+    .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i, '')
+    .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร)$/i, '')
     .trim();
   if (strippedName.length >= 3) {
     distinctive.add(strippedName.toLowerCase());
@@ -175,17 +358,21 @@ function extractDistinctiveKeywords(text: string): string[] {
 }
 
 /**
- * Semantic & Distinctive Keyword search across knowledge_items (synced from Google Sheet / Supabase)
+ * Semantic & Distinctive Keyword search across knowledge_items (synced from Google Sheet / Supabase / SQLite)
  */
-export async function searchKnowledgeBase(query: string, topK: number = 5) {
-  const rawQueryLow = query.toLowerCase().trim();
+export async function searchKnowledgeBase(
+  query: string, 
+  topK: number = 5,
+  options?: { includeDrafts?: boolean }
+) {
+  const qAnalysis = analyzeQueryIntent(query);
   const keywords = extractDistinctiveKeywords(query);
 
   let items: any[] = [];
 
   // 1. Try Supabase
   try {
-    const { data: sbItems, error } = await supabaseAdmin
+    let sbQuery = supabaseAdmin
       .from('knowledge_items')
       .select(`
         knowledge_id,
@@ -195,11 +382,19 @@ export async function searchKnowledgeBase(query: string, topK: number = 5) {
         content_type,
         tags,
         department_id,
+        status,
         departments (name),
         sub_departments (name)
       `)
-      .eq('status', 'published')
       .eq('ai_retrieval_enabled', 1);
+
+    if (!options?.includeDrafts) {
+      sbQuery = sbQuery.eq('status', 'published');
+    } else {
+      sbQuery = sbQuery.neq('status', 'archived');
+    }
+
+    const { data: sbItems, error } = await sbQuery;
 
     if (!error && sbItems && sbItems.length > 0) {
       items = sbItems.map(item => ({
@@ -214,6 +409,7 @@ export async function searchKnowledgeBase(query: string, topK: number = 5) {
   if (items.length === 0) {
     try {
       const db = getDb();
+      const statusCondition = options?.includeDrafts ? "k.status != 'archived'" : "k.status = 'published'";
       items = db.prepare(`
         SELECT 
           k.knowledge_id,
@@ -223,12 +419,13 @@ export async function searchKnowledgeBase(query: string, topK: number = 5) {
           k.content_type,
           k.tags,
           k.department_id,
+          k.status,
           d.name as department_name,
           s.name as sub_department_name
         FROM knowledge_items k
         LEFT JOIN departments d ON k.department_id = d.department_id
         LEFT JOIN sub_departments s ON k.sub_department_id = s.sub_department_id
-        WHERE k.status = 'published' AND k.ai_retrieval_enabled = 1
+        WHERE ${statusCondition} AND k.ai_retrieval_enabled = 1
       `).all() as any[];
     } catch {}
   }
@@ -237,59 +434,121 @@ export async function searchKnowledgeBase(query: string, topK: number = 5) {
 
   const scoredItems = items.map(item => {
     let score = 0.0;
+    let confidence = 0.10;
     const titleLow = (item.title || '').toLowerCase();
     const summaryLow = (item.summary || '').toLowerCase();
     const contentLow = (item.content || '').toLowerCase();
     const tagsLow = (item.tags || '').toLowerCase();
 
-    // 1. Exact Person Name in Content or Title (+100.0)
-    const strippedPerson = rawQueryLow
-      .replace(/^(ใครเป็น|นาย|นางสาว|นาง|ว่าที่ร้อยตรี|ว่าที่ ร.ต.|ครู|อาจารย์)\s*/i, '')
-      .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร)$/i, '')
-      .trim();
-    if (strippedPerson.length >= 4 && (contentLow.includes(strippedPerson) || titleLow.includes(strippedPerson))) {
-      score += 100.0;
+    let faqMatch = false;
+    let branchMatch = false;
+    let personMatch = false;
+
+    // A. Check FAQ questions
+    const itemFaqs = parseFaqQuestions(item.content);
+    for (const faq of itemFaqs) {
+      if (qAnalysis.cleanLow.includes(faq) || faq.includes(qAnalysis.cleanLow)) {
+        score += 250.0;
+        faqMatch = true;
+        break;
+      }
+      let wordsInFaq = 0;
+      qAnalysis.rawTokens.forEach(t => { if (faq.includes(t)) wordsInFaq++; });
+      if (qAnalysis.rawTokens.length > 0 && wordsInFaq / qAnalysis.rawTokens.length >= 0.75) {
+        score += 200.0;
+        faqMatch = true;
+        break;
+      }
     }
 
-    // 2. Exact Raw Query in Title or Content (+50.0)
-    if (rawQueryLow.length >= 4 && (titleLow.includes(rawQueryLow) || contentLow.includes(rawQueryLow))) {
-      score += 50.0;
+    // B. Entity & Intent Boost
+    if (qAnalysis.matchedBranches.length > 0) {
+      for (const branch of qAnalysis.matchedBranches) {
+        if (branch.kmId && branch.kmId === item.knowledge_id) {
+          score += 180.0;
+          branchMatch = true;
+          break;
+        }
+        if (titleLow.includes(branch.name.toLowerCase()) || tagsLow.includes(branch.name.toLowerCase())) {
+          score += 150.0;
+          branchMatch = true;
+          break;
+        }
+      }
     }
 
-    // 3. Distinctive keywords match across Title, Tags, Summary, and Content
-    let matchedKwCount = 0;
-    keywords.forEach(kw => {
-      let matchedInItem = false;
-      if (titleLow.includes(kw)) {
-        score += 3.0; // Title match
-        matchedInItem = true;
+    // C. Person Name Match
+    if (qAnalysis.personName && qAnalysis.personName.length >= 3) {
+      const pName = qAnalysis.personName;
+      if (contentLow.includes(pName) || titleLow.includes(pName) || tagsLow.includes(pName)) {
+        score += 180.0;
+        personMatch = true;
+      } else {
+        const parts = pName.split(/\s+/).filter(p => p.length >= 3);
+        if (parts.some(p => contentLow.includes(p) || tagsLow.includes(p))) {
+          score += 140.0;
+          personMatch = true;
+        }
       }
-      if (tagsLow.includes(kw)) {
-        score += 2.0;
-        matchedInItem = true;
+    }
+
+    // Direct tag match for any token or person in query
+    let parsedTags: string[] = [];
+    try {
+      parsedTags = JSON.parse(item.tags || '[]');
+    } catch {
+      parsedTags = item.tags ? [item.tags] : [];
+    }
+    for (const tag of parsedTags) {
+      const tLow = tag.toLowerCase();
+      if (tLow.length >= 3 && qAnalysis.cleanLow.includes(tLow)) {
+        score += 30.0;
+        if (!personMatch && contentLow.includes(tLow) && item.title.includes('รายชื่อครู')) {
+          personMatch = true;
+        }
       }
-      if (summaryLow.includes(kw)) {
-        score += 1.5;
-        matchedInItem = true;
-      }
-      if (contentLow.includes(kw)) {
-        score += 0.5; // Content body match
-        matchedInItem = true;
-      }
-      if (matchedInItem) matchedKwCount++;
+    }
+
+    // D. Keyword Matches across Title, Tags, Summary, Content
+    let matchedTokensCount = 0;
+    qAnalysis.rawTokens.forEach(tok => {
+      let matchedInDoc = false;
+      if (titleLow.includes(tok)) { score += 6.0; matchedInDoc = true; }
+      if (tagsLow.includes(tok)) { score += 4.0; matchedInDoc = true; }
+      if (summaryLow.includes(tok)) { score += 2.0; matchedInDoc = true; }
+      if (contentLow.includes(tok)) { score += 1.0; matchedInDoc = true; }
+      if (matchedInDoc) matchedTokensCount++;
     });
 
-    // Calibrated confidence score based on substantive query overlap
-    const matchRatio = keywords.length > 0 ? matchedKwCount / keywords.length : 0;
-    let confidence = 0.10;
-    if (score >= 50.0) {
-      confidence = Math.min(0.99, 0.92 + (score / 1000.0));
-    } else if (matchRatio >= 0.5 && score >= 10.0) {
-      confidence = Math.min(0.95, 0.82 + (score / 100.0));
-    } else if (matchRatio >= 0.35 && score >= 5.0) {
-      confidence = 0.72;
+    // Also factor in distinctive keywords (synonyms & n-grams)
+    keywords.forEach(kw => {
+      if (titleLow.includes(kw)) score += 1.5;
+      if (tagsLow.includes(kw)) score += 1.0;
+    });
+
+    // E. Match ratio
+    const tokenOverlap = qAnalysis.rawTokens.length > 0 ? matchedTokensCount / qAnalysis.rawTokens.length : 0;
+
+    // F. Fallback / Penalty for mismatched intent
+    if (item.content_type === 'news' && (qAnalysis.isTeacherQuery || qAnalysis.isRuleQuery)) {
+      score = Math.max(0, score - 60.0);
+    }
+
+    // G. Calibrated Confidence Calculation
+    if (faqMatch || (branchMatch && qAnalysis.isTeacherQuery)) {
+      confidence = 0.98;
+    } else if (personMatch) {
+      confidence = 0.96;
+    } else if (branchMatch) {
+      confidence = 0.92;
+    } else if (tokenOverlap >= 0.6 && score >= 20.0) {
+      confidence = Math.min(0.92, 0.82 + (score / 300.0));
+    } else if (tokenOverlap >= 0.4 && score >= 10.0) {
+      confidence = Math.min(0.85, 0.72 + (score / 200.0));
+    } else if (tokenOverlap >= 0.25 && score >= 6.0) {
+      confidence = 0.60;
     } else {
-      confidence = Math.min(0.55, Math.round(matchRatio * 70) / 100);
+      confidence = Math.min(0.40, Math.round(tokenOverlap * 50) / 100);
     }
 
     return {
@@ -301,6 +560,7 @@ export async function searchKnowledgeBase(query: string, topK: number = 5) {
       department_id: item.department_id,
       department_name: item.department_name || 'วิทยาลัยการอาชีพฝาง',
       sub_department_name: item.sub_department_name || '',
+      status: item.status,
       rawScore: score,
       relevance_score: Math.round(confidence * 100) / 100
     };
@@ -308,7 +568,7 @@ export async function searchKnowledgeBase(query: string, topK: number = 5) {
 
   // Filter items with meaningful relevance and sort descending
   const filtered = scoredItems
-    .filter(i => i.rawScore > 0.3)
+    .filter(i => i.rawScore > 0.5)
     .sort((a, b) => b.rawScore - a.rawScore)
     .slice(0, topK);
 
@@ -383,7 +643,7 @@ async function generateGroundedAnswer(
 ): Promise<string> {
   const decryptedKey = decryptApiKey(config.api_key_encrypted || '');
   const primarySource = sources[0];
-  const isWeatherQuery = question.includes('อากาศ') || (primarySource && (primarySource.title.includes('อากาศ') || primarySource.content.includes('อากาศ')));
+  const isWeatherQuery = question.includes('อากาศ') || (primarySource && (primarySource.title?.includes('อากาศ') || primarySource.content?.includes('อากาศ')));
 
   let liveWeatherData: any = null;
   if (isWeatherQuery) {
@@ -394,7 +654,12 @@ async function generateGroundedAnswer(
   if (decryptedKey && decryptedKey.length > 10 && config.provider === 'gemini') {
     try {
       const contextText = sources
-        .map((s, i) => `[เอกสารที่ ${i + 1}: ${s.title} (${s.department_name})]\n${s.summary || ''}\n${s.content || ''}`)
+        .map((s, i) => {
+          let text = `### [เอกสารที่ ${i + 1}] ${s.title} (ฝ่าย: ${s.department_name || 'วิทยาลัยการอาชีพฝาง'}${s.sub_department_name ? ' / ' + s.sub_department_name : ''})\n`;
+          if (s.summary) text += `- สาระสำคัญ: ${s.summary}\n`;
+          if (s.content) text += `- เนื้อหาเอกสาร:\n${s.content}\n`;
+          return text;
+        })
         .join('\n\n---\n\n');
 
       const weatherContext = liveWeatherData ? `\n\n[ข้อมูลสภาพอากาศจริงประจำวัน ณ อ.ฝาง จ.เชียงใหม่: ${liveWeatherData.dateStr}, อุณหภูมิ: ${liveWeatherData.temp}°C (รู้สึกเหมือน ${liveWeatherData.feelsLike}°C), สภาพอากาศ: ${liveWeatherData.desc}, ความชื้นสัมพัทธ์: ${liveWeatherData.humidity}%]` : '';
@@ -403,7 +668,18 @@ async function generateGroundedAnswer(
         systemInstruction: {
           parts: [
             {
-              text: `${config.system_prompt}\n\nคำแนะนำและข้อกำหนดสำคัญสำหรับการตอบ:\n1. หากในองค์ความรู้มีหัวข้อ 'รายการคำถาม-คำตอบที่พบบ่อย (FAQ Pairs)' ที่ตรงกับสิ่งที่ผู้ใช้ถาม ให้นำคำตอบที่ระบุในคู่นั้นมาตอบผู้ใช้โดยตรง\n2. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ\n3. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด\n4. กฎเข้มงวดป้องกันการตอบผิด (Strict Anti-Hallucination): ตอบเฉพาะข้อมูลที่มีระบุอยู่ในเอกสารอ้างอิงเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร หากไม่พบข้อมูลให้ตอบอย่างสุภาพว่ายังไม่พบข้อมูลและแนะนำช่องทางติดต่อฝ่ายงานที่เกี่ยวข้องอย่างชัดเจน\n5. ตอบเป็นข้อความบรรยายภาษาไทยที่สุภาพ นอบน้อม ถูกต้อง และกระชับตรงประเด็น`
+              text: `${config.system_prompt}\n\nคำแนะนำและข้อกำหนดสำคัญสำหรับการตอบ:
+1. หากคำถามถามหารายชื่อครู, อาจารย์, หัวหน้าสาขา หรือบุคลากร:
+   - ให้สรุปและแสดงรายชื่อพร้อมตำแหน่งอย่างเป็นระเบียบ เช่น
+     • หัวหน้าสาขาวิชา: [ชื่อ-สกุล] ([ตำแหน่ง])
+     • ผู้ช่วยหัวหน้าสาขาวิชา: [ชื่อ-สกุล] ([ตำแหน่ง])
+     • ครูประจำสาขาวิชา: [ชื่อ-สกุล] ([ตำแหน่ง])
+   - ระบุชื่อสาขาวิชาของวิทยาลัยการอาชีพฝางให้ชัดเจน
+2. หากในองค์ความรู้มีหัวข้อ 'คำถามที่พบบ่อย (FAQ)' หรือ 'รายการคำถาม-คำตอบที่พบบ่อย' ที่ตรงกับสิ่งที่ผู้ใช้ถาม ให้นำคำตอบที่ระบุในคู่นั้นมาตอบผู้ใช้โดยตรง
+3. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ
+4. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด
+5. กฎเข้มงวดป้องกันการตอบผิด (Strict Anti-Hallucination): ตอบเฉพาะข้อมูลที่มีระบุอยู่ในเอกสารอ้างอิงเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร หากไม่พบข้อมูลให้ตอบอย่างสุภาพว่ายังไม่พบข้อมูลและแนะนำช่องทางติดต่อฝ่ายงานที่เกี่ยวข้องอย่างชัดเจน
+6. ตอบเป็นข้อความบรรยายภาษาไทยที่สุภาพ นอบน้อม ถูกต้อง และกระชับตรงประเด็น`
             }
           ]
         },
@@ -411,7 +687,7 @@ async function generateGroundedAnswer(
           {
             role: 'user',
             parts: [
-              { text: `## องค์ความรู้อ้างอิงจากฐานข้อมูลวิทยาลัยการอาชีพฝาง (Google Sheets Knowledge Base):\n${contextText}${weatherContext}\n\n## คำถามของผู้ใช้:\n${question}` }
+              { text: `## องค์ความรู้อ้างอิงจากฐานข้อมูลวิทยาลัยการอาชีพฝาง:\n${contextText}${weatherContext}\n\n## คำถามของผู้ใช้:\n${question}` }
             ]
           }
         ],
@@ -421,15 +697,14 @@ async function generateGroundedAnswer(
         }
       };
 
-      // Map and try candidate models resiliently (Fast models first to avoid timeouts)
-      const primaryModel = config.model_name || 'gemini-3.5-flash-lite';
+      // Map official Google Gemini models resiliently
+      const primaryModel = config.model_name || 'gemini-2.0-flash';
       const candidateModels = Array.from(new Set([
         primaryModel,
-        'gemini-3.5-flash-lite',
-        'gemini-3.1-flash-lite',
-        'gemini-3.5-flash',
-        'gemini-3.6-flash',
-        'gemini-flash-latest'
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-2.5-flash',
+        'gemini-1.5-pro'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -438,7 +713,7 @@ async function generateGroundedAnswer(
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(promptPayload),
-            signal: AbortSignal.timeout(4500)
+            signal: AbortSignal.timeout(6000)
           });
 
           if (res.ok) {
@@ -446,7 +721,6 @@ async function generateGroundedAnswer(
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text && text.trim().length > 0) return cleanFaqArtifacts(text.trim());
           } else if (res.status === 404 || res.status === 503 || res.status === 429) {
-            // Model unavailable or overloaded (503/429), failover immediately to next fast candidate
             continue;
           } else {
             const errText = await res.text();
@@ -454,7 +728,6 @@ async function generateGroundedAnswer(
             continue;
           }
         } catch (callErr) {
-          // If timeout, seamlessly continue to next candidate
           continue;
         }
       }
@@ -513,36 +786,93 @@ async function generateGroundedAnswer(
   }
 
   const keywords = extractDistinctiveKeywords(question);
+  const qAnalysis = analyzeQueryIntent(question);
   let relevantSnippet = '';
 
-  // Check if primarySource has FAQ pairs matching the question
+  // Check if primarySource has FAQ pairs matching the question (both formats: FAQ table / QA list)
   let bestFaqAnswer = '';
-  if (primarySource.content && primarySource.content.includes('### รายการคำถาม-คำตอบที่พบบ่อย')) {
-    const faqSection = primarySource.content.split('### รายการคำถาม-คำตอบที่พบบ่อย')[1] || '';
-    const items = faqSection.split('• คำถาม:').map((s: string) => s.trim()).filter(Boolean);
-    let bestScore = 0;
+  if (primarySource.content) {
+    const rawContent = primarySource.content;
 
-    items.forEach((item: string) => {
-      const parts = item.split('คำตอบ:');
-      const q = (parts[0] || '').trim();
-      const a = (parts[1] || '').trim();
-      let matchCount = 0;
-      keywords.forEach(kw => {
-        if (kw.length >= 2) {
-          if (q.toLowerCase().includes(kw)) matchCount += 3;
-          if (a.toLowerCase().includes(kw)) matchCount += 1;
+    // Pattern 1: FAQ Section with Q: and A:
+    if (rawContent.includes('### คำถามที่พบบ่อย') || rawContent.includes('### รายการคำถาม-คำตอบที่พบบ่อย')) {
+      const faqSection = rawContent.split(/###\s*(?:คำถามที่พบบ่อย|รายการคำถาม-คำตอบที่พบบ่อย)/i)[1] || '';
+      const lines = faqSection.split('\n').map((l: string) => l.trim()).filter(Boolean);
+      
+      const qList: string[] = [];
+      const aList: string[] = [];
+      let inAnswer = false;
+      let curA = '';
+
+      for (const line of lines) {
+        if (/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])/i.test(line)) {
+          if (curA) aList.push(curA.trim());
+          curA = '';
+          inAnswer = false;
+          qList.push(line.replace(/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])\s*/i, '').trim());
+        } else if (/^(\*\*คำตอบ:\*\*|คำตอบ:|A\d*[:.])/i.test(line)) {
+          inAnswer = true;
+          const aText = line.replace(/^(\*\*คำตอบ:\*\*|คำตอบ:|A\d*[:.])\s*/i, '').trim();
+          if (aText) curA += (curA ? ' ' : '') + aText;
+        } else if (inAnswer) {
+          if (line.startsWith('📄') || line.startsWith('🌐') || line.startsWith('###')) {
+            inAnswer = false;
+          } else {
+            const cleanL = line.replace(/^A\d*[:.]\s*/i, '').trim();
+            if (cleanL) curA += (curA ? '\n' : '') + cleanL;
+          }
         }
-      });
-      if (matchCount > bestScore && a) {
-        bestScore = matchCount;
-        bestFaqAnswer = cleanFaqArtifacts(a);
       }
-    });
+      if (curA) aList.push(curA.trim());
+
+      // Match question against qList
+      let maxScore = 0;
+      for (let idx = 0; idx < qList.length; idx++) {
+        const qItem = qList[idx];
+        const aItem = aList[idx] || aList[0];
+        let matchScore = 0;
+        keywords.forEach(kw => {
+          if (kw.length >= 2) {
+            if (qItem.toLowerCase().includes(kw)) matchScore += 3;
+            if (aItem && aItem.toLowerCase().includes(kw)) matchScore += 1;
+          }
+        });
+        if (qAnalysis.cleanLow.includes(qItem.toLowerCase()) || qItem.toLowerCase().includes(qAnalysis.cleanLow)) {
+          matchScore += 10;
+        }
+        if (matchScore > maxScore && aItem) {
+          maxScore = matchScore;
+          bestFaqAnswer = cleanFaqArtifacts(aItem);
+        }
+      }
+    }
   }
 
-  if (bestFaqAnswer && bestFaqAnswer.length > 5) {
+  // Check if primarySource is a Teacher/Personnel list and user asked about teachers
+  if ((qAnalysis.isTeacherQuery || primarySource.title?.includes('รายชื่อครู')) && primarySource.content) {
+    const mainBody = primarySource.content.split(/###\s*คำถามที่พบบ่อย/i)[0] || primarySource.content;
+    const lines = mainBody.split('\n').map((l: string) => l.trim()).filter(Boolean);
+    const formattedRoster: string[] = [];
+    let currentRole = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^(หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้าสาขาวิชา|ครูประจำสาขาวิชา|คณะผู้บริหาร|ผู้อำนวยการ|รองผู้อำนวยการ)$/i.test(line)) {
+        currentRole = line;
+      } else if (currentRole && (line.includes('—') || line.includes('-') || line.startsWith('นาย') || line.startsWith('นาง') || line.startsWith('ว่าที่'))) {
+        formattedRoster.push(`• ${currentRole}: ${line}`);
+      }
+    }
+
+    if (formattedRoster.length > 0) {
+      const branchTitle = primarySource.title.replace(/^รายชื่อครูและบุคลากรสาขาวิชา/i, '').trim();
+      answerBody = `${primarySource.title} วิทยาลัยการอาชีพฝาง มีดังนี้ครับ:\n\n` + formattedRoster.join('\n');
+    }
+  }
+
+  if (bestFaqAnswer && bestFaqAnswer.length > 5 && !answerBody) {
     answerBody = bestFaqAnswer;
-  } else {
+  } else if (!answerBody) {
     if (primarySource.content) {
       const lines = primarySource.content.split('\n').map((l: string) => l.trim()).filter(Boolean);
       for (let i = 0; i < lines.length; i++) {
@@ -561,7 +891,7 @@ async function generateGroundedAnswer(
     } else if (primarySource.summary && primarySource.summary.length > 20 && !primarySource.summary.startsWith('A:')) {
       answerBody = cleanFaqArtifacts(primarySource.summary);
     } else if (primarySource.content) {
-      const mainContent = primarySource.content.split('### รายการคำถาม-คำตอบ')[0] || primarySource.content;
+      const mainContent = primarySource.content.split(/###\s*(?:คำถามที่พบบ่อย|รายการคำถาม)/i)[0] || primarySource.content;
       answerBody = cleanFaqArtifacts(mainContent.substring(0, 450).replace(/[#*`]/g, ''));
     }
   }
@@ -616,11 +946,12 @@ export async function executeRAGPipeline(params: {
   question: string;
   lineUserId?: string;
   isPlayground?: boolean;
+  includeDrafts?: boolean;
 }): Promise<RAGExecutionResult> {
   const startTime = Date.now();
   const db = getDb();
   const config = getActiveAiConfig();
-  const { question, lineUserId = 'LINE_ANONYMOUS_USER', isPlayground = false } = params;
+  const { question, lineUserId = 'LINE_ANONYMOUS_USER', isPlayground = false, includeDrafts = false } = params;
 
   // 0. Handle Conversational Greetings & Courtesy Messages
   const convIntent = detectConversationalIntent(question);
@@ -663,8 +994,12 @@ export async function executeRAGPipeline(params: {
     };
   }
 
-  // 1. Search knowledge base
-  const retrievedSources = await searchKnowledgeBase(question, config.retrieval_top_k);
+  // 1. Search knowledge base with smart entity & intent scoring
+  const retrievedSources = await searchKnowledgeBase(
+    question, 
+    config.retrieval_top_k, 
+    { includeDrafts: isPlayground ? includeDrafts : false }
+  );
 
   const topScore = retrievedSources.length > 0 ? retrievedSources[0].relevance_score : 0.0;
   const isFallback = topScore < config.confidence_threshold || retrievedSources.length === 0;
@@ -826,7 +1161,7 @@ export async function resolveDriveImageForQuery(
         .toLowerCase();
       const normPersonName = rawPersonName.replace(/ศุทธิชัย/g, 'ศุทิชัย');
       const cleanPersonName = normPersonName
-        .replace(/^(นาย|นางสาว|นาง|ว่าที่ร้อยตรี|ว่าที่ ร.ต.|ครู|อาจารย์)\s*/i, '')
+        .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i, '')
         .trim();
       
       if (rawPersonName && (

@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { question } = body;
+    const { question, includeDrafts } = body;
 
     if (!question || question.trim().length === 0) {
       return NextResponse.json({ error: 'กรุณาระบุข้อความคำถาม' }, { status: 400 });
@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     // Execute in playground mode (does not persist to actual ai_query_logs)
     const result = await executeRAGPipeline({
       question: question.trim(),
-      isPlayground: true
+      isPlayground: true,
+      includeDrafts: Boolean(includeDrafts)
     });
 
     return NextResponse.json({
