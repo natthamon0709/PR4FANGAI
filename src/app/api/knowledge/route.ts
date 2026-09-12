@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
 import getDb from '@/lib/db';
 import crypto from 'crypto';
 import { ContentType, KnowledgeStatus } from '@/types/knowledge';
@@ -25,8 +25,9 @@ export async function GET(req: NextRequest) {
     const isAdmin = session.role === 'administrator';
 
     // 1. Try Supabase first
-    try {
-      let sbQuery = supabaseAdmin
+    if (isSupabaseConfigured()) {
+      try {
+        let sbQuery = supabaseAdmin
         .from('knowledge_items')
         .select(`
           *,
@@ -105,6 +106,7 @@ export async function GET(req: NextRequest) {
         });
       }
     } catch {}
+  }
 
     // 2. Fallback to SQLite
     const db = getDb();

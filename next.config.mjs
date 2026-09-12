@@ -4,7 +4,8 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['better-sqlite3', 'bcryptjs'],
     outputFileTracingIncludes: {
-      '/**': ['./data/**/*'],
+      '/api/**/*': ['./data/**/*'],
+      '/**/*': ['./data/**/*'],
     },
   },
   webpack: (config, { dev, isServer }) => {

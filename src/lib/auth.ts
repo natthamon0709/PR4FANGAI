@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 import getDb from './db';
-import { supabaseAdmin } from './supabase';
+import { supabaseAdmin, isSupabaseConfigured } from './supabase';
 import { SessionUser, UserWithPassword } from '@/types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'pr4fang_ai_super_secret_jwt_key_2026_community_college';
@@ -77,22 +77,24 @@ export async function getUserByEmail(email: string): Promise<(UserWithPassword &
   const cleanEmail = email.trim().toLowerCase();
 
   // 1. Try Supabase
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('master_users')
-      .select('*, departments(name), sub_departments(name)')
-      .ilike('email', cleanEmail)
-      .maybeSingle();
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('master_users')
+        .select('*, departments(name), sub_departments(name)')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
 
-    if (data && !error) {
-      return {
-        ...data,
-        department_name: (data.departments as any)?.name || '',
-        sub_department_name: (data.sub_departments as any)?.name || ''
-      };
+      if (data && !error) {
+        return {
+          ...data,
+          department_name: (data.departments as any)?.name || '',
+          sub_department_name: (data.sub_departments as any)?.name || ''
+        };
+      }
+    } catch (supabaseErr) {
+      // Supabase query failed or table not found, proceed to fallback
     }
-  } catch (supabaseErr) {
-    // Supabase query failed or table not found, proceed to fallback
   }
 
   // 2. Fallback to SQLite
@@ -113,21 +115,23 @@ export async function getUserByEmail(email: string): Promise<(UserWithPassword &
 
 export async function getUserById(userId: string): Promise<(UserWithPassword & { department_name: string; sub_department_name: string }) | null> {
   // 1. Try Supabase
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('master_users')
-      .select('*, departments(name), sub_departments(name)')
-      .eq('user_id', userId)
-      .maybeSingle();
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('master_users')
+        .select('*, departments(name), sub_departments(name)')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    if (data && !error) {
-      return {
-        ...data,
-        department_name: (data.departments as any)?.name || '',
-        sub_department_name: (data.sub_departments as any)?.name || ''
-      };
-    }
-  } catch {}
+      if (data && !error) {
+        return {
+          ...data,
+          department_name: (data.departments as any)?.name || '',
+          sub_department_name: (data.sub_departments as any)?.name || ''
+        };
+      }
+    } catch {}
+  }
 
   // 2. Fallback to SQLite
   try {

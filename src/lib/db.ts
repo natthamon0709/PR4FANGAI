@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { createClient, Client } from '@libsql/client';
+import { createClient, type Client } from '@libsql/client';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
@@ -48,10 +48,19 @@ function getDbPath(): string {
 
 export function getDb(): Database.Database {
   if (!dbInstance) {
+    const isServerless = Boolean(
+      process.env.VERCEL ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.LAMBDA_TASK_ROOT
+    );
     const dbPath = getDbPath();
     dbInstance = new Database(dbPath);
     try {
-      dbInstance.pragma('journal_mode = WAL');
+      if (isServerless) {
+        dbInstance.pragma('journal_mode = DELETE');
+      } else {
+        dbInstance.pragma('journal_mode = WAL');
+      }
     } catch {}
     try {
       dbInstance.pragma('foreign_keys = ON');
@@ -554,8 +563,8 @@ function initTables(db: Database.Database) {
   // 2. Seed Master Users if empty
   const userCount = (db.prepare('SELECT COUNT(*) as c FROM master_users').get() as any).c;
   if (userCount === 0) {
-    const adminHash = bcrypt.hashSync('Admin@12345', 12);
-    const staffHash = bcrypt.hashSync('Fang@2026', 12);
+    const adminHash = '$2a$10$hXDyXxlfHnM.9ZvD5o95HOZ8wRHylbEoQqvlemFUdWKGQJqhbb.aK'; // Admin@12345
+    const staffHash = '$2a$10$gIDd1mHxncqGClEDo5zAFud5KmCb5u2/Ssqxj4HfWoxopHYrTq8S6'; // Fang@2026
     const insertUser = db.prepare(`
       INSERT INTO master_users (
         user_id, first_name, last_name, email, password_hash,

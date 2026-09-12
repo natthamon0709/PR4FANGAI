@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSessionFromRequest, hashPassword } from '@/lib/auth';
 import { triggerN8nWebhook } from '@/lib/integrations';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
 import getDb from '@/lib/db';
 
 export async function GET(req: NextRequest) {
@@ -22,52 +22,85 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
 
     // 1. Try Supabase
-    try {
-      let sbQuery = supabaseAdmin
-        .from('master_users')
-        .select('*, departments(name), sub_departments(name)', { count: 'exact' });
+    if (isSupabaseConfigured()) {
+      try {
+        let sbQuery = supabaseAdmin
+          .from('master_users')
+          .select('*, departments(name), sub_departments(name)', { count: 'exact' });
 
-      if (search) {
-        sbQuery = sbQuery.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
-      }
-      if (departmentId) {
-        sbQuery = sbQuery.eq('department_id', departmentId);
-      }
-      if (role) {
-        sbQuery = sbQuery.eq('role', role);
-      }
-      if (status) {
-        sbQuery = sbQuery.eq('status', status);
-      }
+        if (search) {
+          sbQuery = sbQuery.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
+        }
+        if (departmentId) {
+          sbQuery = sbQuery.eq('department_id', departmentId);
+        }
+        if (role) {
+          sbQuery = sbQuery.eq('role', role);
+        }
+        if (status) {
+          sbQuery = sbQuery.eq('status', status);
+        }
 
-      const { data: sbUsers, count: sbTotal, error: sbErr } = await sbQuery
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+        const { data: sbUsers, count: sbTotal, error: sbErr } = await sbQuery
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
 
-      if (!sbErr && sbUsers) {
-        const formatted = sbUsers.map(u => ({
-          ...u,
-          department_name: (u.departments as any)?.name || '',
-          sub_department_name: (u.sub_departments as any)?.name || ''
-        }));
+        if (!sbErr && sbUsers) {
+          const formatted = sbUsers.map(u => ({
+            ...u,
+            department_name: (u.departments as any)?.name || '',
+            sub_department_name: (u.sub_departments as any)?.name || ''
+          }));
 
-        return NextResponse.json({
-          users: formatted,
-          pagination: {
-            page,
-            limit,
-            total: sbTotal || 0,
-            totalPages: Math.ceil((sbTotal || 0) / limit)
-          }
-        });
+          return NextResponse.json({
+            users: formatted,
+            pagination: {
+              page,
+              limit,
+              total: sbTotal || 0,
+              totalPages: Math.ceil((sbTotal || 0) / limit)
+            }
+          });
+        }
+        if (sbErr) {
+          console.error('Supabase fetch users error:', sbErr);
+        }
+      } catch (err) {
+        console.error('Supabase users query exception:', err);
       }
-    } catch (err) {
-      // Fallback below
     }
 
     // 2. Fallback to SQLite
     const db = getDb();
-    let query = `
+    let whereClause = 'WHERE 1=1';
+    const params: any[] = [];
+
+    if (search) {
+      whereClause += ` AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)`;
+      const s = `%${search}%`;
+      params.push(s, s, s, s);
+    }
+
+    if (departmentId) {
+      whereClause += ` AND u.department_id = ?`;
+      params.push(departmentId);
+    }
+
+    if (role) {
+      whereClause += ` AND u.role = ?`;
+      params.push(role);
+    }
+
+    if (status) {
+      whereClause += ` AND u.status = ?`;
+      params.push(status);
+    }
+
+    // Count total matching
+    const countResult = db.prepare(`SELECT COUNT(*) as total FROM master_users u ${whereClause}`).get(...params) as { total: number };
+    const total = countResult ? countResult.total : 0;
+
+    const dataQuery = `
       SELECT 
         u.user_id,
         u.first_name,
@@ -89,41 +122,11 @@ export async function GET(req: NextRequest) {
       FROM master_users u
       LEFT JOIN departments d ON u.department_id = d.department_id
       LEFT JOIN sub_departments s ON u.sub_department_id = s.sub_department_id
-      WHERE 1=1
+      ${whereClause}
+      ORDER BY u.created_at DESC LIMIT ? OFFSET ?
     `;
-    const params: any[] = [];
 
-    if (search) {
-      query += ` AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)`;
-      const s = `%${search}%`;
-      params.push(s, s, s, s);
-    }
-
-    if (departmentId) {
-      query += ` AND u.department_id = ?`;
-      params.push(departmentId);
-    }
-
-    if (role) {
-      query += ` AND u.role = ?`;
-      params.push(role);
-    }
-
-    if (status) {
-      query += ` AND u.status = ?`;
-      params.push(status);
-    }
-
-    // Count total matching
-    const countQuery = `SELECT COUNT(*) as total FROM (${query})`;
-    const countResult = db.prepare(countQuery).get(...params) as { total: number };
-    const total = countResult ? countResult.total : 0;
-
-    // Order & Pagination
-    query += ` ORDER BY u.created_at DESC LIMIT ? OFFSET ?`;
-    params.push(limit, offset);
-
-    const users = db.prepare(query).all(...params);
+    const users = db.prepare(dataQuery).all(...params, limit, offset);
 
     return NextResponse.json({
       users,
@@ -136,7 +139,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Fetch users error:', error);
-    return NextResponse.json({ error: 'ไม่สามารถดึงข้อมูลรายชื่อผู้ใช้งานได้' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'ไม่สามารถดึงข้อมูลรายชื่อผู้ใช้งานได้' }, { status: 500 });
   }
 }
 
