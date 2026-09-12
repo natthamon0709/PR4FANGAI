@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
 import getDb from '@/lib/db';
 
 export async function POST(req: NextRequest) {
@@ -10,12 +11,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
     }
 
-    const db = getDb();
-    const result = db.prepare('UPDATE ai_query_logs SET feedback = ? WHERE log_id = ?').run(feedback, log_id);
+    // 1. Update in Supabase
+    try {
+      await supabaseAdmin
+        .from('ai_query_logs')
+        .update({ feedback })
+        .eq('log_id', log_id);
+    } catch {}
 
-    if (result.changes === 0) {
-      return NextResponse.json({ error: 'Query log not found' }, { status: 404 });
-    }
+    // 2. Update in SQLite
+    try {
+      const db = getDb();
+      db.prepare('UPDATE ai_query_logs SET feedback = ? WHERE log_id = ?').run(feedback, log_id);
+    } catch {}
 
     return NextResponse.json({
       success: true,

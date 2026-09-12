@@ -45,7 +45,7 @@ export default function UserFilterGroup({
       <select
         value={departmentId}
         onChange={(e) => onDepartmentChange(e.target.value)}
-        className="h-11 px-3 rounded-lg border border-outline bg-surface-card text-xs text-onSurface focus:outline-none focus:ring-2 focus:ring-primary"
+        className="h-11 px-3.5 rounded-xl border border-outline/70 bg-surface/50 hover:bg-surface/80 focus:bg-white text-xs font-medium text-onSurface focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all duration-150 cursor-pointer"
       >
         <option value="">ทุกฝ่าย (All Departments)</option>
         {departments.map((d) => (
@@ -59,7 +59,7 @@ export default function UserFilterGroup({
       <select
         value={role}
         onChange={(e) => onRoleChange(e.target.value)}
-        className="h-11 px-3 rounded-lg border border-outline bg-surface-card text-xs text-onSurface focus:outline-none focus:ring-2 focus:ring-primary"
+        className="h-11 px-3.5 rounded-xl border border-outline/70 bg-surface/50 hover:bg-surface/80 focus:bg-white text-xs font-medium text-onSurface focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all duration-150 cursor-pointer"
       >
         <option value="">ทุกสิทธิ์ (All Roles)</option>
         <option value="administrator">Administrator</option>
@@ -70,7 +70,7 @@ export default function UserFilterGroup({
       <select
         value={status}
         onChange={(e) => onStatusChange(e.target.value)}
-        className="h-11 px-3 rounded-lg border border-outline bg-surface-card text-xs text-onSurface focus:outline-none focus:ring-2 focus:ring-primary"
+        className="h-11 px-3.5 rounded-xl border border-outline/70 bg-surface/50 hover:bg-surface/80 focus:bg-white text-xs font-medium text-onSurface focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all duration-150 cursor-pointer"
       >
         <option value="">ทุกสถานะ (All Status)</option>
         <option value="active">เปิดใช้งาน (Active)</option>
@@ -80,7 +80,7 @@ export default function UserFilterGroup({
       {hasFilter && (
         <button
           onClick={onReset}
-          className="h-11 px-3 rounded-lg border border-outline text-xs text-onSurface-muted hover:text-onSurface hover:bg-surface-variant flex items-center gap-1.5 transition-colors"
+          className="h-11 px-3.5 rounded-xl border border-outline/70 text-xs font-medium text-onSurface-muted hover:text-onSurface hover:bg-surface-variant/80 flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
           title="ล้างตัวกรอง"
         >
           <RotateCcw className="w-3.5 h-3.5" />

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
 import getDb from '@/lib/db';
 import { executeBroadcastDispatch } from '@/lib/line-service';
-import { pullLatestFromGoogleSheets } from '@/lib/google-sheets-sync';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -14,10 +13,6 @@ export async function GET(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
     }
-
-    try {
-      await pullLatestFromGoogleSheets('LINE_Broadcasts');
-    } catch {}
 
     const db = getDb();
     const isAdmin = session.role === 'administrator';

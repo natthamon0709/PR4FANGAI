@@ -23,8 +23,8 @@ module.exports = {
           onContainer: '#451a03',
         },
         surface: {
-          DEFAULT: '#FCF9F9',
-          variant: '#F6ECEC',
+          DEFAULT: '#F8F9FA', // Clean crisp off-white for modern enterprise SaaS look
+          variant: '#F1F3F5',
           card: '#FFFFFF',
         },
         onSurface: {
@@ -33,8 +33,9 @@ module.exports = {
           muted: '#7A7670',
         },
         outline: {
-          DEFAULT: '#E2D5D5',
-          light: '#F0E6E6',
+          DEFAULT: '#E5E7EB', // Clean modern border
+          light: '#F3F4F6',
+          brand: '#E2D5D5', // Subtle warm accent border
         },
         error: {
           DEFAULT: '#B3261E',
@@ -51,9 +52,14 @@ module.exports = {
         mono: ['"IBM Plex Mono"', 'monospace'],
       },
       boxShadow: {
-        level1: '0 1px 3px rgba(0,0,0,0.08)',
-        level2: '0 2px 6px rgba(0,0,0,0.12)',
-        level3: '0 4px 16px rgba(0,0,0,0.16)',
+        xs: '0 1px 2px 0 rgba(0, 0, 0, 0.04)',
+        card: '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 4px 14px -2px rgba(0, 0, 0, 0.03)',
+        'card-hover': '0 10px 25px -4px rgba(128, 0, 0, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.04)',
+        level1: '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
+        level2: '0 4px 16px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -2px rgba(0, 0, 0, 0.03)',
+        level3: '0 16px 36px -4px rgba(0, 0, 0, 0.1), 0 6px 14px -2px rgba(0, 0, 0, 0.05)',
+        'glow-maroon': '0 0 24px -4px rgba(128, 0, 0, 0.25)',
+        'glow-gold': '0 0 20px -3px rgba(217, 119, 6, 0.3)',
       }
     },
   },

@@ -9,16 +9,16 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const user = getUserByEmail(cleanEmail);
+    const user = await getUserByEmail(cleanEmail);
 
     let resetToken = null;
     let resetUrl = null;
 
     if (user && user.status === 'active') {
-      resetToken = createPasswordResetToken(user.user_id);
+      resetToken = await createPasswordResetToken(user.user_id);
       // In a live production system, email is sent with this URL.
       // For local development and demonstration, we also return the token/url in payload.
-      const origin = req.headers.get('origin') || 'http://localhost:3000';
+      const origin = req.headers.get('origin') || 'http://localhost:3005';
       resetUrl = `${origin}/reset-password?token=${resetToken}`;
     }
 

@@ -201,15 +201,15 @@ export default function UsersPage() {
           <div className="flex items-center gap-2.5">
             <Link
               href="/integrations"
-              className="h-11 px-4 rounded-lg border border-outline bg-surface-card hover:bg-surface-variant text-xs font-semibold text-onSurface flex items-center gap-2 shadow-sm transition-colors"
+              className="h-11 px-4 rounded-xl border border-outline/50 bg-surface-card hover:bg-surface-variant/70 text-xs font-semibold text-onSurface flex items-center gap-2 shadow-xs transition-all active:scale-95"
             >
-              <FileSpreadsheet className="w-4 h-4 text-secondary" />
+              <FileSpreadsheet className="w-4 h-4 text-amber-600" />
               <span>Google Sheets Sync</span>
             </Link>
 
             <Link
               href="/users/new"
-              className="h-11 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors"
+              className="h-11 px-5 rounded-xl bg-gradient-to-r from-primary via-[#8c0a0a] to-[#720000] hover:from-[#961212] hover:to-[#800000] text-white text-xs font-bold flex items-center gap-2 shadow-card hover:shadow-card-hover transition-all active:scale-95 ring-1 ring-white/20"
             >
               <UserPlus className="w-4 h-4" />
               <span>เพิ่มผู้ใช้งานใหม่</span>
@@ -228,16 +228,16 @@ export default function UsersPage() {
 
         {/* Password Reset Result Notification */}
         {tempPassResult && (
-          <div className="p-4 rounded-xl bg-secondary-container/50 border border-secondary text-onSurface space-y-2 animate-scaleUp">
-            <h4 className="font-heading font-bold text-secondary-dark flex items-center gap-2 text-sm">
-              <Key className="w-4 h-4 text-secondary" />
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-onSurface space-y-2 animate-scaleUp shadow-card">
+            <h4 className="font-heading font-bold text-amber-800 flex items-center gap-2 text-sm">
+              <Key className="w-4 h-4 text-amber-600" />
               <span>รีเซ็ตรหัสผ่านชั่วคราวสำเร็จ</span>
             </h4>
             <p className="text-xs text-onSurface-variant">
               รหัสผ่านใหม่สำหรับคุณ <strong>{tempPassResult.user.first_name} {tempPassResult.user.last_name}</strong> ({tempPassResult.user.email}):
             </p>
             <div className="flex items-center gap-3 pt-1">
-              <code className="px-3 py-1.5 bg-surface-card rounded-lg border border-secondary/40 font-mono text-base font-bold text-primary tracking-wider">
+              <code className="px-3.5 py-1.5 bg-white rounded-xl border border-amber-300 font-mono text-base font-bold text-primary tracking-wider shadow-xs">
                 {tempPassResult.pass}
               </code>
               <button
@@ -250,8 +250,8 @@ export default function UsersPage() {
           </div>
         )}
 
-        {/* Filter & Search Bar matching Wireframe 4.2 */}
-        <div className="p-4 rounded-xl bg-surface-card border border-outline/30 shadow-level1 space-y-3">
+        {/* Filter & Search Bar */}
+        <div className="p-4 rounded-2xl bg-surface-card border border-outline/40 shadow-card space-y-3">
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
             <UserSearchBar value={search} onChange={handleSearchChange} />
             <UserFilterGroup

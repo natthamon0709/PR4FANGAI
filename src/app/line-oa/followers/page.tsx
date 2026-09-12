@@ -8,7 +8,7 @@ import FollowerTable from '@/components/line/FollowerTable';
 import SessionAlert from '@/components/SessionAlert';
 import { SessionUser } from '@/types';
 import { LineFollower } from '@/types/line';
-import { Users, ArrowLeft, RefreshCw, Loader2, UserCheck, Smartphone, CheckCircle2, QrCode, FileSpreadsheet, ShieldAlert } from 'lucide-react';
+import { Users, ArrowLeft, RefreshCw, Loader2, UserCheck, Smartphone, CheckCircle2, QrCode, ShieldAlert } from 'lucide-react';
 
 export default function FollowersPage() {
   const router = useRouter();
@@ -19,7 +19,6 @@ export default function FollowersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [syncingLine, setSyncingLine] = useState(false);
-  const [syncingSheet, setSyncingSheet] = useState(false);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadFollowers = async () => {
@@ -84,36 +83,6 @@ export default function FollowersPage() {
     }
   };
 
-  const handleSyncFromSheet = async () => {
-    setSyncingSheet(true);
-    setAlertMsg(null);
-
-    try {
-      const res = await safeFetchJson('/api/line-oa/followers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'sync_from_sheet' })
-      });
-
-      if (res.ok && res.data?.success) {
-        setAlertMsg({
-          type: 'success',
-          text: `✅ ${res.data.message}`
-        });
-        await loadFollowers();
-      } else {
-        setAlertMsg({
-          type: 'error',
-          text: `❌ ${res.data?.error || res.error || 'ไม่สามารถซิงค์ข้อมูลจาก Google Sheets ได้'}`
-        });
-      }
-    } catch (err: any) {
-      setAlertMsg({ type: 'error', text: `เกิดข้อผิดพลาด: ${err.message}` });
-    } finally {
-      setSyncingSheet(false);
-    }
-  };
-
   if (loading && !currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -163,21 +132,11 @@ export default function FollowersPage() {
             <button
               type="button"
               onClick={handleSyncFromLineApi}
-              disabled={syncingLine || syncingSheet}
+              disabled={syncingLine}
               className="h-10 px-3.5 rounded-xl bg-[#00B900] text-white hover:bg-[#009900] text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
             >
               {syncingLine ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
               <span>ดึงผู้ติดตามสดจาก LINE API</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSyncFromSheet}
-              disabled={syncingSheet || syncingLine}
-              className="h-10 px-3.5 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-            >
-              {syncingSheet ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
-              <span>ซิงค์กับ Google Sheet</span>
             </button>
 
             <Link

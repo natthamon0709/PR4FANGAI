@@ -26,12 +26,12 @@ export default function NotificationRuleTable({ initialRules, onRefresh }: Notif
       desc: 'เมื่อผู้ดูแลระบบส่งข้อคิดเห็นให้เจ้าหน้าที่ปรับปรุงบทความ'
     },
     sync_error: {
-      title: 'Google Sheets ซิงค์ผิดพลาด (Sync Error)',
-      desc: 'เมื่อเกิดข้อผิดพลาดในการเชื่อมต่อหรืออ่านเขียนข้อมูลชีท'
+      title: 'แจ้งเตือนระบบฐานข้อมูล (Database System Alert)',
+      desc: 'เมื่อเกิดข้อผิดพลาดในการบันทึกข้อมูลลงฐานข้อมูล'
     },
     sync_conflict: {
-      title: 'เกิดข้อขัดแย้งข้อมูล 2 ทาง (Sync Conflict)',
-      desc: 'เมื่อข้อมูลในระบบและ Google Sheet มีการแก้ไขพร้อมกัน'
+      title: 'ตรวจพบความผิดปกติของข้อมูล (Data Integrity Alert)',
+      desc: 'เมื่อพบความไม่สอดคล้องของโครงสร้างข้อมูลในระบบ'
     }
   };
 

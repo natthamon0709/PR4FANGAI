@@ -1,5 +1,5 @@
 {
-  "name": "PR4Fang AI — LINE OA Chatbot & Google Sheets Sync Workflow",
+  "name": "PR4Fang AI — LINE OA Chatbot & Direct Database API Workflow",
   "nodes": [
     {
       "parameters": {
@@ -50,23 +50,40 @@
     },
     {
       "parameters": {
-        "authentication": "serviceAccount",
-        "documentId": {
-          "__rl": true,
-          "value": "1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs",
-          "mode": "id"
+        "method": "POST",
+        "url": "http://localhost:3000/api/ai-engine/query",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "fang_ai_n8n_live_sec_key_2026"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
         },
-        "sheetName": {
-          "__rl": true,
-          "value": "547794364",
-          "mode": "name"
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "question",
+              "value": "={{ $('LINE Webhook Inbound').item.json.body.events[0].message.text }}"
+            },
+            {
+              "name": "line_user_id",
+              "value": "={{ $('LINE Webhook Inbound').item.json.body.events[0].source.userId }}"
+            }
+          ]
         },
         "options": {}
       },
-      "id": "node-google-sheets",
-      "name": "Read Master Google Sheet",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
+      "id": "node-knowledge-query",
+      "name": "Query Direct Knowledge Base",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [720, 300]
     },
     {
@@ -128,14 +145,14 @@
       "main": [
         [
           {
-            "node": "Read Master Google Sheet",
+            "node": "Query Direct Knowledge Base",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Read Master Google Sheet": {
+    "Query Direct Knowledge Base": {
       "main": [
         [
           {

@@ -41,31 +41,27 @@ export default function KpiCard({ metric }: KpiCardProps) {
     switch (metric.color) {
       case 'primary':
         return {
-          bg: 'bg-surface-card',
-          border: 'border-outline/30 hover:border-primary/50',
-          iconBg: 'bg-primary-container/60',
+          border: 'border-outline/50 hover:border-primary/40',
+          iconBg: 'bg-primary/10 text-primary border border-primary/20',
           accent: 'text-primary'
         };
       case 'secondary':
         return {
-          bg: 'bg-surface-card',
-          border: 'border-outline/30 hover:border-secondary/50',
-          iconBg: 'bg-secondary-container/60',
+          border: 'border-outline/50 hover:border-secondary/40',
+          iconBg: 'bg-amber-500/10 text-amber-700 border border-amber-500/20',
           accent: 'text-secondary-dark'
         };
       case 'error':
         return {
-          bg: 'bg-surface-card',
-          border: 'border-outline/30 hover:border-error/40',
-          iconBg: 'bg-error-container/60',
+          border: 'border-outline/50 hover:border-error/40',
+          iconBg: 'bg-red-500/10 text-red-600 border border-red-500/20',
           accent: 'text-error'
         };
       case 'success':
       default:
         return {
-          bg: 'bg-surface-card',
-          border: 'border-outline/30 hover:border-success/40',
-          iconBg: 'bg-success-container/60',
+          border: 'border-outline/50 hover:border-success/40',
+          iconBg: 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20',
           accent: 'text-success'
         };
     }
@@ -74,21 +70,21 @@ export default function KpiCard({ metric }: KpiCardProps) {
   const theme = getCardTheme();
 
   const cardBody = (
-    <div className={`p-5 rounded-2xl border ${theme.border} ${theme.bg} shadow-level1 transition-all hover:shadow-level2 group relative flex flex-col justify-between h-full`}>
+    <div className={`p-5 rounded-2xl border ${theme.border} bg-surface-card shadow-card modern-card-hover hover:shadow-card-hover group relative flex flex-col justify-between h-full`}>
       {/* Top row: Label & Icon */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <span className="text-xs font-heading font-semibold text-onSurface-variant truncate">
           {metric.label}
         </span>
-        <div className={`w-9 h-9 rounded-xl ${theme.iconBg} flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105`}>
+        <div className={`w-10 h-10 rounded-2xl ${theme.iconBg} flex items-center justify-center flex-shrink-0 shadow-xs transition-transform duration-200 group-hover:scale-110`}>
           {getIcon()}
         </div>
       </div>
 
-      {/* Main Metric Number (Style Guide: IBM Plex Sans Thai 700 28px) */}
-      <div className="my-1">
+      {/* Main Metric Number */}
+      <div className="my-1.5">
         <div className="flex items-baseline gap-1.5">
-          <span className="font-heading font-extrabold text-2xl sm:text-3xl text-onSurface tracking-tight">
+          <span className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-4xl text-onSurface tracking-tight">
             {typeof metric.value === 'number' ? metric.value.toLocaleString('th-TH') : metric.value}
           </span>
           {metric.unit && (
@@ -100,21 +96,31 @@ export default function KpiCard({ metric }: KpiCardProps) {
       </div>
 
       {/* Bottom Trend / Subtitle */}
-      <div className="pt-2 mt-2 border-t border-outline/15 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-1">
+      <div className="pt-2.5 mt-2 border-t border-outline/30 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-1.5">
           {metric.trendDirection === 'up' && (
-            <TrendingUp className="w-3.5 h-3.5 text-success" />
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium text-[10px] border border-emerald-200/50">
+              <TrendingUp className="w-3 h-3" />
+              <span>{metric.trendText || 'เพิ่มขึ้น'}</span>
+            </span>
           )}
           {metric.trendDirection === 'down' && (
-            <TrendingDown className="w-3.5 h-3.5 text-error" />
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-700 font-medium text-[10px] border border-rose-200/50">
+              <TrendingDown className="w-3 h-3" />
+              <span>{metric.trendText || 'ลดลง'}</span>
+            </span>
           )}
-          <span className="text-onSurface-muted text-[11px] font-medium truncate">
-            {metric.trendText || '-'}
-          </span>
+          {!metric.trendDirection && (
+            <span className="text-onSurface-muted text-[11px] font-medium truncate">
+              {metric.trendText || '-'}
+            </span>
+          )}
         </div>
 
         {metric.href && (
-          <ArrowRight className="w-3.5 h-3.5 text-onSurface-muted group-hover:text-primary transition-colors flex-shrink-0" />
+          <div className="w-6 h-6 rounded-full bg-surface-variant/50 flex items-center justify-center text-onSurface-muted group-hover:bg-primary group-hover:text-white transition-colors flex-shrink-0">
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
         )}
       </div>
     </div>

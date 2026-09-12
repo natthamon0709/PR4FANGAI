@@ -17,13 +17,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน' }, { status: 400 });
     }
 
-    const verification = verifyPasswordResetToken(token);
+    const verification = await verifyPasswordResetToken(token);
     if (!verification.valid) {
       return NextResponse.json({ error: verification.error || 'โทเค็นไม่ถูกต้องหรือหมดอายุ' }, { status: 400 });
     }
 
     const passwordHash = await hashPassword(newPassword);
-    const success = consumePasswordResetToken(token, passwordHash);
+    const success = await consumePasswordResetToken(token, passwordHash);
 
     if (!success) {
       return NextResponse.json({ error: 'ไม่สามารถเปลี่ยนรหัสผ่านได้ กรุณาลองใหม่อีกครั้ง' }, { status: 400 });

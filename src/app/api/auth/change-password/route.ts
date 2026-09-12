@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน' }, { status: 400 });
     }
 
-    const user = getUserById(session.user_id);
+    const user = await getUserById(session.user_id);
     if (!user) {
       return NextResponse.json({ error: 'ไม่พบข้อมูลผู้ใช้งาน' }, { status: 404 });
     }
@@ -34,12 +34,25 @@ export async function POST(req: NextRequest) {
     }
 
     const newHash = await hashPassword(newPassword);
-    const db = getDb();
-    db.prepare(`
-      UPDATE master_users
-      SET password_hash = ?, updated_at = datetime('now', 'localtime')
-      WHERE user_id = ?
-    `).run(newHash, session.user_id);
+
+    // Supabase
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase');
+      await supabaseAdmin
+        .from('master_users')
+        .update({ password_hash: newHash, updated_at: new Date().toISOString() })
+        .eq('user_id', session.user_id);
+    } catch {}
+
+    // SQLite
+    try {
+      const db = getDb();
+      db.prepare(`
+        UPDATE master_users
+        SET password_hash = ?, updated_at = datetime('now', 'localtime')
+        WHERE user_id = ?
+      `).run(newHash, session.user_id);
+    } catch {}
 
     return NextResponse.json({
       success: true,

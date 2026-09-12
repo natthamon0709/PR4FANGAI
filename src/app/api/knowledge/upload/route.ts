@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
+import { uploadToStorage } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,8 +9,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
     }
 
-    // In a production server, files can be written to disk / S3.
-    // For our serverless App Router setup, we parse the formData and generate secure file metadata.
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
 
@@ -31,13 +30,21 @@ export async function POST(req: NextRequest) {
     else if (['xls', 'xlsx', 'csv'].includes(ext)) fileType = 'xlsx';
     else if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) fileType = 'image';
 
-    const mockFileUrl = `https://drive.google.com/file/d/sample_${Date.now()}/view?usp=sharing`;
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const contentType = file.type || 'application/octet-stream';
+
+    // Upload to Supabase Storage bucket
+    const uploadRes = await uploadToStorage(fileName, buffer, contentType, 'documents');
+    const fileUrl = uploadRes.success && uploadRes.url 
+      ? uploadRes.url 
+      : `https://drive.google.com/file/d/sample_${Date.now()}/view?usp=sharing`;
 
     return NextResponse.json({
       success: true,
       attachment: {
         file_name: fileName,
-        file_url: mockFileUrl,
+        file_url: fileUrl,
         file_type: fileType,
         file_size_kb: fileSizeKb,
         uploaded_at: new Date().toISOString()

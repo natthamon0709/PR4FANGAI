@@ -28,12 +28,12 @@ export default function AppLogo({
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       {/* Official College Logo Seal */}
-      <div className={`${iconSizes[size]} rounded-xl bg-white flex items-center justify-center p-1 shadow-sm flex-shrink-0 border border-secondary/30 ring-2 ${isDark ? 'ring-secondary/50' : 'ring-primary/10'}`}>
+      <div className={`${iconSizes[size]} rounded-2xl bg-white flex items-center justify-center p-1.5 shadow-card flex-shrink-0 border border-secondary/30 ring-2 ${isDark ? 'ring-amber-400/40 shadow-glow-gold/20' : 'ring-primary/15'} transition-transform duration-200 hover:scale-105`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/img/logofve.png"
           alt="วิทยาลัยการอาชีพฝาง"
-          className="w-full h-full object-contain"
+          className="w-full h-full object-contain filter drop-shadow-xs"
         />
       </div>
       <div>
@@ -41,12 +41,12 @@ export default function AppLogo({
           <span className={`font-heading tracking-tight font-extrabold ${titleSizes[size]} ${isDark ? 'text-white' : 'text-primary'}`}>
             PR4Fang
           </span>
-          <span className="bg-secondary text-white px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">
+          <span className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-wider shadow-xs ring-1 ring-amber-400/30">
             AI
           </span>
         </div>
         {showSubtitle && (
-          <p className={`text-[11px] truncate font-medium mt-1 leading-tight ${isDark ? 'text-secondary-light' : 'text-onSurface-muted'}`}>
+          <p className={`text-[11px] truncate font-medium mt-1 leading-tight ${isDark ? 'text-amber-200/90' : 'text-onSurface-muted'}`}>
             วิทยาลัยการอาชีพฝาง
           </p>
         )}

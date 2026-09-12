@@ -46,13 +46,13 @@ assert(staffUser.role === 'staff', 'Staff has role "staff"');
 assert(staffUser.status === 'active', 'Staff status is "active"');
 assert(bcrypt.compareSync('Fang@2026', staffUser.password_hash), 'Staff password matches "Fang@2026"');
 
-// Test 4: Master Users count matches Google Sheet exactly
+// Test 4: Master Users table populated in Database
 const masterUsers = db.prepare('SELECT * FROM master_users').all();
-assert(masterUsers.length >= 2, `Master users table strictly contains users from Google Sheet (Actual: ${masterUsers.length})`);
+assert(masterUsers.length >= 2, `Master users table contains active users (Actual: ${masterUsers.length})`);
 
-// Test 5: Google Sheets Settings & Integration configuration
-const sheetId = db.prepare('SELECT value FROM system_settings WHERE key = ?').get('google_sheets_id');
-assert(sheetId && sheetId.value === '1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs', 'Google Sheets ID correctly configured');
+// Test 5: Direct Database Engine & n8n Integration configuration
+const dbEngine = db.prepare('SELECT value FROM system_settings WHERE key = ?').get('database_engine');
+assert(dbEngine && dbEngine.value.includes('SQLite'), 'Direct Database Engine correctly configured');
 
 const n8nKey = db.prepare('SELECT value FROM system_settings WHERE key = ?').get('n8n_api_key');
 assert(n8nKey && n8nKey.value.length > 0, 'n8n API Key configured');

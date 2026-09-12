@@ -63,6 +63,16 @@ export interface AnnouncementItem {
   created_at: string;
 }
 
+export interface DatabaseStatusInfo {
+  engine: string;
+  status: 'healthy' | 'degraded' | 'error';
+  mode: string;
+  total_users: number;
+  total_knowledge: number;
+  total_logs: number;
+  last_checked: string;
+}
+
 export interface DashboardSummaryResponse {
   role: Role;
   user_department_id?: string;
@@ -74,7 +84,8 @@ export interface DashboardSummaryResponse {
   recent_activities: RecentActivityItem[];
   knowledge_gaps?: KnowledgeGapItem[];
   announcements: AnnouncementItem[];
-  sync_status: {
+  db_status: DatabaseStatusInfo;
+  sync_status?: {
     pending_count: number;
     last_synced: string;
     sheet_url: string;

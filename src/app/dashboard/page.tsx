@@ -10,7 +10,7 @@ import KnowledgeGrowthChart from '@/components/dashboard/KnowledgeGrowthChart';
 import RecentKnowledgeList from '@/components/dashboard/RecentKnowledgeList';
 import KnowledgeGapList from '@/components/dashboard/KnowledgeGapList';
 import AnnouncementWidget from '@/components/dashboard/AnnouncementWidget';
-import SheetSyncStatusCard from '@/components/dashboard/SheetSyncStatusCard';
+import DatabaseStatusCard from '@/components/dashboard/DatabaseStatusCard';
 import QuickAddButton from '@/components/dashboard/QuickAddButton';
 import SessionAlert from '@/components/SessionAlert';
 import { SessionUser } from '@/types';
@@ -132,13 +132,12 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Bottom Row: Google Sheets Sync Status Card (C29) + Announcements */}
+            {/* Bottom Row: Database Status Card + Announcements */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
-                <SheetSyncStatusCard
-                  pendingCount={summary.sync_status?.pending_count || 0}
-                  lastSynced={summary.sync_status?.last_synced}
-                  sheetUrl={summary.sync_status?.sheet_url}
+                <DatabaseStatusCard
+                  dbStatus={summary.db_status}
+                  lastChecked={summary.calculated_at}
                 />
               </div>
               <div className="lg:col-span-2">
@@ -154,13 +153,13 @@ export default function DashboardPage() {
         {!isAdmin && (
           <>
             {/* Quick Action Banner for Staff */}
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-primary-container/80 to-surface-card border border-primary/20 shadow-level1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="space-y-1">
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-primary/5 via-amber-500/5 to-surface-card border border-primary/20 shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
+              <div className="space-y-1 relative z-10">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
-                  <Sparkles className="w-4 h-4 text-secondary" />
+                  <Sparkles className="w-4 h-4 text-amber-500" />
                   <span>จัดการองค์ความรู้ประจำฝ่าย</span>
                 </div>
-                <h3 className="font-heading font-bold text-base text-onSurface">
+                <h3 className="font-heading font-bold text-base md:text-lg text-onSurface">
                   มีข้อมูล ระเบียบ หรือแบบฟอร์มใหม่ของ{currentUser.department_name}ที่ต้องการอัปเดต?
                 </h3>
                 <p className="text-xs text-onSurface-muted">
@@ -172,7 +171,7 @@ export default function DashboardPage() {
               <QuickAddButton
                 href="/knowledge/new"
                 label="+ เพิ่มองค์ความรู้ใหม่"
-                className="flex-shrink-0"
+                className="flex-shrink-0 relative z-10"
               />
             </div>
 
@@ -189,7 +188,7 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Bottom Row: Knowledge Gaps in Department + Sheet Sync */}
+            {/* Bottom Row: Knowledge Gaps in Department + DB Status */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <KnowledgeGapList
@@ -198,10 +197,9 @@ export default function DashboardPage() {
                 />
               </div>
               <div className="lg:col-span-1">
-                <SheetSyncStatusCard
-                  pendingCount={summary.sync_status?.pending_count || 0}
-                  lastSynced={summary.sync_status?.last_synced}
-                  sheetUrl={summary.sync_status?.sheet_url}
+                <DatabaseStatusCard
+                  dbStatus={summary.db_status}
+                  lastChecked={summary.calculated_at}
                 />
               </div>
             </div>

@@ -9,7 +9,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'สงวนสิทธิ์เฉพาะผู้ดูแลระบบ (Administrator) เท่านั้น' }, { status: 403 });
     }
 
-    const user = getUserById(params.id);
+    const user = await getUserById(params.id);
     if (!user) {
       return NextResponse.json({ error: 'ไม่พบผู้ใช้งาน' }, { status: 404 });
     }
@@ -17,12 +17,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const tempPassword = `Fang@${Math.floor(1000 + Math.random() * 9000)}`;
     const newHash = await hashPassword(tempPassword);
 
-    const db = getDb();
-    db.prepare(`
-      UPDATE master_users
-      SET password_hash = ?, failed_login_count = 0, locked_until = NULL, updated_at = datetime('now', 'localtime')
-      WHERE user_id = ?
-    `).run(newHash, params.id);
+    // Supabase
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase');
+      await supabaseAdmin.from('master_users').update({
+        password_hash: newHash,
+        failed_login_count: 0,
+        locked_until: null,
+        updated_at: new Date().toISOString()
+      }).eq('user_id', params.id);
+    } catch {}
+
+    // SQLite
+    try {
+      const db = getDb();
+      db.prepare(`
+        UPDATE master_users
+        SET password_hash = ?, failed_login_count = 0, locked_until = NULL, updated_at = datetime('now', 'localtime')
+        WHERE user_id = ?
+      `).run(newHash, params.id);
+    } catch {}
 
     return NextResponse.json({
       success: true,

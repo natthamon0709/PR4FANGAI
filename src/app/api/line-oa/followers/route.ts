@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
 import getDb from '@/lib/db';
-import { pullLatestFromGoogleSheets } from '@/lib/google-sheets-sync';
 import { syncFollowersFromLineApiLive, getLineChannelConfig } from '@/lib/line-service';
 
 export const dynamic = 'force-dynamic';
@@ -17,10 +16,6 @@ export async function GET(req: NextRequest) {
     if (session.role !== 'administrator') {
       return NextResponse.json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น' }, { status: 403 });
     }
-
-    try {
-      await pullLatestFromGoogleSheets('LINE_Followers');
-    } catch {}
 
     const db = getDb();
     const config = getLineChannelConfig();

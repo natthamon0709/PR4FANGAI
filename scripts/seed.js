@@ -1,31 +1,39 @@
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const fs = require('fs');
 
 const dbPath = path.join(__dirname, '..', 'data', 'pr4fang.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+db.pragma('foreign_keys = OFF');
 
-console.log('🌱 Seeding PR4Fang AI Database strictly from Google Sheet Master Data...');
+console.log('🌱 Seeding PR4Fang AI Database strictly from Master Data (Direct Database Architecture)...');
 
 // Clear existing tables
-db.prepare('DELETE FROM sync_conflicts').run();
-db.prepare('DELETE FROM sync_logs').run();
-db.prepare('DELETE FROM sheet_sync_configs').run();
-db.prepare('DELETE FROM knowledge_attachments').run();
-db.prepare('DELETE FROM knowledge_version_history').run();
-db.prepare('DELETE FROM knowledge_items').run();
-db.prepare('DELETE FROM dashboard_summary_cache').run();
-db.prepare('DELETE FROM announcements').run();
-db.prepare('DELETE FROM knowledge_gap_logs').run();
-db.prepare('DELETE FROM activity_feed').run();
-db.prepare('DELETE FROM login_audit_logs').run();
-db.prepare('DELETE FROM reset_password_tokens').run();
-db.prepare('DELETE FROM master_users').run();
-db.prepare('DELETE FROM sub_departments').run();
-db.prepare('DELETE FROM departments').run();
-db.prepare('DELETE FROM system_settings').run();
+try { db.prepare('DELETE FROM ai_retrieved_sources').run(); } catch {}
+try { db.prepare('DELETE FROM ai_query_logs').run(); } catch {}
+try { db.prepare('DELETE FROM line_broadcasts').run(); } catch {}
+try { db.prepare('DELETE FROM line_followers').run(); } catch {}
+try { db.prepare('DELETE FROM line_account_link_requests').run(); } catch {}
+try { db.prepare('DELETE FROM sync_conflicts').run(); } catch {}
+try { db.prepare('DELETE FROM sync_logs').run(); } catch {}
+try { db.prepare('DELETE FROM sheet_sync_configs').run(); } catch {}
+try { db.prepare('DELETE FROM knowledge_attachments').run(); } catch {}
+try { db.prepare('DELETE FROM knowledge_version_history').run(); } catch {}
+try { db.prepare('DELETE FROM knowledge_items').run(); } catch {}
+try { db.prepare('DELETE FROM dashboard_summary_cache').run(); } catch {}
+try { db.prepare('DELETE FROM announcements').run(); } catch {}
+try { db.prepare('DELETE FROM knowledge_gap_logs').run(); } catch {}
+try { db.prepare('DELETE FROM activity_feed').run(); } catch {}
+try { db.prepare('DELETE FROM login_audit_logs').run(); } catch {}
+try { db.prepare('DELETE FROM reset_password_tokens').run(); } catch {}
+try { db.prepare('DELETE FROM master_users').run(); } catch {}
+try { db.prepare('DELETE FROM sub_departments').run(); } catch {}
+try { db.prepare('DELETE FROM departments').run(); } catch {}
+try { db.prepare('DELETE FROM system_settings').run(); } catch {}
+
+db.pragma('foreign_keys = ON');
 
 // 1. Departments (Master_Department)
 const departmentsData = [
@@ -115,14 +123,116 @@ usersData.forEach(u => {
 
 console.log(`✅ Seeded ${usersData.length} Master Users directly matching Google Sheet Master_Users!`);
 
+// 3.5 Knowledge Base (Single Source of Truth)
+const csvKmPath = path.join(__dirname, '..', 'data', 'google-sheets-export', '04_Knowledge_Base.csv');
+if (fs.existsSync(csvKmPath)) {
+  function parseCSV(text) {
+    const rows = [];
+    let currentRow = [];
+    let currentVal = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentVal += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        currentRow.push(currentVal.trim());
+        currentVal = '';
+      } else if ((char === '\r' || char === '\n') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') i++;
+        currentRow.push(currentVal.trim());
+        if (currentRow.some(c => c.length > 0)) rows.push(currentRow);
+        currentRow = [];
+        currentVal = '';
+      } else {
+        currentVal += char;
+      }
+    }
+    if (currentRow.length > 0 && currentRow.some(c => c.length > 0)) {
+      currentRow.push(currentVal.trim());
+      rows.push(currentRow);
+    }
+    return rows;
+  }
+
+  function getDeptId(deptName) {
+    if (!deptName) return 'dept-01-resource';
+    if (deptName.includes('บริหารทรัพยากร')) return 'dept-01-resource';
+    if (deptName.includes('ยุทธศาสตร์') || deptName.includes('แผนงาน')) return 'dept-02-planning';
+    if (deptName.includes('กิจการนักเรียน') || deptName.includes('นักศึกษา')) return 'dept-03-student';
+    if (deptName.includes('วิชาการ')) return 'dept-04-academic';
+    return 'dept-01-resource';
+  }
+
+  function getSubDeptId(deptId, subDeptName) {
+    const subs = db.prepare('SELECT sub_department_id, name FROM sub_departments WHERE department_id = ?').all(deptId);
+    if (subDeptName) {
+      const matched = subs.find(s => subDeptName.includes(s.name) || s.name.includes(subDeptName));
+      if (matched) return matched.sub_department_id;
+    }
+    return subs[0] ? subs[0].sub_department_id : 'sub-01-01';
+  }
+
+  const rows = parseCSV(fs.readFileSync(csvKmPath, 'utf8')).slice(1);
+
+  const insertKm = db.prepare(`
+    INSERT OR REPLACE INTO knowledge_items (
+      knowledge_id, content_type, title, summary, content, department_id, sub_department_id,
+      tags, status, effective_date, expiry_date, ai_retrieval_enabled, sync_status,
+      created_by, updated_by, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced', 'usr-admin-001', 'usr-admin-001', datetime('now'), datetime('now'))
+  `);
+
+  const insertVer = db.prepare(`
+    INSERT OR REPLACE INTO knowledge_version_history (
+      version_id, knowledge_id, version_no, title_snapshot, summary_snapshot,
+      content_snapshot, tags_snapshot, edited_by, edited_at
+    ) VALUES (?, ?, 1, ?, ?, ?, ?, 'usr-admin-001', datetime('now'))
+  `);
+
+  const insertAtt = db.prepare(`
+    INSERT OR REPLACE INTO knowledge_attachments (
+      attachment_id, knowledge_id, file_name, file_url, file_type, file_size_kb, uploaded_at
+    ) VALUES (?, ?, ?, ?, 'pdf', 256, datetime('now'))
+  `);
+
+  rows.forEach(r => {
+    const kid = r[0];
+    const contentType = r[1] || 'document';
+    const title = r[2];
+    const summary = r[3];
+    const content = r[4];
+    const deptId = getDeptId(r[5]);
+    const subDeptId = getSubDeptId(deptId, r[6]);
+    const tags = r[7] || '[]';
+    const status = r[8] || 'published';
+    const effDate = r[9] === '-' ? null : r[9];
+    const expDate = r[10] === '-' ? null : r[10];
+    const driveUrl = r[11];
+
+    insertKm.run(kid, contentType, title, summary, content, deptId, subDeptId, tags, status, effDate, expDate);
+    insertVer.run('ver-' + kid + '-1', kid, title, summary, content, tags);
+    if (driveUrl && driveUrl !== '-') {
+      insertAtt.run('att-' + kid + '-1', kid, title + '.pdf', driveUrl);
+    }
+  });
+
+  console.log(`✅ Seeded ${rows.length} Knowledge Items into Database!`);
+}
+
 // 4. System Settings
 const settings = [
   { key: 'site_name', value: 'PR4Fang AI - ระบบจัดการองค์ความรู้' },
   { key: 'college_name', value: 'วิทยาลัยการอาชีพฝาง' },
-  { key: 'google_sheets_id', value: '1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs' },
-  { key: 'google_account_email', value: 'pr4fang-sync@fang-ai-2026.iam.gserviceaccount.com' },
-  { key: 'google_sheets_sync_status', value: 'synced' },
-  { key: 'google_sheets_last_synced', value: new Date().toISOString() },
+  { key: 'database_engine', value: 'SQLite 3 (WAL Mode)' },
+  { key: 'database_status', value: 'healthy' },
+  { key: 'database_storage', value: 'Local Disk / data/pr4fang.db' },
   { key: 'n8n_api_key', value: 'fang_ai_n8n_live_sec_key_2026' }
 ];
 

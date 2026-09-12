@@ -22,7 +22,7 @@ export default function UserSearchBar({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-11 pl-10 pr-9 rounded-lg border border-outline bg-surface-card text-onSurface text-sm placeholder:text-onSurface-muted/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+        className="w-full h-11 pl-10 pr-9 rounded-xl border border-outline/70 bg-surface/50 hover:bg-surface/80 focus:bg-white text-onSurface text-sm placeholder:text-onSurface-muted/70 focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all duration-150"
       />
       {value && (
         <button

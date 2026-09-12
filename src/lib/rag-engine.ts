@@ -1,4 +1,5 @@
 import getDb from './db';
+import { supabaseAdmin } from './supabase';
 import crypto from 'crypto';
 import { decryptApiKey } from './ai-crypto';
 import { AiEngineConfig, AiRetrievedSource, RAGPlaygroundResult } from '@/types/ai';
@@ -174,30 +175,63 @@ function extractDistinctiveKeywords(text: string): string[] {
 }
 
 /**
- * Semantic & Distinctive Keyword search across knowledge_items (synced from Google Sheet)
+ * Semantic & Distinctive Keyword search across knowledge_items (synced from Google Sheet / Supabase)
  */
-export function searchKnowledgeBase(query: string, topK: number = 5) {
-  const db = getDb();
+export async function searchKnowledgeBase(query: string, topK: number = 5) {
   const rawQueryLow = query.toLowerCase().trim();
   const keywords = extractDistinctiveKeywords(query);
 
-  // Query only published & AI retrieval enabled items from SQLite (synced from Google Sheet)
-  const items = db.prepare(`
-    SELECT 
-      k.knowledge_id,
-      k.title,
-      k.summary,
-      k.content,
-      k.content_type,
-      k.tags,
-      k.department_id,
-      d.name as department_name,
-      s.name as sub_department_name
-    FROM knowledge_items k
-    LEFT JOIN departments d ON k.department_id = d.department_id
-    LEFT JOIN sub_departments s ON k.sub_department_id = s.sub_department_id
-    WHERE k.status = 'published' AND k.ai_retrieval_enabled = 1
-  `).all() as any[];
+  let items: any[] = [];
+
+  // 1. Try Supabase
+  try {
+    const { data: sbItems, error } = await supabaseAdmin
+      .from('knowledge_items')
+      .select(`
+        knowledge_id,
+        title,
+        summary,
+        content,
+        content_type,
+        tags,
+        department_id,
+        departments (name),
+        sub_departments (name)
+      `)
+      .eq('status', 'published')
+      .eq('ai_retrieval_enabled', 1);
+
+    if (!error && sbItems && sbItems.length > 0) {
+      items = sbItems.map(item => ({
+        ...item,
+        department_name: (item.departments as any)?.name || '',
+        sub_department_name: (item.sub_departments as any)?.name || ''
+      }));
+    }
+  } catch {}
+
+  // 2. Fallback to SQLite
+  if (items.length === 0) {
+    try {
+      const db = getDb();
+      items = db.prepare(`
+        SELECT 
+          k.knowledge_id,
+          k.title,
+          k.summary,
+          k.content,
+          k.content_type,
+          k.tags,
+          k.department_id,
+          d.name as department_name,
+          s.name as sub_department_name
+        FROM knowledge_items k
+        LEFT JOIN departments d ON k.department_id = d.department_id
+        LEFT JOIN sub_departments s ON k.sub_department_id = s.sub_department_id
+        WHERE k.status = 'published' AND k.ai_retrieval_enabled = 1
+      `).all() as any[];
+    } catch {}
+  }
 
   if (items.length === 0) return [];
 
@@ -595,25 +629,26 @@ export async function executeRAGPipeline(params: {
     let logId: string | undefined;
     if (!isPlayground) {
       logId = 'qlog-' + crypto.randomUUID();
-      db.prepare(`
-        INSERT INTO ai_query_logs (
-          log_id, line_user_id, matched_user_id, question_text, confidence_score,
-          answer_text, is_fallback, response_time_ms, feedback, department_id, created_at
-        ) VALUES (?, ?, NULL, ?, 1.0, ?, 0, ?, 'none', NULL, datetime('now', 'localtime'))
-      `).run(logId, lineUserId, question.trim(), convIntent.replyText, responseTimeMs);
-
       try {
-        const { pushToGoogleSheets } = await import('./google-sheets-sync');
-        pushToGoogleSheets('AI_Query_Logs', 'create', {
+        await supabaseAdmin.from('ai_query_logs').insert({
           log_id: logId,
           line_user_id: lineUserId,
-          question: question.trim(),
-          confidence: 1.0,
-          answer: convIntent.replyText,
+          question_text: question.trim(),
+          confidence_score: 1.0,
+          answer_text: convIntent.replyText,
           is_fallback: 0,
           response_time_ms: responseTimeMs,
-          created_at: new Date().toISOString()
+          feedback: 'none'
         });
+      } catch {}
+
+      try {
+        db.prepare(`
+          INSERT INTO ai_query_logs (
+            log_id, line_user_id, matched_user_id, question_text, confidence_score,
+            answer_text, is_fallback, response_time_ms, feedback, department_id, created_at
+          ) VALUES (?, ?, NULL, ?, 1.0, ?, 0, ?, 'none', NULL, datetime('now', 'localtime'))
+        `).run(logId, lineUserId, question.trim(), convIntent.replyText, responseTimeMs);
       } catch {}
     }
 
@@ -629,7 +664,7 @@ export async function executeRAGPipeline(params: {
   }
 
   // 1. Search knowledge base
-  const retrievedSources = searchKnowledgeBase(question, config.retrieval_top_k);
+  const retrievedSources = await searchKnowledgeBase(question, config.retrieval_top_k);
 
   const topScore = retrievedSources.length > 0 ? retrievedSources[0].relevance_score : 0.0;
   const isFallback = topScore < config.confidence_threshold || retrievedSources.length === 0;
@@ -646,23 +681,27 @@ export async function executeRAGPipeline(params: {
         const gapId = 'gap-' + crypto.randomUUID();
         const existingGap = db.prepare('SELECT gap_id, ask_count FROM knowledge_gap_logs WHERE question_text = ? LIMIT 1').get(question.trim()) as any;
         if (existingGap) {
+          try {
+            await supabaseAdmin.from('knowledge_gap_logs').update({
+              ask_count: (existingGap.ask_count || 1) + 1,
+              last_asked_at: new Date().toISOString()
+            }).eq('question_text', question.trim());
+          } catch {}
           db.prepare(`UPDATE knowledge_gap_logs SET ask_count = ask_count + 1, last_asked_at = datetime('now', 'localtime') WHERE gap_id = ?`).run(existingGap.gap_id);
         } else {
-          db.prepare(`
-            INSERT INTO knowledge_gap_logs (gap_id, question_text, ask_count, status, department_guess, last_asked_at)
-            VALUES (?, ?, 1, 'open', ?, datetime('now', 'localtime'))
-          `).run(gapId, question.trim(), retrievedSources[0]?.department_id || null);
-
           try {
-            const { pushToGoogleSheets } = await import('./google-sheets-sync');
-            pushToGoogleSheets('Knowledge_Gaps', 'create', {
+            await supabaseAdmin.from('knowledge_gap_logs').insert({
               gap_id: gapId,
               question_text: question.trim(),
               ask_count: 1,
               status: 'open',
-              department_guess: retrievedSources[0]?.department_name || 'ฝ่ายบริหารทรัพยากร'
+              department_guess: retrievedSources[0]?.department_id || null
             });
           } catch {}
+          db.prepare(`
+            INSERT INTO knowledge_gap_logs (gap_id, question_text, ask_count, status, department_guess, last_asked_at)
+            VALUES (?, ?, 1, 'open', ?, datetime('now', 'localtime'))
+          `).run(gapId, question.trim(), retrievedSources[0]?.department_id || null);
         }
       } catch (err) {
         console.error('Failed to log knowledge gap:', err);
@@ -683,45 +722,61 @@ export async function executeRAGPipeline(params: {
     logId = 'qlog-' + crypto.randomUUID();
     const matchedUser = db.prepare('SELECT user_id, department_id FROM master_users WHERE line_user_id = ? LIMIT 1').get(lineUserId) as any;
 
-    db.prepare(`
-      INSERT INTO ai_query_logs (
-        log_id, line_user_id, matched_user_id, question_text, confidence_score,
-        answer_text, is_fallback, response_time_ms, feedback, department_id, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'none', ?, datetime('now', 'localtime'))
-    `).run(
-      logId,
-      lineUserId,
-      matchedUser?.user_id || null,
-      question.trim(),
-      topScore,
-      answerText,
-      isFallback ? 1 : 0,
-      responseTimeMs,
-      retrievedSources[0]?.department_id || matchedUser?.department_id || null
-    );
-
-    // Insert retrieved sources
-    const insertSource = db.prepare(`
-      INSERT INTO ai_retrieved_sources (source_id, log_id, knowledge_id, relevance_score, rank)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    retrievedSources.forEach(s => {
-      insertSource.run('asrc-' + crypto.randomUUID(), logId, s.knowledge_id, s.relevance_score, s.rank);
-    });
-
-    // Push live query log to Google Sheets
+    // 1. Supabase
     try {
-      const { pushToGoogleSheets } = await import('./google-sheets-sync');
-      pushToGoogleSheets('AI_Query_Logs', 'create', {
+      await supabaseAdmin.from('ai_query_logs').insert({
         log_id: logId,
         line_user_id: lineUserId,
-        question: question.trim(),
-        confidence: topScore,
-        answer: answerText,
+        matched_user_id: matchedUser?.user_id || null,
+        question_text: question.trim(),
+        confidence_score: topScore,
+        answer_text: answerText,
         is_fallback: isFallback ? 1 : 0,
         response_time_ms: responseTimeMs,
-        created_at: new Date().toISOString()
+        feedback: 'none',
+        department_id: retrievedSources[0]?.department_id || matchedUser?.department_id || null
+      });
+
+      if (retrievedSources.length > 0) {
+        const sbSources = retrievedSources.map(s => ({
+          source_id: 'asrc-' + crypto.randomUUID(),
+          log_id: logId,
+          knowledge_id: s.knowledge_id,
+          relevance_score: s.relevance_score,
+          rank: s.rank
+        }));
+        await supabaseAdmin.from('ai_retrieved_sources').insert(sbSources);
+      }
+    } catch (sbErr) {
+      console.warn('Supabase RAG query log warning:', sbErr);
+    }
+
+    // 2. SQLite
+    try {
+      db.prepare(`
+        INSERT INTO ai_query_logs (
+          log_id, line_user_id, matched_user_id, question_text, confidence_score,
+          answer_text, is_fallback, response_time_ms, feedback, department_id, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'none', ?, datetime('now', 'localtime'))
+      `).run(
+        logId,
+        lineUserId,
+        matchedUser?.user_id || null,
+        question.trim(),
+        topScore,
+        answerText,
+        isFallback ? 1 : 0,
+        responseTimeMs,
+        retrievedSources[0]?.department_id || matchedUser?.department_id || null
+      );
+
+      const insertSource = db.prepare(`
+        INSERT INTO ai_retrieved_sources (source_id, log_id, knowledge_id, relevance_score, rank)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      retrievedSources.forEach(s => {
+        insertSource.run('asrc-' + crypto.randomUUID(), logId, s.knowledge_id, s.relevance_score, s.rank);
       });
     } catch {}
   }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
 import getDb from '@/lib/db';
-import { pullLatestFromGoogleSheets } from '@/lib/google-sheets-sync';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,13 +11,6 @@ export async function GET(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
     }
-
-    // Attempt to pull latest LINE data from Google Sheets
-    try {
-      await pullLatestFromGoogleSheets('LINE_Configs');
-      await pullLatestFromGoogleSheets('LINE_Followers');
-      await pullLatestFromGoogleSheets('LINE_Broadcasts');
-    } catch {}
 
     const db = getDb();
 

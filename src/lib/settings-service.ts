@@ -554,9 +554,9 @@ export function createBackupJob(triggered_by: 'manual' | 'scheduled' = 'manual',
 export function getIntegrationsSummary(): IntegrationsSummaryResponse {
   const db = getDb();
 
-  // 1. Sheets CMS (Phase 4)
-  const sheetsCount = (db.prepare('SELECT COUNT(*) as c FROM sheet_sync_configs WHERE is_active = 1').get() as any).c;
-  const syncErrorCount = (db.prepare("SELECT COUNT(*) as c FROM sync_logs WHERE status = 'error'").get() as any).c;
+  // 1. Direct Database (SQLite 3 WAL Mode)
+  const totalUsers = (db.prepare('SELECT COUNT(*) as c FROM master_users').get() as any).c;
+  const totalKnowledge = (db.prepare('SELECT COUNT(*) as c FROM knowledge_items').get() as any).c;
 
   // 2. AI Engine (Phase 5)
   const aiConfig = db.prepare('SELECT * FROM ai_engine_configs WHERE is_active = 1 LIMIT 1').get() as any;
@@ -572,15 +572,16 @@ export function getIntegrationsSummary(): IntegrationsSummaryResponse {
   return {
     integrations: [
       {
-        key: 'sheets',
-        title: 'Google Sheets CMS (Phase 4)',
-        status: syncErrorCount > 0 ? 'error' : 'connected',
-        statusLabel: syncErrorCount > 0 ? `พบข้อผิดพลาด (${syncErrorCount})` : 'เชื่อมต่อปกติ (2-Way)',
+        key: 'database',
+        title: 'ฐานข้อมูลหลัก (Direct Database SSOT)',
+        status: 'connected',
+        statusLabel: 'เชื่อมต่อตรง (SQLite WAL Mode)',
         details: [
-          { label: 'จำนวนชีทที่ซิงค์', value: `${sheetsCount} ชีท` },
-          { label: 'สถานะข้อผิดพลาด', value: `${syncErrorCount} รายการ` }
+          { label: 'Database Engine', value: 'SQLite 3 (WAL)' },
+          { label: 'ผู้ใช้งานในระบบ', value: `${totalUsers} บัญชี` },
+          { label: 'องค์ความรู้ทั้งหมด', value: `${totalKnowledge} รายการ` }
         ],
-        settingsUrl: '/sheets-cms/connection'
+        settingsUrl: '/integrations'
       },
       {
         key: 'ai',

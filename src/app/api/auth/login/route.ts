@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const user = getUserByEmail(cleanEmail);
+    const user = await getUserByEmail(cleanEmail);
 
     if (!user) {
-      logLoginAttempt(null, cleanEmail, 'failed_password', ip);
+      await logLoginAttempt(null, cleanEmail, 'failed_password', ip);
       return NextResponse.json({ 
         error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' 
       }, { status: 401 });
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       const lockedTime = new Date(user.locked_until).getTime();
       if (Date.now() < lockedTime) {
         const remainingMinutes = Math.ceil((lockedTime - Date.now()) / (1000 * 60));
-        logLoginAttempt(user.user_id, cleanEmail, 'account_locked', ip);
+        await logLoginAttempt(user.user_id, cleanEmail, 'account_locked', ip);
         return NextResponse.json({ 
           error: `บัญชีถูกระงับชั่วคราวเนื่องจากใส่รหัสผ่านผิดเกินกำหนด กรุณารอ ${remainingMinutes} นาที หรือติดต่อผู้ดูแลระบบ` 
         }, { status: 423 });
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     // Check account suspended
     if (user.status === 'suspended') {
-      logLoginAttempt(user.user_id, cleanEmail, 'account_suspended', ip);
+      await logLoginAttempt(user.user_id, cleanEmail, 'account_suspended', ip);
       return NextResponse.json({ 
         error: 'บัญชีถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ ฝ่ายยุทธศาสตร์และแผนงาน (งานศูนย์ดิจิทัลและสื่อสารองค์กร)' 
       }, { status: 403 });
@@ -54,8 +54,8 @@ export async function POST(req: NextRequest) {
     // Verify password
     const isPasswordValid = await verifyPassword(password, user.password_hash);
     if (!isPasswordValid) {
-      const { newFailCount, isLocked } = handleFailedLogin(user.user_id, user.failed_login_count);
-      logLoginAttempt(user.user_id, cleanEmail, 'failed_password', ip);
+      const { newFailCount, isLocked } = await handleFailedLogin(user.user_id, user.failed_login_count);
+      await logLoginAttempt(user.user_id, cleanEmail, 'failed_password', ip);
       
       const attemptsLeft = Math.max(0, MAX_FAILED_ATTEMPTS - newFailCount);
       if (isLocked) {
@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Successful login
-    handleSuccessfulLogin(user.user_id);
-    logLoginAttempt(user.user_id, cleanEmail, 'success', ip);
+    await handleSuccessfulLogin(user.user_id);
+    await logLoginAttempt(user.user_id, cleanEmail, 'success', ip);
 
     const sessionPayload = {
       user_id: user.user_id,

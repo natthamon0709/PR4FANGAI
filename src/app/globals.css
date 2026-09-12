@@ -6,38 +6,110 @@
 
 :root {
   --primary: #800000;
+  --primary-dark: #520000;
+  --primary-light: #a01a1a;
   --secondary: #D97706;
-  --surface: #FCF9F9;
-  --surface-variant: #F6ECEC;
+  --secondary-dark: #b45309;
+  --surface: #F8F9FA;
+  --surface-variant: #F1F3F5;
+  --surface-card: #FFFFFF;
+  --scrollbar-thumb: rgba(128, 0, 0, 0.25);
+  --scrollbar-track: transparent;
 }
 
 body {
   font-family: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #FCF9F9;
+  background-color: var(--surface);
   color: #1C1B1A;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Modern Web Guidance: Balanced & Pretty typography wrapping */
 h1, h2, h3, h4, h5, h6 {
   font-family: 'IBM Plex Sans Thai', sans-serif;
+  text-wrap: balance;
+  letter-spacing: -0.015em;
+}
+
+p, li, blockquote {
+  text-wrap: pretty;
 }
 
 code, pre, .font-mono {
   font-family: 'IBM Plex Mono', monospace;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Modern Web Guidance: Standard CSS scrollbar with custom properties */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
-::-webkit-scrollbar-track {
-  background: #F6ECEC;
+
+/* Legacy fallback for WebKit/Blink browsers */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 0, 0, 0.5);
+  }
 }
-::-webkit-scrollbar-thumb {
-  background: #E2D5D5;
-  border-radius: 3px;
+
+/* Glassmorphism & Modern UI utilities */
+.glass-header {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #800000;
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.7);
+}
+
+.modern-card-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.modern-card-hover:hover {
+  transform: translateY(-2px);
+}
+
+/* Keyframes animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideRight {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scaleUp {
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slideRight {
+  animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

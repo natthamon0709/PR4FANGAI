@@ -2,10 +2,10 @@ import getDb from './db';
 import { User } from '@/types';
 
 export const GOOGLE_SHEET_CONFIG = {
-  spreadsheetId: '1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs',
-  gid: '547794364',
-  sheetUrl: 'https://docs.google.com/spreadsheets/d/1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs/edit?gid=547794364#gid=547794364',
-  sheetName: 'Master Users'
+  spreadsheetId: '',
+  gid: '',
+  sheetUrl: '',
+  sheetName: ''
 };
 
 export function getSystemSetting(key: string, defaultValue: string = ''): string {

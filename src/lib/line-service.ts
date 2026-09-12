@@ -28,7 +28,7 @@ export function getLineChannelConfig(): LineChannelConfig {
       channel_id: '',
       channel_secret_masked: '',
       channel_access_token_masked: '',
-      webhook_url: 'http://localhost:3000/api/line-oa/webhook',
+      webhook_url: 'http://localhost:3005/api/line-oa/webhook',
       webhook_verified: false,
       is_active: false
     };
@@ -403,28 +403,6 @@ export function verifyAccountLinkCode(code: string, lineUserId: string): { succe
   // 3. Update follower link
   db.prepare("UPDATE line_followers SET linked_master_user_id = ?, last_interaction_at = datetime('now', 'localtime') WHERE line_user_id = ?").run(req.master_user_id, lineUserId);
 
-  // 4. Push updated line_user_id to Google Sheets immediately
-  try {
-    const { pushToGoogleSheets } = require('./google-sheets-sync');
-    const userRow = db.prepare('SELECT u.*, d.name as department_name, s.name as sub_department_name FROM master_users u LEFT JOIN departments d ON u.department_id = d.department_id LEFT JOIN sub_departments s ON u.sub_department_id = s.sub_department_id WHERE u.user_id = ?').get(req.master_user_id) as any;
-    if (userRow) {
-      pushToGoogleSheets('Master_Users', 'update', {
-        user_id: userRow.user_id,
-        first_name: userRow.first_name,
-        last_name: userRow.last_name,
-        email: userRow.email,
-        phone: userRow.phone,
-        department_name: userRow.department_name,
-        sub_department_name: userRow.sub_department_name,
-        role: userRow.role,
-        status: userRow.status,
-        line_user_id: lineUserId
-      }).catch((e: any) => console.error('Push to Google Sheets error:', e));
-    }
-  } catch (syncErr) {
-    console.error('Failed to trigger pushToGoogleSheets on verify:', syncErr);
-  }
-
   return {
     success: true,
     message: `✅ ผูกบัญชีสำเร็จเรียบร้อยแล้ว!\n\nยินดีต้อนรับคุณ ${req.first_name} ${req.last_name} (${req.department_name || 'วิทยาลัยการอาชีพฝาง'})\nระบบจะส่งการแจ้งเตือนงานและการอัปเดตองค์ความรู้มายังบัญชี LINE นี้ครับ`,
@@ -472,17 +450,6 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
           INSERT INTO line_followers (follower_id, line_user_id, display_name, avatar_url, linked_master_user_id, followed_at, blocked, last_interaction_at)
           VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'), 0, datetime('now', 'localtime'))
         `).run(newFid, lineUserId, liveDisplayName, livePictureUrl, linkedUser?.user_id || null);
-
-        // Push new follower to Google Sheet
-        try {
-          const { pushToGoogleSheets } = await import('./google-sheets-sync');
-          pushToGoogleSheets('LINE_Followers', 'create', {
-            follower_id: newFid,
-            line_user_id: lineUserId,
-            display_name: liveDisplayName,
-            avatar_url: livePictureUrl
-          });
-        } catch {}
       } else {
         db.prepare(`
           UPDATE line_followers 

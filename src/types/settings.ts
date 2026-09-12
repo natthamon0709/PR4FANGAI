@@ -90,7 +90,7 @@ export interface BackupJob {
 }
 
 export interface IntegrationItem {
-  key: 'sheets' | 'ai' | 'line';
+  key: 'database' | 'sheets' | 'ai' | 'line';
   title: string;
   status: 'connected' | 'error' | 'inactive';
   statusLabel: string;

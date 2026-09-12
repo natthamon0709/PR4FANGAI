@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
-    const latestUser = getUserById(session.user_id);
+    const latestUser = await getUserById(session.user_id);
     if (!latestUser || latestUser.status === 'suspended') {
       return NextResponse.json({ authenticated: false, error: 'บัญชีถูกระงับหรือไม่มีอยู่ในระบบ' }, { status: 403 });
     }

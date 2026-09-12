@@ -10,20 +10,20 @@ export default function RoleBadge({ role }: RoleBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-colors ${
         isAdmin
-          ? 'bg-secondary-container text-secondary-dark border border-secondary/30'
-          : 'bg-surface-variant text-onSurface-variant border border-outline/40'
+          ? 'bg-amber-500/10 text-amber-700 border border-amber-500/30 shadow-xs font-mono font-bold'
+          : 'bg-surface-variant text-onSurface-variant border border-outline/50'
       }`}
     >
       {isAdmin ? (
         <>
-          <ShieldCheck className="w-3.5 h-3.5 text-secondary" />
+          <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
           <span>Administrator</span>
         </>
       ) : (
         <>
-          <UserCheck className="w-3.5 h-3.5 text-onSurface-muted" />
+          <UserCheck className="w-3.5 h-3.5 text-onSurface-muted/80" />
           <span>Staff</span>
         </>
       )}

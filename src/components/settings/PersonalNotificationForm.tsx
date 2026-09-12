@@ -30,8 +30,8 @@ export default function PersonalNotificationForm({ initialPreferences }: Persona
     },
     {
       id: 'sync_error',
-      label: 'Google Sheets ซิงค์ผิดพลาด',
-      desc: 'แจ้งเตือนเมื่อการซิงค์ข้อมูลกับ Google Sheet มีปัญหา'
+      label: 'แจ้งเตือนข้อผิดพลาดฐานข้อมูล',
+      desc: 'แจ้งเตือนเมื่อเกิดปัญหาในการเขียนหรือเชื่อมต่อฐานข้อมูล'
     }
   ];
 

@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { createClient, Client } from '@libsql/client';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
@@ -572,30 +573,13 @@ function initTables(db: Database.Database) {
     const defaultSettings = [
       { key: 'site_name', value: 'PR4Fang AI - ระบบจัดการองค์ความรู้' },
       { key: 'college_name', value: 'วิทยาลัยการอาชีพฝาง' },
-      { key: 'google_sheets_id', value: '1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs' },
-      { key: 'google_apps_script_url', value: 'https://script.google.com/macros/s/AKfycbxUI67uapRoJ5uuW6lofbVvGmPpY0x3T5-0uTv1QvCLkKmT-ZGLt76DVJGzM6NS49Yi/exec' },
-      { key: 'google_account_email', value: 'pr4fang-sync@fang-ai-2026.iam.gserviceaccount.com' },
-      { key: 'google_sheets_sync_status', value: 'synced' },
-      { key: 'google_sheets_last_synced', value: new Date().toISOString() },
+      { key: 'database_engine', value: 'SQLite 3 (WAL Mode)' },
+      { key: 'database_status', value: 'healthy' },
+      { key: 'database_storage', value: 'Local Disk / data/pr4fang.db' },
       { key: 'n8n_api_key', value: 'fang_ai_n8n_live_sec_key_2026' }
     ];
     const insertSetting = db.prepare('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)');
     defaultSettings.forEach(s => insertSetting.run(s.key, s.value));
-  }
-
-  // 4. Seed Sheet Sync Configs if empty
-  const syncConfigCount = (db.prepare('SELECT COUNT(*) as c FROM sheet_sync_configs').get() as any).c;
-  if (syncConfigCount === 0) {
-    const SPREADSHEET_ID = '1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs';
-    const sheetConfigs = [
-      { id: 'sync-cfg-001', name: 'Master_Users', gid: '0', table: 'master_users' },
-      { id: 'sync-cfg-002', name: 'Knowledge_Base', gid: '0', table: 'knowledge_items' },
-      { id: 'sync-cfg-003', name: 'Knowledge_Gaps', gid: '0', table: 'knowledge_gap_logs' },
-      { id: 'sync-cfg-004', name: 'AI_Query_Logs', gid: '0', table: 'ai_query_logs' },
-      { id: 'sync-cfg-005', name: 'LINE_Configs', gid: '0', table: 'line_channel_configs' }
-    ];
-    const insertSync = db.prepare('INSERT OR REPLACE INTO sheet_sync_configs (config_id, sheet_name, google_sheet_id, google_tab_gid, target_table, field_mapping, sync_direction, is_active) VALUES (?, ?, ?, ?, ?, "{}", "two_way", 1)');
-    sheetConfigs.forEach(sc => insertSync.run(sc.id, sc.name, SPREADSHEET_ID, sc.gid, sc.table));
   }
 
   // Seed Default College Profile if empty
@@ -698,7 +682,7 @@ function initTables(db: Database.Database) {
       ) VALUES (?, '', '', '', ?, 0, 1, datetime('now', 'localtime'))
     `).run(
       'line-cfg-001',
-      'http://localhost:3000/api/line-oa/webhook'
+      'http://localhost:3005/api/line-oa/webhook'
     );
   }
 
@@ -772,6 +756,31 @@ function initTables(db: Database.Database) {
       insertStmt.run(`snap-f-${dateStr}`, 'follower_count', 'global', null, dateStr, followers);
     }
   }
+}
+
+// -------------------------------------------------------------------------
+// Turso LibSQL Client (Vercel Serverless & Cloud Compatible)
+// -------------------------------------------------------------------------
+let libsqlClientInstance: Client | null = null;
+
+export function getLibSqlClient(): Client {
+  if (!libsqlClientInstance) {
+    const url = process.env.TURSO_DATABASE_URL || `file:${path.join(process.cwd(), 'data', 'pr4fang.db')}`;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+    libsqlClientInstance = createClient({ url, authToken });
+  }
+  return libsqlClientInstance;
+}
+
+export async function executeQuery<T = any>(sql: string, args: any[] = []): Promise<T[]> {
+  const client = getLibSqlClient();
+  const res = await client.execute({ sql, args });
+  return res.rows as unknown as T[];
+}
+
+export async function executeQueryOne<T = any>(sql: string, args: any[] = []): Promise<T | null> {
+  const rows = await executeQuery<T>(sql, args);
+  return rows[0] || null;
 }
 
 export default getDb;

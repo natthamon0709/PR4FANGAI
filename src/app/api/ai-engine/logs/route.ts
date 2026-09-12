@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
 import getDb from '@/lib/db';
 
 export async function GET(req: NextRequest) {
@@ -9,7 +10,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
     }
 
-    const db = getDb();
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search')?.trim() || '';
     const deptFilter = searchParams.get('department_id') || 'all';
@@ -21,6 +21,79 @@ export async function GET(req: NextRequest) {
 
     const isAdmin = session.role === 'administrator';
 
+    // 1. Try Supabase
+    try {
+      let sbQuery = supabaseAdmin
+        .from('ai_query_logs')
+        .select(`
+          *,
+          departments (name),
+          master_users (first_name, last_name),
+          ai_retrieved_sources (
+            source_id,
+            knowledge_id,
+            relevance_score,
+            rank,
+            knowledge_items (title, content_type)
+          )
+        `, { count: 'exact' });
+
+      if (!isAdmin) {
+        sbQuery = sbQuery.or(`department_id.eq.${session.department_id},matched_user_id.eq.${session.user_id}`);
+      } else if (deptFilter !== 'all') {
+        sbQuery = sbQuery.eq('department_id', deptFilter);
+      }
+      if (search) {
+        sbQuery = sbQuery.or(`question_text.ilike.%${search}%,answer_text.ilike.%${search}%`);
+      }
+      if (feedbackFilter !== 'all') {
+        sbQuery = sbQuery.eq('feedback', feedbackFilter);
+      }
+
+      const { data: sbLogs, count: sbCount, error: sbErr } = await sbQuery
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (!sbErr && sbLogs) {
+        const formatted = sbLogs.map((l: any) => ({
+          log_id: l.log_id,
+          line_user_id: l.line_user_id,
+          matched_user_id: l.matched_user_id,
+          matched_user_name: l.master_users ? `${l.master_users.first_name} ${l.master_users.last_name}` : null,
+          question_text: l.question_text,
+          confidence_score: Number(l.confidence_score),
+          answer_text: l.answer_text,
+          is_fallback: Boolean(l.is_fallback),
+          response_time_ms: l.response_time_ms,
+          feedback: l.feedback,
+          department_id: l.department_id,
+          department_name: l.departments?.name || null,
+          created_at: l.created_at,
+          sources: (l.ai_retrieved_sources || []).map((s: any) => ({
+            source_id: s.source_id,
+            knowledge_id: s.knowledge_id,
+            title: s.knowledge_items?.title || '',
+            content_type: s.knowledge_items?.content_type || '',
+            relevance_score: s.relevance_score,
+            rank: s.rank
+          }))
+        }));
+
+        return NextResponse.json({
+          logs: formatted,
+          pagination: {
+            total: sbCount || 0,
+            page,
+            limit,
+            totalPages: Math.ceil((sbCount || 0) / limit) || 1
+          },
+          is_admin: isAdmin
+        });
+      }
+    } catch {}
+
+    // 2. Fallback to SQLite
+    const db = getDb();
     let query = `
       SELECT 
         q.log_id,
@@ -45,7 +118,6 @@ export async function GET(req: NextRequest) {
     const conditions: string[] = [];
     const params: any[] = [];
 
-    // Staff Scoping: Staff can only see their department's queries
     if (!isAdmin) {
       conditions.push('(q.department_id = ? OR q.matched_user_id = ?)');
       params.push(session.department_id, session.user_id);
@@ -76,14 +148,12 @@ export async function GET(req: NextRequest) {
       query += ` WHERE ${conditions.join(' AND ')}`;
     }
 
-    // Count Total
     const countSql = `SELECT COUNT(*) as c FROM (${query})`;
     const totalCount = (db.prepare(countSql).get(...params) as any).c;
 
     query += ` ORDER BY q.created_at DESC LIMIT ? OFFSET ?`;
     const logs = db.prepare(query).all(...params, limit, offset) as any[];
 
-    // Attach Top sources to each log
     const getSources = db.prepare(`
       SELECT 
         s.source_id,

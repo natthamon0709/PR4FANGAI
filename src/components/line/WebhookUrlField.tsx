@@ -82,7 +82,7 @@ export default function WebhookUrlField({
 
       <div className="text-[11px] text-onSurface-muted space-y-1">
         <p>• <strong>วิธีใช้งาน:</strong> นำ URL นี้ไปกรอกในช่อง <strong>Webhook URL</strong> ในแท็บ Messaging API บน LINE Developers Console</p>
-        <p>• <strong>การทดสอบด้วย ngrok:</strong> หากรันบนเครื่อง Local ให้รัน <code className="bg-surface-variant/60 px-1 py-0.5 rounded font-mono text-[10px]">ngrok http 3000</code> แล้วนำ HTTPS URL ที่ได้มาใส่แทนที่ด้านบนนี้</p>
+        <p>• <strong>การทดสอบด้วย ngrok:</strong> หากรันบนเครื่อง Local ให้รัน <code className="bg-surface-variant/60 px-1 py-0.5 rounded font-mono text-[10px]">ngrok http 3005</code> แล้วนำ HTTPS URL ที่ได้มาใส่แทนที่ด้านบนนี้</p>
       </div>
     </div>
   );

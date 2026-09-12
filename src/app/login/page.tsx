@@ -70,25 +70,28 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8 bg-surface">
+    <div className="min-h-screen flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8 bg-surface relative overflow-hidden">
+      {/* Ambient background glow for high-end feel */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-primary/12 via-amber-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+
       {/* Container matching Wireframe 4.1 & High Fidelity Mockup */}
-      <div className="max-w-md w-full space-y-6">
+      <div className="max-w-md w-full space-y-6 relative z-10 animate-fadeIn">
         {/* Top Logo & Title */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <AppLogo size="lg" showSubtitle={false} />
           </div>
-          <h1 className="text-2xl font-heading font-extrabold text-primary tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-primary tracking-tight">
             PR4Fang AI
           </h1>
-          <p className="text-sm font-medium text-onSurface-variant">
+          <p className="text-xs sm:text-sm font-medium text-onSurface-variant">
             ระบบจัดการองค์ความรู้ วิทยาลัยการอาชีพฝาง
           </p>
         </div>
 
-        {/* Card Box */}
-        <div className="bg-surface-card py-8 px-6 sm:px-8 rounded-2xl border border-outline/40 shadow-level2 space-y-6">
-          <div className="border-b border-outline/20 pb-4">
+        {/* Card Box with Glassmorphism */}
+        <div className="bg-surface-card/95 backdrop-blur-xl py-8 px-6 sm:px-8 rounded-3xl border border-outline/50 shadow-level3 space-y-6">
+          <div className="border-b border-outline/30 pb-4">
             <h2 className="text-lg font-heading font-bold text-onSurface">
               เข้าสู่ระบบ (Sign In)
             </h2>
@@ -108,7 +111,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Field */}
             <div>
-              <label className="block text-sm font-medium text-onSurface mb-1.5">
+              <label className="block text-xs font-semibold text-onSurface mb-1.5 uppercase tracking-wide">
                 อีเมล / ชื่อผู้ใช้งาน
               </label>
               <div className="relative">
@@ -118,7 +121,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="name@fang.ac.th"
-                  className="w-full h-12 pl-10 pr-4 rounded-lg border border-outline bg-surface-card text-onSurface text-sm placeholder:text-onSurface-muted/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary font-mono transition-all"
+                  className="w-full h-12 pl-10 pr-4 rounded-xl border border-outline/70 bg-surface/50 hover:bg-surface/80 focus:bg-white text-onSurface text-sm placeholder:text-onSurface-muted/60 focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary font-mono transition-all duration-150"
                 />
                 <Mail className="w-4 h-4 absolute left-3.5 top-4 text-onSurface-muted" />
               </div>
@@ -127,7 +130,7 @@ export default function LoginPage() {
             {/* Password Field with Toggle */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-onSurface">
+                <label className="block text-xs font-semibold text-onSurface uppercase tracking-wide">
                   รหัสผ่าน
                 </label>
                 <Link
@@ -144,13 +147,13 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full h-12 pl-10 pr-11 rounded-lg border border-outline bg-surface-card text-onSurface text-sm placeholder:text-onSurface-muted/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all font-mono"
+                  className="w-full h-12 pl-10 pr-11 rounded-xl border border-outline/70 bg-surface/50 hover:bg-surface/80 focus:bg-white text-onSurface text-sm placeholder:text-onSurface-muted/60 focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all duration-150 font-mono"
                 />
                 <Lock className="w-4 h-4 absolute left-3.5 top-4 text-onSurface-muted" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-onSurface-muted hover:text-onSurface p-0.5"
+                  className="absolute right-3.5 top-3.5 text-onSurface-muted hover:text-onSurface p-1 rounded-md transition-colors"
                   aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -165,7 +168,7 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-outline text-primary focus:ring-primary"
+                  className="rounded-md border-outline text-primary focus:ring-primary"
                 />
                 <span>จดจำฉันไว้ในระบบ</span>
               </label>
@@ -180,29 +183,29 @@ export default function LoginPage() {
           </form>
 
           {/* Quick Demo Selector */}
-          <div className="pt-4 border-t border-outline/20">
-            <p className="text-[11px] font-semibold text-onSurface-muted mb-2 uppercase tracking-wider text-center">
+          <div className="pt-4 border-t border-outline/30">
+            <p className="text-[11px] font-mono font-bold text-onSurface-muted mb-2.5 uppercase tracking-wider text-center">
               บัญชีทดสอบระบบ (Demo Accounts)
             </p>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => handleFillDemo('admin')}
-                className="px-2 py-1.5 rounded-lg border border-secondary/40 bg-secondary-container/30 hover:bg-secondary-container/60 text-[11px] font-bold text-secondary-dark transition-colors text-center"
+                className="px-2.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-mono font-bold text-amber-700 transition-all active:scale-95 shadow-xs text-center"
               >
                 Admin
               </button>
               <button
                 type="button"
                 onClick={() => handleFillDemo('staff')}
-                className="px-2 py-1.5 rounded-lg border border-primary/30 bg-primary-container/30 hover:bg-primary-container/60 text-[11px] font-bold text-primary transition-colors text-center"
+                className="px-2.5 py-2 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-xs font-mono font-bold text-primary transition-all active:scale-95 shadow-xs text-center"
               >
                 Staff
               </button>
               <button
                 type="button"
                 onClick={() => handleFillDemo('suspended')}
-                className="px-2 py-1.5 rounded-lg border border-error/30 bg-error-container/30 hover:bg-error-container/60 text-[11px] font-bold text-error transition-colors text-center"
+                className="px-2.5 py-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-xs font-mono font-bold text-red-600 transition-all active:scale-95 shadow-xs text-center"
               >
                 Suspended
               </button>
@@ -211,8 +214,8 @@ export default function LoginPage() {
 
           {/* Support Info */}
           <div className="pt-2 text-center">
-            <p className="text-xs text-onSurface-muted flex items-center justify-center gap-1">
-              <HelpCircle className="w-3.5 h-3.5" />
+            <p className="text-xs text-onSurface-muted flex items-center justify-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5 text-onSurface-muted/80" />
               <span>ปัญหาการเข้าใช้งาน ติดต่องานศูนย์ดิจิทัลและสื่อสารองค์กร</span>
             </p>
           </div>
@@ -220,7 +223,7 @@ export default function LoginPage() {
 
         {/* Footer info */}
         <p className="text-center text-xs text-onSurface-muted">
-          © วิทยาลัยการอาชีพฝาง 2569 — ระบบต้นแบบ Phase 1
+          © วิทยาลัยการอาชีพฝาง 2569 — ระบบ PR4Fang AI
         </p>
       </div>
     </div>

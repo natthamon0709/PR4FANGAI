@@ -50,18 +50,6 @@ export default function LineOaOverviewPage() {
     loadData();
   }, [router]);
 
-  const handleSyncWithSheet = async () => {
-    setSyncing(true);
-    try {
-      await fetch('/api/sheets-cms/sync-all', { method: 'POST' });
-      await loadData();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   if (loading || !currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -103,15 +91,6 @@ export default function LineOaOverviewPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleSyncWithSheet}
-              disabled={syncing}
-              className="h-10 px-3.5 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
-            >
-              {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              <span>ซิงค์กับ Google Sheet</span>
-            </button>
 
             <Link
               href="/line-oa/broadcast"
@@ -139,7 +118,7 @@ export default function LineOaOverviewPage() {
         {/* 2. Webhook URL Display (C82) - Admin only */}
         {isAdmin && (
           <WebhookUrlField
-            url={channelConfig?.webhook_url || 'http://localhost:3000/api/line-oa/webhook'}
+            url={channelConfig?.webhook_url || 'http://localhost:3005/api/line-oa/webhook'}
             verified={Boolean(stats?.channelConnected)}
           />
         )}

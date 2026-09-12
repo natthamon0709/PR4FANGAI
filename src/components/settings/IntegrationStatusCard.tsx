@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { IntegrationItem } from '@/types/settings';
-import { FileSpreadsheet, Bot, Smartphone, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Database, Bot, Smartphone, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface IntegrationStatusCardProps {
   item: IntegrationItem;
@@ -10,7 +10,8 @@ interface IntegrationStatusCardProps {
 
 export default function IntegrationStatusCard({ item }: IntegrationStatusCardProps) {
   const iconMap: Record<string, any> = {
-    sheets: FileSpreadsheet,
+    database: Database,
+    sheets: Database,
     ai: Bot,
     line: Smartphone
   };

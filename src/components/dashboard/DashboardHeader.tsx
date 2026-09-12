@@ -29,10 +29,10 @@ export default function DashboardHeader({
   });
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-outline/20">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-outline/30">
       <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl md:text-2xl font-heading font-extrabold text-onSurface tracking-tight">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-heading font-extrabold text-onSurface tracking-tight">
             {isAdmin ? (
               <span>ภาพรวมระบบ (System Overview)</span>
             ) : (
@@ -40,12 +40,12 @@ export default function DashboardHeader({
             )}
           </h1>
           {isAdmin && (
-            <span className="px-2 py-0.5 rounded-full bg-secondary-container text-secondary-dark text-[11px] font-bold border border-secondary/30">
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 text-[11px] font-mono font-bold border border-amber-500/25 shadow-xs">
               ทุกฝ่าย
             </span>
           )}
         </div>
-        <p className="text-xs text-onSurface-muted mt-0.5">
+        <p className="text-xs text-onSurface-muted mt-1">
           {isAdmin ? (
             <span>วิทยาลัยการอาชีพฝาง · ฝ่ายยุทธศาสตร์และแผนงาน (งานศูนย์ดิจิทัลและสื่อสารองค์กร)</span>
           ) : (
@@ -56,7 +56,7 @@ export default function DashboardHeader({
 
       {/* Right Action: Current Thai date & Manual Cache Refresh button */}
       <div className="flex items-center gap-2.5">
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card border border-outline/30 text-xs font-mono text-onSurface-variant">
+        <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-card border border-outline/40 text-xs font-mono text-onSurface-variant shadow-xs">
           <Calendar className="w-3.5 h-3.5 text-primary" />
           <span>{thaiDateFormatted}</span>
         </div>
@@ -65,7 +65,7 @@ export default function DashboardHeader({
           <button
             onClick={onRefresh}
             disabled={refreshing}
-            className="h-9 px-3.5 rounded-lg border border-outline bg-surface-card hover:bg-surface-variant text-xs font-medium text-onSurface flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+            className="h-10 px-4 rounded-xl border border-outline/40 bg-surface-card hover:bg-surface-variant/80 text-xs font-semibold text-onSurface flex items-center gap-2 transition-all duration-150 disabled:opacity-50 shadow-xs active:scale-95"
             title="รีเฟรชข้อมูลสรุปภาพรวมแดชบอร์ด"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-primary ${refreshing ? 'animate-spin' : ''}`} />

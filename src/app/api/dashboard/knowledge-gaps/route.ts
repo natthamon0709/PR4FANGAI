@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
 import getDb from '@/lib/db';
 
 export async function GET(req: NextRequest) {
@@ -9,27 +10,34 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const db = getDb();
     const isAdmin = session.role === 'administrator';
 
-    // Auto-resolve any gaps that have published knowledge items
+    // 1. Try Supabase
     try {
-      db.prepare(`
-        UPDATE knowledge_gap_logs 
-        SET status = 'resolved' 
-        WHERE status = 'open' 
-        AND EXISTS (
-          SELECT 1 FROM knowledge_items k 
-          WHERE k.status = 'published' 
-          AND (
-            LOWER(k.title) = LOWER(knowledge_gap_logs.question_text)
-            OR LOWER(k.title) LIKE '%' || LOWER(knowledge_gap_logs.question_text) || '%'
-            OR LOWER(knowledge_gap_logs.question_text) LIKE '%' || LOWER(k.title) || '%'
-          )
-        )
-      `).run();
+      let query = supabaseAdmin
+        .from('knowledge_gap_logs')
+        .select('*, departments(name)')
+        .eq('status', 'open');
+
+      if (!isAdmin && session.department_id) {
+        query = query.or(`department_guess.eq.${session.department_id},department_guess.is.null`);
+      }
+
+      const { data: sbGaps, error: sbErr } = await query
+        .order('ask_count', { ascending: false })
+        .order('last_asked_at', { ascending: false });
+
+      if (!sbErr && sbGaps) {
+        const formatted = sbGaps.map(g => ({
+          ...g,
+          department_name: (g.departments as any)?.name || null
+        }));
+        return NextResponse.json({ gaps: formatted });
+      }
     } catch {}
 
+    // 2. Fallback to SQLite
+    const db = getDb();
     const gaps = isAdmin
       ? db.prepare(`
           SELECT g.*, d.name as department_name 

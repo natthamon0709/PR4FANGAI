@@ -3,18 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "rm -rf .next && next dev -p 3000",
+    "dev": "rm -rf .next && next dev -p 3005",
     "clean": "rm -rf .next",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "next start -p 3005",
     "lint": "next lint",
     "seed": "node scripts/seed.js",
     "test:api": "node scripts/test-api.js",
     "test:dashboard": "node scripts/test-dashboard.js",
-    "test:knowledge": "node scripts/test-knowledge.js",
-    "test:sheets": "node scripts/test-sheets.js"
+    "test:knowledge": "node scripts/test-knowledge.js"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
+    "@supabase/supabase-js": "^2.116.0",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.8.1",
     "clsx": "^2.1.1",

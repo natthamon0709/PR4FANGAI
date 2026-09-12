@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import { uploadToStorage } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -32,34 +30,22 @@ export async function POST(req: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const contentType = file.type || 'image/jpeg';
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'richmenu');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    // Upload to Supabase Storage 'pr4fang-media' under 'richmenu' folder
+    const uploadRes = await uploadToStorage(file.name, buffer, contentType, 'richmenu');
+
+    if (!uploadRes.success || !uploadRes.url) {
+      return NextResponse.json({ error: uploadRes.error || 'อัปโหลดรูปลง Supabase Storage ไม่สำเร็จ' }, { status: 500 });
     }
-
-    const fileName = `richmenu-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext === 'webp' ? 'png' : ext}`;
-    const filePath = path.join(uploadsDir, fileName);
-
-    fs.writeFileSync(filePath, buffer);
-
-    // Auto-fit dimensions to exact 2500x1686 and compress to <1MB
-    try {
-      const { execSync } = await import('child_process');
-      execSync(`sips -z 1686 2500 "${filePath}" --setProperty formatOptions 85`);
-    } catch (resizeErr) {
-      console.warn('sips resize warning:', resizeErr);
-    }
-
-    const publicUrl = `/uploads/richmenu/${fileName}`;
 
     return NextResponse.json({
       success: true,
-      imageUrl: publicUrl,
-      fileName
+      imageUrl: uploadRes.url,
+      fileName: file.name
     });
   } catch (error: any) {
-    console.error('Rich Menu image upload error:', error);
+    console.error('Rich menu image upload error:', error);
     return NextResponse.json({ error: 'อัปโหลดรูปภาพไม่สำเร็จ: ' + error.message }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
 import getDb from '@/lib/db';
 import { encryptApiKey, maskApiKey } from '@/lib/ai-crypto';
 
@@ -10,6 +11,35 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
     }
 
+    // 1. Try Supabase
+    try {
+      const { data: sbConfig, error: sbErr } = await supabaseAdmin
+        .from('ai_engine_configs')
+        .select('*')
+        .eq('is_active', 1)
+        .limit(1)
+        .maybeSingle();
+
+      if (!sbErr && sbConfig) {
+        return NextResponse.json({
+          config: {
+            config_id: sbConfig.config_id,
+            provider: sbConfig.provider,
+            model_name: sbConfig.model_name,
+            api_key_masked: maskApiKey(sbConfig.api_key_encrypted),
+            system_prompt: sbConfig.system_prompt,
+            confidence_threshold: Number(sbConfig.confidence_threshold),
+            retrieval_top_k: Number(sbConfig.retrieval_top_k),
+            temperature: Number(sbConfig.temperature),
+            is_active: Boolean(sbConfig.is_active),
+            updated_at: sbConfig.updated_at
+          },
+          is_admin: session.role === 'administrator'
+        });
+      }
+    } catch {}
+
+    // 2. Fallback to SQLite
     const db = getDb();
     const config = db.prepare('SELECT * FROM ai_engine_configs WHERE is_active = 1 LIMIT 1').get() as any;
 
@@ -113,42 +143,64 @@ export async function PUT(req: NextRequest) {
 
     const now = new Date().toISOString();
 
-    if (current) {
-      db.prepare(`
-        UPDATE ai_engine_configs
-        SET provider = ?, model_name = ?, api_key_encrypted = ?, system_prompt = ?,
-            confidence_threshold = ?, retrieval_top_k = ?, temperature = ?, updated_by = ?, updated_at = ?
-        WHERE config_id = ?
-      `).run(
+    // 1. Update in Supabase
+    try {
+      await supabaseAdmin.from('ai_engine_configs').upsert({
+        config_id: current?.config_id || 'cfg-ai-001',
         provider,
         model_name,
-        finalEncryptedKey,
-        system_prompt.trim(),
-        thresholdNum,
-        topKNum,
-        tempNum,
-        session.user_id,
-        now,
-        current.config_id
-      );
-    } else {
-      db.prepare(`
-        INSERT INTO ai_engine_configs (
-          config_id, provider, model_name, api_key_encrypted, system_prompt,
-          confidence_threshold, retrieval_top_k, temperature, is_active, updated_by, updated_at
-        ) VALUES ('cfg-ai-001', ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-      `).run(
-        provider,
-        model_name,
-        finalEncryptedKey,
-        system_prompt.trim(),
-        thresholdNum,
-        topKNum,
-        tempNum,
-        session.user_id,
-        now
-      );
+        api_key_encrypted: finalEncryptedKey,
+        system_prompt: system_prompt.trim(),
+        confidence_threshold: thresholdNum,
+        retrieval_top_k: topKNum,
+        temperature: tempNum,
+        is_active: 1,
+        updated_by: session.user_id,
+        updated_at: now
+      });
+    } catch (sbErr) {
+      console.warn('Supabase AI config update error:', sbErr);
     }
+
+    // 2. Update in SQLite mirror
+    try {
+      if (current) {
+        db.prepare(`
+          UPDATE ai_engine_configs
+          SET provider = ?, model_name = ?, api_key_encrypted = ?, system_prompt = ?,
+              confidence_threshold = ?, retrieval_top_k = ?, temperature = ?, updated_by = ?, updated_at = ?
+          WHERE config_id = ?
+        `).run(
+          provider,
+          model_name,
+          finalEncryptedKey,
+          system_prompt.trim(),
+          thresholdNum,
+          topKNum,
+          tempNum,
+          session.user_id,
+          now,
+          current.config_id
+        );
+      } else {
+        db.prepare(`
+          INSERT INTO ai_engine_configs (
+            config_id, provider, model_name, api_key_encrypted, system_prompt,
+            confidence_threshold, retrieval_top_k, temperature, is_active, updated_by, updated_at
+          ) VALUES ('cfg-ai-001', ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+        `).run(
+          provider,
+          model_name,
+          finalEncryptedKey,
+          system_prompt.trim(),
+          thresholdNum,
+          topKNum,
+          tempNum,
+          session.user_id,
+          now
+        );
+      }
+    } catch {}
 
     return NextResponse.json({
       success: true,

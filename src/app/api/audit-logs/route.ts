@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
 import getDb from '@/lib/db';
 
 export async function GET(req: NextRequest) {
@@ -9,6 +10,43 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'สงวนสิทธิ์เฉพาะผู้ดูแลระบบ (Administrator) เท่านั้น' }, { status: 403 });
     }
 
+    // 1. Try Supabase
+    try {
+      const { data: sbLogs, error: sbErr } = await supabaseAdmin
+        .from('login_audit_logs')
+        .select(`
+          *,
+          master_users (
+            first_name,
+            last_name,
+            role,
+            departments (
+              name
+            )
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (!sbErr && sbLogs) {
+        const formatted = sbLogs.map(l => ({
+          log_id: l.log_id,
+          user_id: l.user_id,
+          email_attempted: l.email_attempted,
+          result: l.result,
+          ip_address: l.ip_address,
+          created_at: l.created_at,
+          first_name: (l.master_users as any)?.first_name || null,
+          last_name: (l.master_users as any)?.last_name || null,
+          role: (l.master_users as any)?.role || null,
+          department_name: (l.master_users as any)?.departments?.name || null
+        }));
+
+        return NextResponse.json({ logs: formatted });
+      }
+    } catch {}
+
+    // 2. Fallback to SQLite
     const db = getDb();
     const logs = db.prepare(`
       SELECT 

@@ -3,8 +3,6 @@ import { getSessionFromRequest } from '@/lib/auth';
 import getDb from '@/lib/db';
 import { getLineChannelConfig, testLineConnectionLive, getRawLineChannelAccessToken } from '@/lib/line-service';
 import { encryptApiKey, decryptApiKey } from '@/lib/ai-crypto';
-import { pushToGoogleSheets, pullLatestFromGoogleSheets } from '@/lib/google-sheets-sync';
-import { getSystemSetting, setSystemSetting } from '@/lib/integrations';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,11 +19,9 @@ export async function GET(req: NextRequest) {
     }
 
     const config = getLineChannelConfig();
-    const appsScriptUrl = getSystemSetting('google_apps_script_url', '');
 
     return NextResponse.json({
       config,
-      google_apps_script_url: appsScriptUrl,
       is_admin: true
     });
   } catch (error: any) {
@@ -34,7 +30,7 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * Test Connection endpoint or Pull from Google Sheet
+ * Test Connection endpoint
  */
 export async function POST(req: NextRequest) {
   try {
@@ -44,26 +40,6 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-
-    // Check if user requested a Pull from Google Sheets
-    if (body.action === 'pull_from_sheet') {
-      const syncRes = await pullLatestFromGoogleSheets('LINE_Configs');
-      const lineRes = syncRes.results['LINE_Configs'];
-      
-      if (lineRes && lineRes.status === 'error') {
-        return NextResponse.json({
-          success: false,
-          error: `ไม่สามารถดึงข้อมูลจาก Google Sheet ได้: ${lineRes.error || 'โปรดตรวจสอบว่ามีแท็บ LINE_Configs ใน Google Sheet หรือยัง'}`
-        }, { status: 400 });
-      }
-
-      const updatedConfig = getLineChannelConfig();
-      return NextResponse.json({
-        success: true,
-        message: 'ดึงข้อมูลการตั้งค่า LINE Channel จากแท็บ LINE_Configs ใน Google Sheet สำเร็จแล้ว',
-        config: updatedConfig
-      });
-    }
 
     let tokenToTest = body.channel_access_token?.trim();
 
@@ -132,11 +108,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { channel_id, channel_secret, channel_access_token, webhook_url, google_apps_script_url } = body;
-
-    if (google_apps_script_url !== undefined) {
-      setSystemSetting('google_apps_script_url', google_apps_script_url.trim());
-    }
+    const { channel_id, channel_secret, channel_access_token, webhook_url } = body;
 
     const db = getDb();
     const current = db.prepare('SELECT * FROM line_channel_configs WHERE is_active = 1 LIMIT 1').get() as any;
@@ -175,7 +147,7 @@ export async function PUT(req: NextRequest) {
       rawToken = current?.channel_access_token_encrypted ? decryptApiKey(current.channel_access_token_encrypted) || '' : '';
     }
 
-    const finalWebhookUrl = webhook_url?.trim() || 'http://localhost:3000/api/line-oa/webhook';
+    const finalWebhookUrl = webhook_url?.trim() || 'http://localhost:3005/api/line-oa/webhook';
     const finalChannelId = channel_id?.trim() || '';
 
     // Perform REAL live validation against LINE Messaging API
@@ -216,22 +188,6 @@ export async function PUT(req: NextRequest) {
           webhook_url, webhook_verified, is_active, bot_display_name, bot_basic_id, bot_picture_url, updated_at
         ) VALUES ('line-cfg-001', ?, ?, ?, ?, ?, 1, ?, ?, ?, datetime('now', 'localtime'))
       `).run(finalChannelId, finalSecretEnc, finalTokenEnc, finalWebhookUrl, isVerified, botDisplayName, botBasicId, botPictureUrl);
-    }
-
-    // Push sync to Google Sheets (LINE_Configs tab)
-    try {
-      await pushToGoogleSheets('LINE_Configs', 'update', {
-        config_id: 'line-cfg-001',
-        channel_id: finalChannelId,
-        channel_secret_encrypted: finalSecretEnc,
-        channel_access_token_encrypted: finalTokenEnc,
-        webhook_url: finalWebhookUrl,
-        webhook_verified: isVerified,
-        bot_display_name: botDisplayName,
-        bot_basic_id: botBasicId
-      });
-    } catch (pushErr) {
-      console.log('Push to Google Sheets skipped:', pushErr);
     }
 
     if (rawToken && isVerified === 0) {
@@ -281,19 +237,6 @@ export async function DELETE(req: NextRequest) {
           updated_at = datetime('now', 'localtime')
       WHERE is_active = 1
     `).run();
-
-    try {
-      await pushToGoogleSheets('LINE_Configs', 'update', {
-        config_id: 'line-cfg-001',
-        channel_id: '',
-        channel_secret_encrypted: '',
-        channel_access_token_encrypted: '',
-        webhook_url: 'http://localhost:3000/api/line-oa/webhook',
-        webhook_verified: 0,
-        bot_display_name: '',
-        bot_basic_id: ''
-      });
-    } catch {}
 
     return NextResponse.json({
       success: true,

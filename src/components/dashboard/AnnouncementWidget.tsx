@@ -32,44 +32,46 @@ export default function AnnouncementWidget({
   }
 
   return (
-    <div className="p-5 md:p-6 bg-surface-card rounded-2xl border border-outline/30 shadow-level1 flex flex-col justify-between h-full">
+    <div className="p-5 md:p-6 bg-surface-card rounded-2xl border border-outline/40 shadow-card flex flex-col justify-between h-full">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 pb-3 border-b border-outline/20">
+      <div className="flex items-center justify-between gap-2 pb-3 border-b border-outline/30">
         <h3 className="font-heading font-bold text-sm md:text-base text-onSurface flex items-center gap-2">
-          <Bell className="w-4 h-4 text-primary" />
+          <span className="w-7 h-7 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-xs">
+            <Bell className="w-4 h-4" />
+          </span>
           <span>{title}</span>
         </h3>
         <Link
           href="/announcements"
-          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 group"
         >
           <span>ดูทั้งหมด</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
 
       {/* Items */}
-      <div className="divide-y divide-outline/15 my-2 space-y-2">
+      <div className="my-3 space-y-2.5">
         {announcements.map((ann) => {
           const isUrgent = ann.priority === 'urgent';
           return (
             <div
               key={ann.announcement_id}
-              className={`p-3 rounded-xl border transition-all ${
+              className={`p-3.5 rounded-2xl border transition-all ${
                 isUrgent
-                  ? 'bg-error-container/30 border-error/40'
-                  : 'bg-surface-variant/30 border-outline/20'
+                  ? 'bg-rose-50/70 border-rose-200/80 shadow-xs'
+                  : 'bg-surface-variant/40 border-outline/30 hover:border-primary/20 hover:bg-surface-variant/60 shadow-xs'
               }`}
             >
-              <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="flex items-center gap-1.5">
                   {isUrgent ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-error text-white font-bold text-[10px]">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600 text-white font-mono font-bold text-[10px] shadow-xs">
                       <AlertCircle className="w-3 h-3" />
                       <span>สำคัญด่วน</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-container text-primary font-bold text-[10px]">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold text-[10px] border border-primary/20">
                       <Info className="w-3 h-3" />
                       <span>ประกาศทั่วไป</span>
                     </span>
@@ -95,7 +97,7 @@ export default function AnnouncementWidget({
       </div>
 
       {/* Footer */}
-      <div className="pt-2 border-t border-outline/15 text-right">
+      <div className="pt-3 border-t border-outline/30 text-right">
         <Link
           href="/announcements"
           className="text-xs font-semibold text-primary hover:underline"

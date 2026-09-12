@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSessionFromRequest, hashPassword } from '@/lib/auth';
 import { triggerN8nWebhook } from '@/lib/integrations';
+import { supabaseAdmin } from '@/lib/supabase';
 import getDb from '@/lib/db';
 
 export async function GET(req: NextRequest) {
@@ -20,6 +21,51 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const offset = (page - 1) * limit;
 
+    // 1. Try Supabase
+    try {
+      let sbQuery = supabaseAdmin
+        .from('master_users')
+        .select('*, departments(name), sub_departments(name)', { count: 'exact' });
+
+      if (search) {
+        sbQuery = sbQuery.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
+      }
+      if (departmentId) {
+        sbQuery = sbQuery.eq('department_id', departmentId);
+      }
+      if (role) {
+        sbQuery = sbQuery.eq('role', role);
+      }
+      if (status) {
+        sbQuery = sbQuery.eq('status', status);
+      }
+
+      const { data: sbUsers, count: sbTotal, error: sbErr } = await sbQuery
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (!sbErr && sbUsers) {
+        const formatted = sbUsers.map(u => ({
+          ...u,
+          department_name: (u.departments as any)?.name || '',
+          sub_department_name: (u.sub_departments as any)?.name || ''
+        }));
+
+        return NextResponse.json({
+          users: formatted,
+          pagination: {
+            page,
+            limit,
+            total: sbTotal || 0,
+            totalPages: Math.ceil((sbTotal || 0) / limit)
+          }
+        });
+      }
+    } catch (err) {
+      // Fallback below
+    }
+
+    // 2. Fallback to SQLite
     const db = getDb();
     let query = `
       SELECT 
@@ -120,53 +166,77 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Check duplicate in Supabase
+    try {
+      const { data: existingSb } = await supabaseAdmin
+        .from('master_users')
+        .select('user_id')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
+
+      if (existingSb) {
+        return NextResponse.json({ error: 'อีเมลนี้มีผู้ใช้งานในระบบแล้ว กรุณาใช้อีเมลอื่น' }, { status: 409 });
+      }
+    } catch {}
+
     const db = getDb();
 
-    // Check duplicate email
-    const existing = db.prepare('SELECT user_id FROM master_users WHERE LOWER(email) = ?').get(cleanEmail);
-    if (existing) {
-      return NextResponse.json({ error: 'อีเมลนี้มีผู้ใช้งานในระบบแล้ว กรุณาใช้อีเมลอื่น' }, { status: 409 });
-    }
+    // Check duplicate in SQLite
+    try {
+      const existing = db.prepare('SELECT user_id FROM master_users WHERE LOWER(email) = ?').get(cleanEmail);
+      if (existing) {
+        return NextResponse.json({ error: 'อีเมลนี้มีผู้ใช้งานในระบบแล้ว กรุณาใช้อีเมลอื่น' }, { status: 409 });
+      }
+    } catch {}
 
     // Generate random temporary password if not provided
     const tempPassword = password || `Fang@${Math.floor(1000 + Math.random() * 9000)}`;
     const passwordHash = await hashPassword(tempPassword);
     const userId = 'usr-' + crypto.randomUUID();
 
-    db.prepare(`
-      INSERT INTO master_users (
-        user_id, first_name, last_name, email, password_hash,
-        phone, department_id, sub_department_id, role, status,
-        avatar_url, line_user_id, failed_login_count, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 0, datetime('now', 'localtime'), datetime('now', 'localtime'))
-    `).run(
-      userId,
-      first_name.trim(),
-      last_name.trim(),
-      cleanEmail,
-      passwordHash,
-      phone ? phone.trim() : null,
-      department_id,
-      sub_department_id,
-      role,
-      status,
-      line_user_id ? line_user_id.trim() : null
-    );
+    // Supabase Insert
+    try {
+      await supabaseAdmin.from('master_users').insert({
+        user_id: userId,
+        first_name: first_name.trim(),
+        last_name: last_name.trim(),
+        email: cleanEmail,
+        password_hash: passwordHash,
+        phone: phone ? phone.trim() : null,
+        department_id,
+        sub_department_id,
+        role,
+        status,
+        line_user_id: line_user_id ? line_user_id.trim() : null,
+        failed_login_count: 0
+      });
+    } catch (sbErr) {
+      console.error('Supabase user insert error:', sbErr);
+    }
 
-    // Trigger push to Google Sheets (Two-Way Sync Stage/Push)
-    const { pushToGoogleSheets } = await import('@/lib/google-sheets-sync');
-    pushToGoogleSheets('Master_Users', 'create', {
-      user_id: userId,
-      first_name: first_name.trim(),
-      last_name: last_name.trim(),
-      email: cleanEmail,
-      phone: phone ? phone.trim() : null,
-      department_code: department_id,
-      sub_department_name: sub_department_id,
-      role,
-      status,
-      line_user_id: line_user_id ? line_user_id.trim() : null
-    }).catch(err => console.error('Push to Google Sheets error:', err));
+    // SQLite Insert
+    try {
+      db.prepare(`
+        INSERT INTO master_users (
+          user_id, first_name, last_name, email, password_hash,
+          phone, department_id, sub_department_id, role, status,
+          avatar_url, line_user_id, failed_login_count, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 0, datetime('now', 'localtime'), datetime('now', 'localtime'))
+      `).run(
+        userId,
+        first_name.trim(),
+        last_name.trim(),
+        cleanEmail,
+        passwordHash,
+        phone ? phone.trim() : null,
+        department_id,
+        sub_department_id,
+        role,
+        status,
+        line_user_id ? line_user_id.trim() : null
+      );
+    } catch {}
 
     // Trigger n8n webhook notification asynchronously
     triggerN8nWebhook('user.created', {

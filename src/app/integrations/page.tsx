@@ -2,20 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import AuthButton from '@/components/AuthButton';
 import SessionAlert from '@/components/SessionAlert';
 import { SessionUser } from '@/types';
-import { FileSpreadsheet, Bot, ExternalLink, RefreshCw, CheckCircle2, ShieldAlert, Copy, Check, Zap } from 'lucide-react';
+import { Database, CheckCircle2, ShieldCheck, Copy, Check, Zap, Server, HardDrive } from 'lucide-react';
 
 export default function IntegrationsPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
 
-  const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs/edit?gid=547794364#gid=547794364';
   const apiKey = 'fang_ai_n8n_live_sec_key_2026';
 
   useEffect(() => {
@@ -41,29 +38,6 @@ export default function IntegrationsPage() {
     loadAuth();
   }, [router]);
 
-  const handleSyncSheets = async () => {
-    setSyncing(true);
-    setMessage(null);
-    try {
-      const res = await fetch('/api/integrations/google-sheets/sync', {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessage({
-          type: 'success',
-          text: `ซิงค์ข้อมูล ${data.recordsCount} รายการไปยัง Google Sheets เรียบร้อยแล้ว (One-way Sync)`,
-        });
-      } else {
-        setMessage({ type: 'error', text: data.error || 'ซิงค์ข้อมูลไม่สำเร็จ' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   const copyApiKey = () => {
     navigator.clipboard.writeText(apiKey);
     setCopiedKey(true);
@@ -86,10 +60,10 @@ export default function IntegrationsPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-heading font-bold text-onSurface">
-            การเชื่อมต่อ Google Sheets & n8n AI
+            การเชื่อมต่อฐานข้อมูล & n8n AI Webhooks
           </h1>
           <p className="text-xs text-onSurface-muted mt-0.5">
-            บริหารจัดการการซิงค์ข้อมูลไปยัง Google Sheets และการเชื่อมต่อ AI Workflow ผ่าน n8n
+            ระบบทำงานตรงกับฐานข้อมูลหลัก (Direct Database Single Source of Truth) และรองรับการเชื่อมต่อ AI Workflow ผ่าน n8n
           </p>
         </div>
 
@@ -101,62 +75,62 @@ export default function IntegrationsPage() {
           />
         )}
 
-        {/* Card 1: Google Sheets Sync */}
+        {/* Card 1: Direct Database Architecture */}
         <div className="p-6 bg-surface-card rounded-2xl border border-outline/30 shadow-level1 space-y-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-success-container text-success flex items-center justify-center flex-shrink-0">
-                <FileSpreadsheet className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                <Database className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-heading font-bold text-onSurface">
-                  Google Sheets "Master Users"
+                <h3 className="text-lg font-heading font-bold text-onSurface flex items-center gap-2">
+                  <span>ฐานข้อมูลระบบหลัก (Single Source of Truth)</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Direct DB
+                  </span>
                 </h3>
                 <p className="text-xs text-onSurface-muted">
-                  ฐานข้อมูลบัญชีผู้ใช้สำหรับ Phase 4 (CMS) และ Phase 5 (AI Processing)
+                  ระบบเชื่อมต่อตรงกับฐานข้อมูลในตัว ไม่ผ่าน Third-party Sync ลดความหน่วงและตัดปัญหาความขัดแย้งของข้อมูล
                 </p>
               </div>
             </div>
-
-            <a
-              href={googleSheetUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="h-9 px-3 rounded-lg border border-outline bg-surface hover:bg-surface-variant text-xs font-semibold text-primary flex items-center gap-1.5 transition-colors"
-            >
-              <span>เปิด Sheet</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-surface-variant/50 border border-outline/30 space-y-2 text-xs font-mono">
-            <div>
-              <span className="text-onSurface-muted font-sans">Spreadsheet ID: </span>
-              <span className="font-bold text-onSurface">1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-xl bg-surface-variant/40 border border-outline/20 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-onSurface-muted">
+                <Server className="w-3.5 h-3.5 text-primary" />
+                <span>Database Engine</span>
+              </div>
+              <p className="font-bold text-sm text-onSurface font-mono">SQLite 3 (WAL Mode)</p>
             </div>
-            <div>
-              <span className="text-onSurface-muted font-sans">GID: </span>
-              <span className="font-bold text-onSurface">547794364</span>
+
+            <div className="p-3.5 rounded-xl bg-surface-variant/40 border border-outline/20 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-onSurface-muted">
+                <HardDrive className="w-3.5 h-3.5 text-primary" />
+                <span>Storage Path</span>
+              </div>
+              <p className="font-bold text-sm text-onSurface font-mono">data/pr4fang.db</p>
             </div>
-            <div>
-              <span className="text-onSurface-muted font-sans">โหมดการซิงค์: </span>
-              <span className="font-bold text-primary font-sans">One-way Sync (Database → Google Sheets)</span>
+
+            <div className="p-3.5 rounded-xl bg-surface-variant/40 border border-outline/20 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-onSurface-muted">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Data Integrity</span>
+              </div>
+              <p className="font-bold text-sm text-emerald-600">ACID Compliant</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <p className="text-xs text-onSurface-muted">
-              *ข้อมูลจะถูกส่งออกไปอัปเดตชีต Master Users เพื่อให้ AI ตรวจสอบสิทธิ์ผู้ใช้
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-onSurface space-y-1">
+            <p className="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              ระบบเชื่อมต่อตรง 100% (Google Sheets Sync Disconnected)
             </p>
-            <AuthButton
-              onClick={handleSyncSheets}
-              loading={syncing}
-              fullWidth={false}
-              className="px-5"
-            >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              <span>ซิงค์ข้อมูลไปยัง Sheet ตอนนี้</span>
-            </AuthButton>
+            <p className="text-onSurface-muted text-[11px] leading-relaxed">
+              ทุกการทำรายการผ่านหน้าจอเว็บและ LINE OA จะอ่าน-เขียนตรงกับฐานข้อมูลทันที ทำให้มีความเร็วสูงสุดและข้อมูลเป็นปัจจุบันตลอดเวลา
+            </p>
           </div>
         </div>
 

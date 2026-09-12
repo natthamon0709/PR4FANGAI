@@ -9,7 +9,7 @@ import WebhookUrlField from '@/components/line/WebhookUrlField';
 import SessionAlert from '@/components/SessionAlert';
 import { SessionUser } from '@/types';
 import { LineChannelConfig } from '@/types/line';
-import { Settings, Save, Key, Trash2, RefreshCw, Loader2, ArrowLeft, Radio, CheckCircle2, ShieldCheck, Lock, AlertCircle, FileSpreadsheet, ExternalLink } from 'lucide-react';
+import { Settings, Save, Key, Trash2, RefreshCw, Loader2, ArrowLeft, Radio, CheckCircle2, ShieldCheck, Lock, AlertCircle } from 'lucide-react';
 
 export default function LineChannelSettingsPage() {
   const router = useRouter();
@@ -19,15 +19,13 @@ export default function LineChannelSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const [pulling, setPulling] = useState(false);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Form states
   const [channelId, setChannelId] = useState('');
   const [channelSecret, setChannelSecret] = useState('');
   const [channelToken, setChannelToken] = useState('');
-  const [webhookUrl, setWebhookUrl] = useState('http://localhost:3000/api/line-oa/webhook');
-  const [appsScriptUrl, setAppsScriptUrl] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState('http://localhost:3005/api/line-oa/webhook');
 
   const loadSettings = async () => {
     try {
@@ -50,12 +48,9 @@ export default function LineChannelSettingsPage() {
         if (data.config) {
           setChannelConfig(data.config);
           setChannelId(data.config.channel_id || '');
-          setWebhookUrl(data.config.webhook_url || 'http://localhost:3000/api/line-oa/webhook');
+          setWebhookUrl(data.config.webhook_url || 'http://localhost:3005/api/line-oa/webhook');
           setChannelSecret(data.config.channel_secret_masked || '');
           setChannelToken(data.config.channel_access_token_masked || '');
-        }
-        if (data.google_apps_script_url) {
-          setAppsScriptUrl(data.google_apps_script_url);
         }
       }
     } catch (err: any) {
@@ -102,30 +97,6 @@ export default function LineChannelSettingsPage() {
     }
   };
 
-  const handlePullFromGoogleSheets = async () => {
-    setPulling(true);
-    setAlertMsg(null);
-
-    try {
-      const res = await safeFetchJson('/api/line-oa/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'pull_from_sheet' })
-      });
-
-      if (res.ok && res.data?.success) {
-        setAlertMsg({ type: 'success', text: `✅ ${res.data.message}` });
-        await loadSettings();
-      } else {
-        setAlertMsg({ type: 'error', text: res.data?.error || res.error || 'ไม่สามารถดึงข้อมูลจาก Google Sheet ได้' });
-      }
-    } catch (err: any) {
-      setAlertMsg({ type: 'error', text: `เกิดข้อผิดพลาด: ${err.message}` });
-    } finally {
-      setPulling(false);
-    }
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -139,8 +110,7 @@ export default function LineChannelSettingsPage() {
           channel_id: channelId,
           channel_secret: channelSecret || undefined,
           channel_access_token: channelToken || undefined,
-          webhook_url: webhookUrl,
-          google_apps_script_url: appsScriptUrl
+          webhook_url: webhookUrl
         })
       });
 
@@ -178,7 +148,7 @@ export default function LineChannelSettingsPage() {
         setChannelId('');
         setChannelSecret('');
         setChannelToken('');
-        setWebhookUrl('http://localhost:3000/api/line-oa/webhook');
+        setWebhookUrl('http://localhost:3005/api/line-oa/webhook');
         await loadSettings();
       } else {
         setAlertMsg({ type: 'error', text: res.data?.error || res.error || 'ไม่สามารถล้างการตั้งค่าได้' });
@@ -230,16 +200,6 @@ export default function LineChannelSettingsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePullFromGoogleSheets}
-              disabled={pulling || saving || testing}
-              className="h-10 px-3.5 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
-            >
-              {pulling ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
-              <span>ดึงค่าจาก Google Sheet</span>
-            </button>
-
             <Link
               href="/line-oa"
               className="h-10 px-3.5 rounded-xl border border-outline bg-surface-card hover:bg-surface-variant text-xs font-semibold text-onSurface flex items-center gap-1.5 shadow-sm transition-all"
@@ -396,36 +356,6 @@ export default function LineChannelSettingsPage() {
               />
               <p className="text-[11px] text-onSurface-muted mt-1">
                 Token สำหรับส่งข้อความ Push / Reply / Multicast และใช้ทดสอบความถูกต้องกับ LINE Messaging API
-              </p>
-            </div>
-
-            {/* Google Apps Script Web App URL for Real-time 2-Way Sync */}
-            <div className="p-4 rounded-2xl bg-surface-variant/30 border border-outline/30 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-onSurface flex items-center gap-1.5">
-                  <FileSpreadsheet className="w-4 h-4 text-primary" />
-                  <span>Google Apps Script Web App URL (สำหรับ Push ข้อมูลเข้า Google Sheet อัตโนมัติ)</span>
-                </label>
-                <a
-                  href={`https://docs.google.com/spreadsheets/d/1-zp32f6bkCcXpGo5O__moHCAXcm_Sjg0rTPRkTK6fYs/edit`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] text-primary flex items-center gap-1 hover:underline"
-                >
-                  <span>เปิด Google Sheet</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              <input
-                type="text"
-                value={appsScriptUrl}
-                onChange={(e) => setAppsScriptUrl(e.target.value)}
-                disabled={saving || clearing}
-                placeholder="https://script.google.com/macros/s/AKfycb.../exec (ได้จากการกด Deploy > New Deployment > Web app)"
-                className="w-full h-10 px-3.5 rounded-xl border border-outline bg-surface text-xs font-mono text-onSurface outline-none focus:border-primary"
-              />
-              <p className="text-[11px] text-onSurface-muted">
-                เมื่อกรอก URL นี้ ทุกครั้งที่มีการบันทึกการตั้งค่าหรือตัดการเชื่อมต่อ ระบบจะส่งข้อมูลไปอัปเดตแท็บ <strong>LINE_Configs</strong> ใน Google Sheet ทันที
               </p>
             </div>
           </div>

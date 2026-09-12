@@ -10,7 +10,7 @@ import {
   KnowledgeGapItem, 
   AnnouncementItem 
 } from '@/types/dashboard';
-import { GOOGLE_SHEET_CONFIG, getSystemSetting } from './integrations';
+import { getSystemSetting } from './integrations';
 
 const CACHE_TTL_MINUTES = 15;
 
@@ -377,12 +377,11 @@ export async function getDashboardSummary(
     ? db.prepare(annQuery).all()
     : db.prepare(annQuery).all(user.department_id)) as AnnouncementItem[];
 
-  // 8. Pending Sync Info
-  const pendingSyncRow = db.prepare(`
-    SELECT COUNT(*) as c FROM knowledge_items WHERE sync_status = 'pending'
-  `).get() as { c: number };
-
-  const lastSynced = getSystemSetting('google_sheets_last_synced', new Date().toISOString());
+  // 8. Database Health & Direct Storage Status
+  const userCount = (db.prepare('SELECT COUNT(*) as c FROM master_users').get() as any)?.c || 0;
+  const knowledgeCount = (db.prepare('SELECT COUNT(*) as c FROM knowledge_items').get() as any)?.c || 0;
+  const logCount = (db.prepare('SELECT COUNT(*) as c FROM ai_query_logs').get() as any)?.c || 0;
+  const nowStr = new Date().toISOString();
 
   return {
     role: user.role,
@@ -395,10 +394,19 @@ export async function getDashboardSummary(
     recent_activities,
     knowledge_gaps,
     announcements,
+    db_status: {
+      engine: 'SQLite 3 (WAL Mode)',
+      status: 'healthy',
+      mode: 'Direct Local Storage',
+      total_users: userCount,
+      total_knowledge: knowledgeCount,
+      total_logs: logCount,
+      last_checked: nowStr
+    },
     sync_status: {
-      pending_count: pendingSyncRow ? pendingSyncRow.c : 0,
-      last_synced: lastSynced,
-      sheet_url: GOOGLE_SHEET_CONFIG.sheetUrl
+      pending_count: 0,
+      last_synced: nowStr,
+      sheet_url: ''
     }
   };
 }
