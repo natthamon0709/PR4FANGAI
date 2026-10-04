@@ -460,15 +460,18 @@ export async function generateAudioReply(options: TTSOptions): Promise<TTSResult
   const audioId = `voice-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
   const filename = `${audioId}.mp3`;
 
-  // 4. Save to local storage: public/audio/responses/
-  const publicDir = path.join(process.cwd(), 'public', 'audio', 'responses');
+  // 4. Save to local storage (or /tmp on serverless environments like Vercel)
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+  const audioDir = isServerless 
+    ? path.join('/tmp', 'audio', 'responses')
+    : path.join(process.cwd(), 'public', 'audio', 'responses');
   try {
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true });
+    if (!fs.existsSync(audioDir)) {
+      fs.mkdirSync(audioDir, { recursive: true });
     }
-    fs.writeFileSync(path.join(publicDir, filename), audioBuffer);
+    fs.writeFileSync(path.join(audioDir, filename), audioBuffer);
   } catch (fsErr) {
-    console.error('Error writing local audio file:', fsErr);
+    console.warn('Warning writing local audio file:', fsErr);
   }
 
   // 5. If Supabase Storage is configured, upload to pr4fang-media bucket for global CDN access

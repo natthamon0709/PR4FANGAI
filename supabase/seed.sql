@@ -132,7 +132,7 @@ INSERT INTO line_channel_configs (
     config_id, channel_id, channel_secret_encrypted, channel_access_token_encrypted,
     webhook_url, webhook_verified, is_active
 ) VALUES (
-    'line-cfg-001', '', '', '', 'https://pr4fang-ai.vercel.app/api/line-oa/webhook', 0, 1
+    'line-cfg-001', '', '', '', 'https://pr-4-fangai.vercel.app/api/line-oa/webhook', 0, 1
 )
 ON CONFLICT (config_id) DO NOTHING;
 

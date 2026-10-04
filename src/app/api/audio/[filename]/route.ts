@@ -15,10 +15,14 @@ export async function GET(
       return new NextResponse('Invalid filename', { status: 400 });
     }
 
-    const filePath = path.join(process.cwd(), 'public', 'audio', 'responses', filename);
-
+    let filePath = path.join(process.cwd(), 'public', 'audio', 'responses', filename);
     if (!fs.existsSync(filePath)) {
-      return new NextResponse('Audio file not found', { status: 404 });
+      const tmpPath = path.join('/tmp', 'audio', 'responses', filename);
+      if (fs.existsSync(tmpPath)) {
+        filePath = tmpPath;
+      } else {
+        return new NextResponse('Audio file not found', { status: 404 });
+      }
     }
 
     const stat = fs.statSync(filePath);

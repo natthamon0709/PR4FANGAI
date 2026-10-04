@@ -1267,11 +1267,14 @@ export async function executeRAGPipeline(params: {
   isPlayground?: boolean;
   includeDrafts?: boolean;
   publicBaseUrl?: string;
+  generateVoiceReply?: boolean;
 }): Promise<RAGExecutionResult> {
   const startTime = Date.now();
   const db = getDb();
   const config = getActiveAiConfig();
-  const { lineUserId = 'LINE_ANONYMOUS_USER', isPlayground = false, includeDrafts = false, publicBaseUrl = '' } = params;
+  const { lineUserId = 'LINE_ANONYMOUS_USER', isPlayground = false, includeDrafts = false, publicBaseUrl = '', generateVoiceReply } = params;
+  const isAudioInput = Boolean(params.audioBuffer && params.audioBuffer.length > 0);
+  const shouldProduceVoice = generateVoiceReply !== undefined ? generateVoiceReply : (isPlayground ? Boolean(config.voice_reply_enabled) : isAudioInput);
 
   let question = (params.question || '').trim();
   let transcribedQuestion: string | undefined;
@@ -1336,7 +1339,7 @@ export async function executeRAGPipeline(params: {
     let greetingAudioUrl: string | undefined;
     let greetingDurationMs: number | undefined;
 
-    if (config.voice_reply_enabled) {
+    if (shouldProduceVoice && config.voice_reply_enabled) {
       try {
         const audioRes = await generateAudioReply({
           text: convIntent.replyText,
@@ -1492,7 +1495,7 @@ export async function executeRAGPipeline(params: {
   let audioUrl: string | undefined;
   let audioDurationMs: number | undefined;
 
-  if (config.voice_reply_enabled && answerText) {
+  if (shouldProduceVoice && config.voice_reply_enabled && answerText) {
     try {
       const audioRes = await generateAudioReply({
         text: answerText,

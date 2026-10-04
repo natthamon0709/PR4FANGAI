@@ -623,6 +623,7 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
       audioMimeType,
       lineUserId: lineUserId,
       isPlayground: false,
+      generateVoiceReply: messageType === 'audio',
       publicBaseUrl
     });
 
@@ -710,8 +711,8 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
     ];
 
     // Bubble 2: Spoken voice message (Audio Bubble)
-    // LINE Messaging API requires valid HTTPS URL for audio
-    if (ragResult.audioUrl && ragResult.audioUrl.startsWith('https://')) {
+    // Only send audio reply if the incoming user message was audio!
+    if (messageType === 'audio' && ragResult.audioUrl && ragResult.audioUrl.startsWith('https://')) {
       replyMessages.push({
         type: 'audio',
         originalContentUrl: ragResult.audioUrl,
