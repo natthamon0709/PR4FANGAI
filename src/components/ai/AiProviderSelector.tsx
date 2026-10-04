@@ -13,10 +13,10 @@ interface AiProviderSelectorProps {
 
 const PROVIDER_MODELS: Record<AiProvider, { id: string; name: string; tag: string; desc: string }[]> = {
   gemini: [
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', tag: 'แนะนำความเร็วสูง (Recommended Fast)', desc: 'ตอบสนองรวดเร็วใน 0.8 วินาที เสถียรสูง เหมาะสำหรับ LINE OA' },
-    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', tag: 'High Intelligence', desc: 'รุ่นประมวลผลความรู้เชิงลึก สังเคราะห์ภาษาเป็นธรรมชาติ' },
-    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite', tag: 'Ultra Fast', desc: 'ตอบสนองฉับไว ประหยัดโควตา API' },
-    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', tag: 'Latest Version', desc: 'เชื่อมต่อเวอร์ชันล่าสุดอัตโนมัติ' }
+    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', tag: 'แนะนำความฉลาดสูง (Recommended)', desc: 'รุ่นประมวลผลความรู้เชิงลึก สังเคราะห์ภาษาเป็นธรรมชาติ เสถียรสูง เหมาะสำหรับ LINE OA' },
+    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', tag: 'Latest Version', desc: 'เชื่อมต่อเวอร์ชันล่าสุดอัตโนมัติ' },
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', tag: 'Fast & Lightweight', desc: 'ตอบสนองรวดเร็วใน 0.8 วินาที ประหยัดโควตา API' },
+    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite', tag: 'Ultra Fast', desc: 'ตอบสนองฉับไว ประหยัดโควตา API' }
   ],
   openai: [
     { id: 'gpt-4o-mini', name: 'GPT-4o Mini', tag: 'Fast & Efficient', desc: 'ตอบสนองไว คุ้มค่า เหมาะสำหรับคำถามทั่วไป' },
@@ -52,7 +52,7 @@ export default function AiProviderSelector({
             checked={provider === 'gemini'}
             onChange={() => {
               onProviderChange('gemini');
-              onModelChange('gemini-1.5-flash');
+              onModelChange('gemini-3.6-flash');
             }}
             className="sr-only"
             disabled={disabled}

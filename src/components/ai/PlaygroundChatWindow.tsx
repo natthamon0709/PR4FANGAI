@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, User, Send, Loader2, Sparkles, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Bot, User, Send, Loader2, Sparkles, Clock, RefreshCw, AlertTriangle, Volume2, Mic, MicOff, Square } from 'lucide-react';
 import ConfidenceScoreBar from './ConfidenceScoreBar';
 import RetrievedSourceCard from './RetrievedSourceCard';
 import { RAGPlaygroundResult } from '@/types/ai';
@@ -11,12 +11,15 @@ interface ChatMessage {
   text: string;
   timestamp: string;
   result?: RAGPlaygroundResult;
+  isVoice?: boolean;
 }
 
 const SAMPLE_QUESTIONS = [
-  'ขอฟอร์มลาป่วยต้องยื่นล่วงหน้ากี่วัน',
+  'ค่าเทอมจ่ายตี้ไหนเจ้า',
+  'เปิดเทอมวันใด แล้วต้องเตรียมอะหยังพ่อง',
+  'ครูแผนกช่างยนต์มีไผพ่องเจ้า',
+  'ขอฟอร์มลาป่วยยะจะได',
   'โครงสร้างการบริหารวิทยาลัยการอาชีพฝางมีฝ่ายใดบ้าง',
-  'รายชื่อครูและบุคลากรสาขาวิชาการบัญชี',
   'ระเบียบการลงทะเบียนเรียนและเอกสารที่ต้องใช้'
 ];
 
@@ -25,12 +28,18 @@ export default function PlaygroundChatWindow() {
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'สวัสดีครับ/ค่ะ ยินดีต้อนรับสู่โหมดทดสอบ AI Playground (จำลองการทำงานบน LINE Official Account) คุณสามารถพิมพ์คำถามเพื่อทดสอบการค้นหาองค์ความรู้และประมวลผลคำตอบได้ทันทีครับ',
+      text: 'สวัสดีครับ/ค่ะ ยินดีต้อนรับสู่โหมดทดสอบ AI Playground (จำลองการทำงานบน LINE Official Account) รองรับทั้งการพิมพ์และส่งเสียงพูดภาษาถิ่นเหนือ (คำเมือง) พร้อมตอบกลับด้วยข้อความและไฟล์เสียงพูดครับ',
       timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -40,6 +49,15 @@ export default function PlaygroundChatWindow() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
 
   const handleSend = async (questionToSend?: string) => {
     const text = (questionToSend || input).trim();
@@ -105,12 +123,125 @@ export default function PlaygroundChatWindow() {
     }
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        await handleSendAudio(audioBlob, mimeType);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+    } catch (err: any) {
+      alert('ไม่สามารถเข้าถึงไมโครโฟนได้: ' + (err.message || 'กรุณาอนุญาตการใช้งานไมโครโฟนในเบราว์เซอร์'));
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const handleSendAudio = async (blob: Blob, mimeType: string) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = async () => {
+      const base64Audio = reader.result as string;
+      const userMsgId = 'usr-voice-' + Date.now();
+      const nowTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: userMsgId,
+          sender: 'user',
+          text: '🎙️ ส่งคลิปเสียงพูดภาษาเหนือ/คำเมือง (กำลังถอดเสียง...)',
+          timestamp: nowTime,
+          isVoice: true
+        }
+      ]);
+      setLoading(true);
+
+      try {
+        const res = await fetch('/api/ai-engine/playground', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audioBase64: base64Audio, audioMimeType: mimeType })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.result) {
+          // Update user message with transcribed question
+          if (data.result.transcribedQuestion) {
+            setMessages(prev => prev.map(m => m.id === userMsgId ? {
+              ...m,
+              text: `🎙️ "${data.result.transcribedQuestion}"`
+            } : m));
+          }
+
+          setMessages(prev => [
+            ...prev,
+            {
+              id: 'ai-' + Date.now(),
+              sender: 'ai',
+              text: data.result.answer,
+              timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+              result: data.result
+            }
+          ]);
+        } else {
+          setMessages(prev => [
+            ...prev,
+            {
+              id: 'ai-err-' + Date.now(),
+              sender: 'ai',
+              text: `เกิดข้อผิดพลาดในการประมวลผลเสียง: ${data.error || 'ไม่สามารถประมวลผลได้'}`,
+              timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+            }
+          ]);
+        }
+      } catch (err: any) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: 'ai-err-' + Date.now(),
+            sender: 'ai',
+            text: `เกิดข้อผิดพลาดในการเชื่อมต่อ: ${err.message}`,
+            timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+  };
+
   const handleClear = () => {
     setMessages([
       {
         id: 'welcome',
         sender: 'ai',
-        text: 'รีเซ็ตการสนทนาทดสอบเรียบร้อยแล้ว พิมพ์คำถามใหม่ได้เลยครับ',
+        text: 'รีเซ็ตการสนทนาทดสอบเรียบร้อยแล้ว พิมพ์หรือส่งเสียงคำถามใหม่ได้เลยครับ',
         timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -199,6 +330,28 @@ export default function PlaygroundChatWindow() {
                   <p className="whitespace-pre-wrap">{msg.text}</p>
                 </div>
 
+                {/* Spoken Audio Reply Player if available */}
+                {msg.result?.audioUrl && (
+                  <div className="p-3 rounded-2xl bg-surface-card border border-primary/25 shadow-sm space-y-2 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <Volume2 className="w-4 h-4 text-primary" />
+                        <span>เสียงตอบกลับ AI (Audio Delivery)</span>
+                      </div>
+                      {msg.result.detectedDialect === 'kham_mueang' && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                          🗣️ สำเนียงคำเมือง
+                        </span>
+                      )}
+                    </div>
+                    <audio
+                      controls
+                      src={msg.result.audioUrl}
+                      className="w-full h-8 accent-primary"
+                    />
+                  </div>
+                )}
+
                 {/* AI Metadata: Confidence Bar & Retrieved Sources */}
                 {msg.result && (
                   <div className="p-3 rounded-2xl bg-surface-card border border-outline/30 shadow-level1 space-y-2.5 max-w-full text-xs animate-fadeIn">
@@ -259,7 +412,7 @@ export default function PlaygroundChatWindow() {
             </div>
             <div className="p-3.5 rounded-2xl rounded-tl-none bg-surface-card border border-outline/20 text-xs text-onSurface flex items-center gap-2 shadow-sm">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>AI กำลังค้นหาองค์ความรู้และสังเคราะห์คำตอบ...</span>
+              <span>AI กำลังค้นหาองค์ความรู้ ถอดเสียง และสังเคราะห์คำตอบ...</span>
             </div>
           </div>
         )}
@@ -267,35 +420,64 @@ export default function PlaygroundChatWindow() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Form Bar */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSend();
-        }}
-        className="p-3 bg-surface-card border-t border-outline/20 flex items-center gap-2"
-      >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="พิมพ์คำถามทดสอบระบบ AI (เช่น ถามเรื่องระเบียบ, ประกาศ, ข้อมูลฝ่าย)..."
-          disabled={loading}
-          className="flex-1 h-11 px-4 rounded-2xl border border-outline bg-surface text-sm text-onSurface outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={loading || !input.trim()}
-          className="h-11 px-5 rounded-2xl bg-primary text-onPrimary font-semibold text-xs md:text-sm flex items-center gap-2 hover:bg-primary-hover transition-all disabled:opacity-40 shadow-level1 flex-shrink-0"
-        >
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-          <span className="hidden sm:inline">ส่งคำถาม</span>
-        </button>
-      </form>
+      {/* Input Form Bar with Voice Recording */}
+      <div className="p-3 bg-surface-card border-t border-outline/20">
+        {isRecording ? (
+          <div className="flex items-center justify-between gap-3 p-2 bg-red-50 dark:bg-red-950/20 border border-red-300 dark:border-red-800 rounded-2xl animate-pulse">
+            <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400 text-xs font-semibold px-2">
+              <span className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
+              <span>กำลังอัดเสียงพูด (คำเมือง/ภาษากลาง)... 0:{recordingSeconds < 10 ? '0' : ''}{recordingSeconds}</span>
+            </div>
+            <button
+              type="button"
+              onClick={stopRecording}
+              className="h-9 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold flex items-center gap-1.5 hover:bg-red-700 transition-all shadow-sm"
+            >
+              <Square className="w-3.5 h-3.5 fill-current" />
+              <span>หยุดและส่งเสียง</span>
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="flex items-center gap-2"
+          >
+            <button
+              type="button"
+              onClick={startRecording}
+              disabled={loading}
+              className="w-11 h-11 rounded-2xl border border-outline bg-surface-card hover:bg-surface-variant text-primary flex items-center justify-center transition-all disabled:opacity-40 flex-shrink-0 shadow-sm"
+              title="กดเพื่ออัดเสียงพูดภาษาเหนือ/คำเมือง (Voice Input)"
+            >
+              <Mic className="w-5 h-5 text-primary" />
+            </button>
+
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="พิมพ์คำถาม หรือกดไมค์เพื่อพูดภาษาเหนือ (เช่น 'ค่าเทอมจ่ายตี้ไหนเจ้า')..."
+              disabled={loading}
+              className="flex-1 h-11 px-4 rounded-2xl border border-outline bg-surface text-sm text-onSurface outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="h-11 px-5 rounded-2xl bg-primary text-onPrimary font-semibold text-xs md:text-sm flex items-center gap-2 hover:bg-primary-hover transition-all disabled:opacity-40 shadow-level1 flex-shrink-0"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">ส่งคำถาม</span>
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

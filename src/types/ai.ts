@@ -11,6 +11,10 @@ export interface AiEngineConfig {
   retrieval_top_k: number; // 1 - 10
   temperature: number; // 0.0 - 1.0
   is_active: boolean;
+  voice_reply_enabled?: boolean;
+  voice_gender?: 'female' | 'male';
+  voice_dialect_mode?: 'adaptive' | 'always_kham_mueang' | 'always_central';
+  voice_speed?: number;
   updated_by?: string;
   updated_at?: string;
 }
@@ -57,6 +61,10 @@ export interface RAGPlaygroundResult {
   response_time_ms: number;
   imageUrl?: string;
   imageCaption?: string;
+  audioUrl?: string;
+  audioDurationMs?: number;
+  detectedDialect?: 'kham_mueang' | 'central' | 'unknown';
+  transcribedQuestion?: string;
   sources: {
     knowledge_id: string;
     title: string;

@@ -12,7 +12,7 @@ import TemperatureSlider from '@/components/ai/TemperatureSlider';
 import SessionAlert from '@/components/SessionAlert';
 import { SessionUser } from '@/types';
 import { AiProvider, AiEngineConfig } from '@/types/ai';
-import { Settings, Save, Play, Loader2, Sparkles, AlertTriangle, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Settings, Save, Play, Loader2, Sparkles, AlertTriangle, ShieldCheck, CheckCircle2, Volume2, Mic } from 'lucide-react';
 
 export default function AiEngineSettingsPage() {
   const router = useRouter();
@@ -23,13 +23,17 @@ export default function AiEngineSettingsPage() {
 
   // Form States
   const [provider, setProvider] = useState<AiProvider>('gemini');
-  const [modelName, setModelName] = useState('gemini-2.5-flash');
+  const [modelName, setModelName] = useState('gemini-3.6-flash');
   const [maskedKey, setMaskedKey] = useState('••••••••4f2a');
   const [newKey, setNewKey] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.70);
   const [retrievalTopK, setRetrievalTopK] = useState(5);
   const [temperature, setTemperature] = useState(0.3);
+  const [voiceReplyEnabled, setVoiceReplyEnabled] = useState(true);
+  const [voiceGender, setVoiceGender] = useState<'female' | 'male'>('female');
+  const [voiceDialectMode, setVoiceDialectMode] = useState<'adaptive' | 'always_kham_mueang' | 'always_central'>('adaptive');
+  const [voiceSpeed, setVoiceSpeed] = useState(1.0);
 
   useEffect(() => {
     async function loadData() {
@@ -51,12 +55,16 @@ export default function AiEngineSettingsPage() {
         if (configRes.ok) {
           const { config } = await configRes.json();
           setProvider(config.provider || 'gemini');
-          setModelName(config.model_name || 'gemini-2.5-flash');
+          setModelName(config.model_name || 'gemini-3.6-flash');
           setMaskedKey(config.api_key_masked || '••••••••4f2a');
           setSystemPrompt(config.system_prompt || '');
           setConfidenceThreshold(config.confidence_threshold ?? 0.70);
           setRetrievalTopK(config.retrieval_top_k ?? 5);
           setTemperature(config.temperature ?? 0.3);
+          setVoiceReplyEnabled(config.voice_reply_enabled ?? true);
+          setVoiceGender(config.voice_gender || 'female');
+          setVoiceDialectMode(config.voice_dialect_mode || 'adaptive');
+          setVoiceSpeed(config.voice_speed ?? 1.0);
         }
       } catch (err: any) {
         setAlertMsg({ type: 'error', text: err.message });
@@ -83,7 +91,11 @@ export default function AiEngineSettingsPage() {
           system_prompt: systemPrompt,
           confidence_threshold: confidenceThreshold,
           retrieval_top_k: retrievalTopK,
-          temperature: temperature
+          temperature: temperature,
+          voice_reply_enabled: voiceReplyEnabled,
+          voice_gender: voiceGender,
+          voice_dialect_mode: voiceDialectMode,
+          voice_speed: voiceSpeed
         })
       });
 
@@ -216,6 +228,142 @@ export default function AiEngineSettingsPage() {
                 onChange={setTemperature}
                 disabled={saving}
               />
+            </div>
+
+            {/* Voice & Northern Dialect Settings */}
+            <div className="p-6 rounded-3xl bg-surface-card border border-outline/30 shadow-level1 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-outline/20">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <Volume2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-bold text-sm text-onSurface">
+                      ระบบเสียงและภาษาถิ่นเหนือ (Voice & Northern Dialect)
+                    </h3>
+                    <p className="text-xs text-onSurface-muted">
+                      ตั้งค่าการสร้างไฟล์เสียงตอบกลับ (TTS) และการรับฟัง/ตอบกลับภาษาคำเมือง
+                    </p>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={voiceReplyEnabled}
+                    onChange={(e) => setVoiceReplyEnabled(e.target.checked)}
+                    disabled={saving}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  <span className="ml-2.5 text-xs font-semibold text-onSurface">
+                    {voiceReplyEnabled ? 'เปิดใช้งานเสียง' : 'ปิดเสียง'}
+                  </span>
+                </label>
+              </div>
+
+              {voiceReplyEnabled && (
+                <div className="space-y-4 pt-1 animate-fadeIn">
+                  {/* Voice Gender */}
+                  <div>
+                    <label className="block text-xs font-semibold text-onSurface mb-2">
+                      เพศและโทนเสียงพูด (Voice Persona)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setVoiceGender('female')}
+                        disabled={saving}
+                        className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                          voiceGender === 'female'
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                            : 'border-outline/40 bg-surface hover:bg-surface-variant/40'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                          voiceGender === 'female' ? 'bg-primary text-onPrimary' : 'bg-surface-variant text-onSurface-muted'
+                        }`}>
+                          ญ
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-onSurface flex items-center gap-1.5">
+                            <span>เสียงผู้หญิง (เปรมวดี Neural)</span>
+                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-primary/15 text-primary font-semibold">แนะนำ</span>
+                          </div>
+                          <p className="text-[11px] text-onSurface-muted mt-0.5">
+                            โทนเสียงอ่อนหวาน อบอุ่น นุ่มนวล สุภาพ เข้ากับคำลงท้าย "เจ้า" ได้เป็นธรรมชาติ
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setVoiceGender('male')}
+                        disabled={saving}
+                        className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                          voiceGender === 'male'
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                            : 'border-outline/40 bg-surface hover:bg-surface-variant/40'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                          voiceGender === 'male' ? 'bg-primary text-onPrimary' : 'bg-surface-variant text-onSurface-muted'
+                        }`}>
+                          ช
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-onSurface">
+                            เสียงผู้ชาย (นิวัฒน์ Neural)
+                          </div>
+                          <p className="text-[11px] text-onSurface-muted mt-0.5">
+                            โทนเสียงสุขุม เป็นทางการ น่าเชื่อถือ เหมาะสำหรับประกาศและระเบียบวิทยาลัย
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dialect Mode */}
+                  <div>
+                    <label className="block text-xs font-semibold text-onSurface mb-1.5">
+                      โหมดการใช้ภาษาถิ่น (Dialect Mode)
+                    </label>
+                    <select
+                      value={voiceDialectMode}
+                      onChange={(e: any) => setVoiceDialectMode(e.target.value)}
+                      disabled={saving}
+                      className="w-full h-11 px-3.5 rounded-2xl border border-outline bg-surface text-xs md:text-sm text-onSurface outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                    >
+                      <option value="adaptive">ปรับตามผู้ใช้ (Adaptive: ตอบคำเมืองเมื่อถามคำเมือง / ตอบภาษากลางเมื่อถามภาษากลาง)</option>
+                      <option value="always_kham_mueang">เน้นภาษาถิ่นเหนือเสมอ (Always Kham Mueang: ตอบด้วยคำเมืองสุภาพทุกคำถาม)</option>
+                      <option value="always_central">ภาษากลางทางการเสมอ (Always Standard Thai: ตอบเป็นภาษากลางล้วน)</option>
+                    </select>
+                  </div>
+
+                  {/* Voice Speed */}
+                  <div>
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="font-semibold text-onSurface">ความเร็วเสียงพูด (Voice Speed)</span>
+                      <span className="font-mono text-primary font-bold">{voiceSpeed.toFixed(1)}x</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.8"
+                      max="1.2"
+                      step="0.1"
+                      value={voiceSpeed}
+                      onChange={(e) => setVoiceSpeed(parseFloat(e.target.value))}
+                      disabled={saving}
+                      className="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <div className="flex justify-between text-[10px] text-onSurface-muted mt-1">
+                      <span>ช้า (0.8x)</span>
+                      <span>ปกติ (1.0x)</span>
+                      <span>เร็ว (1.2x)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit Action Bar */}

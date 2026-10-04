@@ -2,6 +2,7 @@ import getDb from './db';
 import { supabaseAdmin } from './supabase';
 import crypto from 'crypto';
 import { decryptApiKey } from './ai-crypto';
+import { generateAudioReply } from './tts-service';
 import { AiEngineConfig, AiRetrievedSource, RAGPlaygroundResult } from '@/types/ai';
 
 export interface RAGExecutionResult {
@@ -13,6 +14,10 @@ export interface RAGExecutionResult {
   response_time_ms: number;
   imageUrl?: string;
   imageCaption?: string;
+  audioUrl?: string;
+  audioDurationMs?: number;
+  detectedDialect?: 'kham_mueang' | 'central';
+  transcribedQuestion?: string;
   sources: {
     knowledge_id: string;
     title: string;
@@ -37,7 +42,11 @@ export function getActiveAiConfig(): AiEngineConfig {
       confidence_threshold: 0.70,
       retrieval_top_k: 5,
       temperature: 0.3,
-      is_active: true
+      is_active: true,
+      voice_reply_enabled: true,
+      voice_gender: 'female',
+      voice_dialect_mode: 'adaptive',
+      voice_speed: 1.0
     };
   }
   return {
@@ -51,6 +60,10 @@ export function getActiveAiConfig(): AiEngineConfig {
     retrieval_top_k: Number(row.retrieval_top_k) || 5,
     temperature: Number(row.temperature) || 0.3,
     is_active: Boolean(row.is_active),
+    voice_reply_enabled: row.voice_reply_enabled !== undefined ? Boolean(row.voice_reply_enabled) : true,
+    voice_gender: row.voice_gender || 'female',
+    voice_dialect_mode: row.voice_dialect_mode || 'adaptive',
+    voice_speed: Number(row.voice_speed) || 1.0,
     updated_by: row.updated_by,
     updated_at: row.updated_at
   };
@@ -67,9 +80,113 @@ const QUESTION_STOPWORDS = new Set([
   'และ', 'หรือ', 'ที่', 'ใน', 'เป็น', 'ได้', 'มี', 'ไป', 'มา', 'กับ', 'ให้',
   'โดย', 'คือ', 'นี้', 'นั้น', 'ขอ', 'ทราบ', 'ช่วย', 'บอก', 'ข้อมูล', 'รายละเอียด',
   'ครับ', 'ค่ะ', 'นะ', 'คะ', 'หน่อย', 'ด้วย', 'คีับ', 'คับ', 'จ้า',
-  'สวัสดี', 'สวัสดีครับ', 'สวัสดีค่ะ', 'สวัสดีคีับ', 'สวัสดีคับ', 'หวัดดี', 'ดีครับ', 'ดีค่ะ', 'ฮัลโหล',
-  'ขอบคุณ', 'ขอบคุณครับ', 'ขอบคุณค่ะ', 'ขอบใจ', 'ขอบพระคุณ', 'hello', 'hi', 'hey'
+  'เจ้า', 'เน้อเจ้า', 'กะเจ้า', 'เจ้าข้า', 'เน้อ', 'กั๊บ', 'พ่อง', 'หนา', 'เน้อครับ',
+  'สวัสดี', 'สวัสดีครับ', 'สวัสดีค่ะ', 'สวัสดีคีับ', 'สวัสดีคับ', 'สวัสดีเจ้า', 'หวัดดี', 'ดีครับ', 'ดีค่ะ', 'ดีเจ้า', 'ฮัลโหล',
+  'ขอบคุณ', 'ขอบคุณครับ', 'ขอบคุณค่ะ', 'ขอบคุณเจ้า', 'ขอบใจ', 'ขอบใจเน้อ', 'ขอบพระคุณ', 'hello', 'hi', 'hey'
 ]);
+
+export const KHAM_MUEANG_DICTIONARY: Record<string, string[]> = {
+  // สถานที่ & การถามทาง
+  'ตี้ไหน': ['ที่ไหน', 'สถานที่', 'ที่ตั้ง', 'แผนผัง', 'อาคาร', 'ผัง'],
+  'ตี้ใด': ['ที่ไหน', 'สถานที่', 'ที่ตั้ง', 'แผนผัง', 'อาคาร'],
+  'อยู่ตี้ใด': ['อยู่ที่ไหน', 'ที่ไหน', 'สถานที่', 'อาคาร', 'แผนผัง', 'ผัง'],
+  'อยู่ตี้ไหน': ['อยู่ที่ไหน', 'ที่ไหน', 'สถานที่', 'อาคาร', 'แผนผัง'],
+  'ตี้': ['ที่', 'สถานที่'],
+  'ตี้ฮั่น': ['ที่นั่น', 'สถานที่'],
+  'ตี้เพ้': ['ที่นี่', 'สถานที่'],
+  
+  // เวลา & วันที่
+  'วันใด': ['วันไหน', 'กำหนดการ', 'ปฏิทิน', 'เมื่อไหร่', 'วันเปิดเรียน'],
+  'เมื่อใด': ['เมื่อไหร่', 'วันไหน', 'เวลา', 'กำหนดการ'],
+  'ตอนใด': ['เมื่อไหร่', 'เวลาไหน', 'กำหนดการ'],
+  'เปิดเทอม': ['เปิดภาคเรียน', 'ปฏิทินการศึกษา', 'กำหนดการ', 'เปิดเรียน'],
+  'ปิดเทอม': ['ปิดภาคเรียน', 'ปฏิทินการศึกษา', 'กำหนดการ'],
+  
+  // ค่าใช้จ่าย & การเงิน
+  'เต้าใด': ['เท่าไหร่', 'กี่บาท', 'ค่าธรรมเนียม', 'ค่าเทอม', 'การเงิน', 'ค่าใช้จ่าย'],
+  'เต้าได': ['เท่าไหร่', 'กี่บาท', 'ค่าใช้จ่าย', 'ค่าเทอม', 'ค่าธรรมเนียม'],
+  'กี่บาท': ['เท่าไหร่', 'ค่าธรรมเนียม', 'ค่าเทอม', 'การเงิน', 'ชำระเงิน'],
+  'ค่าเทอม': ['ค่าเล่าเรียน', 'ค่าธรรมเนียมการเรียน', 'การเงิน', 'ชำระเงิน', 'แผนกการเงิน', 'จ่ายเงิน'],
+  
+  // การกระทำ & คำถามวิธีทำ
+  'ยะจะได': ['ทำอย่างไร', 'ขั้นตอน', 'ระเบียบ', 'วิธีการ', 'คำร้อง'],
+  'จะได': ['อย่างไร', 'ทำอย่างไร', 'ขั้นตอน'],
+  'ยะได': ['ทำอย่างไร', 'อย่างไร'],
+  'ยังได': ['อย่างไร', 'ทำอย่างไร'],
+  'หยั่งได': ['อย่างไร', 'ทำอย่างไร'],
+  'ยะ': ['ทำ', 'ยื่น', 'ปฏิบัติ'],
+  'แป๋ง': ['ทำ', 'สร้าง', 'ยื่นคำร้อง'],
+  
+  // บุคคล & อาจารย์
+  'เปิ้น': ['ท่าน', 'ครู', 'อาจารย์', 'บุคลากร', 'ผู้สอน'],
+  'อาจ๋าน': ['อาจารย์', 'ครู', 'ผู้สอน', 'บุคลากร'],
+  'ไผ': ['ใคร', 'รายชื่อ', 'อาจารย์', 'ครู'],
+  'ไผพ่อง': ['ใครบ้าง', 'รายชื่อครู', 'รายชื่อบุคลากร', 'อาจารย์', 'ครู'],
+  'มีไผ': ['มีใคร', 'รายชื่อ', 'อาจารย์', 'ครู'],
+  'มีไผพ่อง': ['มีใครบ้าง', 'รายชื่อครู', 'รายชื่อบุคลากร', 'อาจารย์', 'ครู'],
+  'ไผสอน': ['ใครสอน', 'อาจารย์', 'ครู', 'ผู้สอน'],
+  
+  // การเรียน & กิจกรรม
+  'เฮียน': ['เรียน', 'การเรียน', 'หลักสูตร', 'การสอน', 'สาขาวิชา'],
+  'สมัครเฮียน': ['สมัครเรียน', 'รับสมัคร', 'นักศึกษาใหม่', 'โควตา', 'หลักสูตร'],
+  'ขาดเฮียน': ['ขาดเรียน', 'การลา', 'ใบลา', 'ลาป่วย', 'คำร้อง'],
+  'เข้าเฮียน': ['เข้าเรียน', 'สมัครเรียน', 'ปฏิทินการศึกษา'],
+  
+  // อารมณ์ & การสื่อสารท้องถิ่น & คำสร้อย/คำปฏิเสธ
+  'ขะใจ๋': ['ด่วน', 'เร่งด่วน', 'ทันที'],
+  'ฮู้': ['รู้', 'ทราบ'],
+  'ฮู้เรื่อง': ['ทราบข้อมูล', 'รู้เรื่อง'],
+  'บ่ฮู้': ['ไม่รู้', 'ไม่ทราบ'],
+  'บะฮู้': ['ไม่รู้', 'ไม่ทราบ'],
+  'บ่ใจ้': ['ไม่ใช่', 'ไม่ถูกต้อง'],
+  'บะใจ้': ['ไม่ใช่', 'ไม่ถูกต้อง'],
+  'แม่นก่อ': ['ใช่หรือไม่', 'จริงไหม'],
+  'ได้ก่อ': ['ได้ไหม', 'ได้หรือไม่'],
+  'ผ่อ': ['ดู', 'ตรวจสอบ', 'ตรวจ'],
+  'อู้': ['พูด', 'คุย', 'ติดต่อ'],
+  'แอ่ว': ['เยี่ยมชม', 'ดูงาน'],
+  'ปิ๊ก': ['กลับ', 'เดินทางกลับ'],
+  'อะหยัง': ['อะไร', 'ข้อมูล'],
+  'อะหยังพ่อง': ['อะไรบ้าง', 'ข้อมูล', 'รายละเอียด'],
+  'จ๊าดนัก': ['มาก', 'เป็นอย่างมาก'],
+  'สุมา': ['ขออภัย', 'ขอโทษ'],
+  'สุมาเต๊อะ': ['ขออภัย', 'ขอโทษ']
+};
+
+export const NORTHERN_MARKERS = [
+  // คำสร้อย & คำลงท้าย & คำถาม
+  'เจ้า', 'เน้อเจ้า', 'กะเจ้า', 'เจ้าข้า', 'เน้อ', 'หนา', 'เน้อครับ', 'กั๊บ', 'พ่อง', 'เหย', 'แล',
+  'แม่นก่อ', 'ได้ก่อ', 'ดีก่อ', 'ก่อเจ้า', 'ก๋า', 'กาเจ้า',
+  
+  // สถานที่ & การถามทาง
+  'ตี้ไหน', 'ตี้ใด', 'อยู่ตี้ใด', 'อยู่ตี้ไหน', 'ตี้', 'จ่ายตี้', 'ตี้ฮั่น', 'ตี้เพ้', 'ฮั่น',
+  
+  // เวลา & วันที่
+  'วันใด', 'เมื่อใด', 'ตอนใด', 'เวลาใด',
+  
+  // ค่าใช้จ่าย & การเงิน
+  'เต้าใด', 'เต้าได', 'กี่บาท', 'กี่บาทเจ้า', 'เต้าใดเจ้า',
+  
+  // คำถาม & การกระทำ
+  'ยะจะได', 'ยะได', 'จะได', 'ยังได', 'หยั่งได', 'แป๋ง',
+  
+  // บุคคล & อาจารย์ (แม้ไม่มีคำว่าเจ้า)
+  'เปิ้น', 'อาจ๋าน', 'ไผ', 'ไผพ่อง', 'มีไผ', 'มีไผพ่อง', 'ไผสอน', 'ข้าเจ้า', 'สู', 'ตั๋ว',
+  
+  // ปฏิเสธ & รับรู้
+  'บ่มี', 'บะมี', 'บ่ได้', 'บะได้', 'บ่ฮู้', 'บะฮู้', 'บ่ใจ้', 'บะใจ้', 'บ่', 'บะ',
+  
+  // กริยา & คำเมืองทั่วไป
+  'ฮู้', 'ฮู้เรื่อง', 'ผ่อ', 'อู้', 'แอ่ว', 'ปิ๊ก', 'ฮับ', 'ฮอด', 'ตึง', 'สุมา', 'สุมาเต๊อะ',
+  'ยินดี', 'จ๊าดนัก', 'แต๊', 'แต้', 'ขนาด', 'แม่น', 'แม่นแล้ว',
+  'อะหยัง', 'อะหยังพ่อง', 'เฮียน', 'สมัครเฮียน', 'ขาดเฮียน', 'เข้าเฮียน', 'ขะใจ๋'
+];
+
+export function detectNorthernDialect(text: string): boolean {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return NORTHERN_MARKERS.some(marker => lower.includes(marker));
+}
 
 const THAI_SYNONYMS: Record<string, string[]> = {
   'เนคไท': ['การแต่งกาย', 'เครื่องแต่งกาย', 'เครื่องแบบ', 'เนคไทสีกรมท่า', 'ระเบียบวินัย', 'ปวส', 'ปวช'],
@@ -244,10 +361,10 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
   const cleanLow = clean.toLowerCase();
 
   // 1. Intent Detection
-  const isTeacherQuery = /ครู|อาจารย์|บุคลากร|ผู้สอน|หัวหน้าสาขา|หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้า|ใครสอน|มีใครบ้าง|รายชื่อ|ชื่อครู|บุคลากรประจำ/i.test(cleanLow);
+  const isTeacherQuery = /ครู|อาจารย์|บุคลากร|ผู้สอน|หัวหน้าสาขา|หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้า|ใครสอน|มีใครบ้าง|รายชื่อ|ชื่อครู|บุคลากรประจำ|ไผ|ไผพ่อง|มีไผ|มีไผพ่อง|ไผสอน|เปิ้น|อาจ๋าน/i.test(cleanLow);
   const isRuleQuery = /แต่งกาย|ทรงผม|เนคไท|ตัดคะแนน|ลงโทษ|ทัณฑ์บน|ระเบียบ|เครื่องแบบ/i.test(cleanLow);
-  const isContactQuery = /เบอร์โทร|โทรศัพท์|ติดต่อ|ติดต่อใคร|โทรหา/i.test(cleanLow);
-  const isMapQuery = /แผนผัง|ผัง|อาคาร|ห้อง|ตึก|แผนที่/i.test(cleanLow);
+  const isContactQuery = /เบอร์โทร|โทรศัพท์|ติดต่อ|ติดต่อใคร|โทรหา|อู้กับไผ/i.test(cleanLow);
+  const isMapQuery = /แผนผัง|ผัง|อาคาร|ห้อง|ตึก|แผนที่|ตี้ไหน|อยู่ตี้ใด/i.test(cleanLow);
 
   // 2. Branch Matching
   const matchedBranches = ACADEMIC_BRANCHES.filter(b => 
@@ -257,7 +374,7 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
   // 3. Person Name Extraction (ordering prefixes from longest to shortest)
   const strippedPerson = clean
     .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i, '')
-    .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร)$/i, '')
+    .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร|อยู่ตี้ไหน|อยู่ตี้ใด|มีไผพ่อง|มีไผ|คือไผ|สอนอะหยัง)$/i, '')
     .trim();
   const personName = strippedPerson.length >= 3 ? strippedPerson.toLowerCase() : null;
 
@@ -293,6 +410,78 @@ export function parseFaqQuestions(content?: string): string[] {
   return faqs;
 }
 
+export interface FaqPair {
+  question: string;
+  answer: string;
+}
+
+export function parseFaqPairsFromContent(rawContent?: string): FaqPair[] {
+  if (!rawContent) return [];
+  const faqSection = rawContent.split(/###\s*(?:คำถามที่พบบ่อย|รายการคำถาม-คำตอบที่พบบ่อย)/i)[1] || '';
+  const lines = faqSection.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const qLines: string[] = [];
+  const aLines: string[] = [];
+  const interleavedPairs: FaqPair[] = [];
+  let curQ = '';
+  let curA = '';
+
+  let seenQCountBeforeA = 0;
+  let hasSeenA = false;
+  for (const line of lines) {
+    if (/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])/i.test(line)) {
+      if (!hasSeenA) seenQCountBeforeA++;
+    } else if (/^(A\d*[:.]|• คำตอบ[:.]|\*\*คำตอบ:\*\*)/i.test(line)) {
+      hasSeenA = true;
+    }
+  }
+
+  const isGroupedFormat = seenQCountBeforeA > 1;
+
+  if (isGroupedFormat) {
+    for (const line of lines) {
+      if (line.startsWith('📄') || line.startsWith('🌐') || line.startsWith('###')) break;
+      if (/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])/i.test(line)) {
+        qLines.push(line.replace(/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])\s*/i, '').trim());
+      } else if (/^(A\d*[:.]|• คำตอบ[:.])/i.test(line)) {
+        aLines.push(line.replace(/^(A\d*[:.]|• คำตอบ[:.])\s*/i, '').trim());
+      } else if (/^(\*\*คำตอบ:\*\*|คำตอบ:)/i.test(line)) {
+        // Header
+      } else if (aLines.length > 0) {
+        aLines[aLines.length - 1] += ' ' + line;
+      }
+    }
+    const count = Math.min(qLines.length, aLines.length);
+    for (let i = 0; i < count; i++) {
+      interleavedPairs.push({ question: qLines[i], answer: aLines[i] });
+    }
+    return interleavedPairs;
+  }
+
+  for (const line of lines) {
+    if (line.startsWith('📄') || line.startsWith('🌐') || line.startsWith('###')) break;
+    if (/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])/i.test(line)) {
+      if (curQ && curA) {
+        interleavedPairs.push({ question: curQ, answer: curA });
+        curQ = '';
+        curA = '';
+      }
+      curQ = line.replace(/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])\s*/i, '').trim();
+    } else if (/^(A\d*[:.]|• คำตอบ[:.]|\*\*คำตอบ:\*\*|คำตอบ:)/i.test(line)) {
+      const aText = line.replace(/^(A\d*[:.]|• คำตอบ[:.]|\*\*คำตอบ:\*\*|คำตอบ:)\s*/i, '').trim();
+      if (curA) curA += ' ' + aText;
+      else curA = aText;
+    } else if (curA) {
+      curA += ' ' + line;
+    }
+  }
+  if (curQ && curA) {
+    interleavedPairs.push({ question: curQ, answer: curA });
+  }
+
+  return interleavedPairs;
+}
+
 /**
  * Extract comprehensive Thai search tokens, entities, and n-grams
  */
@@ -312,6 +501,14 @@ export function extractDistinctiveKeywords(text: string): string[] {
     if (cleanLow.includes(k)) {
       distinctive.add(k);
       THAI_SYNONYMS[k].forEach(s => distinctive.add(s));
+    }
+  });
+
+  // 1.1 Check Kham Mueang (Northern dialect) synonyms
+  Object.keys(KHAM_MUEANG_DICTIONARY).forEach(k => {
+    if (cleanLow.includes(k)) {
+      distinctive.add(k);
+      KHAM_MUEANG_DICTIONARY[k].forEach(s => distinctive.add(s));
     }
   });
 
@@ -679,7 +876,14 @@ async function generateGroundedAnswer(
 3. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ
 4. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด
 5. กฎเข้มงวดป้องกันการตอบผิด (Strict Anti-Hallucination): ตอบเฉพาะข้อมูลที่มีระบุอยู่ในเอกสารอ้างอิงเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร หากไม่พบข้อมูลให้ตอบอย่างสุภาพว่ายังไม่พบข้อมูลและแนะนำช่องทางติดต่อฝ่ายงานที่เกี่ยวข้องอย่างชัดเจน
-6. ตอบเป็นข้อความบรรยายภาษาไทยที่สุภาพ นอบน้อม ถูกต้อง และกระชับตรงประเด็น`
+6. รูปแบบการตอบสำหรับการแปลงเป็นเสียงพูดสังเคราะห์ (Text-to-Speech & Spoken Rhythm):
+   - ใช้ภาษาพูดที่นุ่มนวล เป็นมิตร สุภาพ และเป็นธรรมชาติเสมือนครูอาจารย์ที่ปรึกษาของวิทยาลัยการอาชีพฝางกำลังพูดคุยให้คำแนะนำ
+   - จัดวรรคตอนของประโยคให้มีจังหวะหยุดหายใจพอเหมาะ ไม่เขียนข้อความยาวติดกันเป็นพืด
+   - หลีกเลี่ยงการใช้อักษรย่อที่อ่านยาก และหลีกเลี่ยงสัญลักษณ์พิเศษที่ไม่จำเป็น เช่น *, #, /, |
+   - เมื่อแจกแจงรายการ ให้เขียนเชื่อมด้วยภาษาพูดที่เป็นธรรมชาติ เช่น "โดยเปิดสอนในระดับ ปวช. และ ปวส. ได้แก่ สาขา..."
+${(config.voice_dialect_mode === 'always_kham_mueang' || (config.voice_dialect_mode !== 'always_central' && detectNorthernDialect(question)))
+  ? '7. คำแนะนำภาษาถิ่นเหนือ (คำเมือง): ผู้ใช้สอบถามด้วยภาษาถิ่นเหนือ (คำเมือง) หรือสำเนียงท้องถิ่น ให้ตอบกลับเป็นภาษาถิ่นเหนือที่สุภาพ ไพเราะ อ่อนหวาน นุ่มนวล เป็นกันเอง (เช่น ใช้คำลงท้าย "เจ้า", "เน้อเจ้า", "ยินดีเจ้า", "สามารถติดต่อได้ตี้...") โดยจัดจังหวะเว้นวรรคหลังคำลงท้ายให้ไพเราะน่าฟัง และคงความถูกต้องตามระเบียบ ขั้นตอน และข้อเท็จจริงของวิทยาลัยการอาชีพฝางอย่างแม่นยำ ไม่ตกหล่น'
+  : '7. ตอบเป็นข้อความบรรยายภาษาไทยกลางที่สุภาพ นอบน้อม ถูกต้อง ชัดเจน น้ำเสียงนุ่มนวล และกระชับตรงประเด็น'}`
             }
           ]
         },
@@ -698,13 +902,15 @@ async function generateGroundedAnswer(
       };
 
       // Map official Google Gemini models resiliently
-      const primaryModel = config.model_name || 'gemini-2.0-flash';
+      const primaryModel = config.model_name || 'gemini-2.5-flash';
       const candidateModels = Array.from(new Set([
         primaryModel,
+        'gemini-2.5-flash',
         'gemini-2.0-flash',
         'gemini-1.5-flash',
-        'gemini-2.5-flash',
-        'gemini-1.5-pro'
+        'gemini-flash-latest',
+        'gemini-3.6-flash',
+        'gemini-3.8-flash'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -792,58 +998,27 @@ async function generateGroundedAnswer(
   // Check if primarySource has FAQ pairs matching the question (both formats: FAQ table / QA list)
   let bestFaqAnswer = '';
   if (primarySource.content) {
-    const rawContent = primarySource.content;
+    const faqPairs = parseFaqPairsFromContent(primarySource.content);
+    let maxScore = 0;
+    for (const pair of faqPairs) {
+      let matchScore = 0;
+      const qLow = pair.question.toLowerCase();
+      const aLow = pair.answer.toLowerCase();
 
-    // Pattern 1: FAQ Section with Q: and A:
-    if (rawContent.includes('### คำถามที่พบบ่อย') || rawContent.includes('### รายการคำถาม-คำตอบที่พบบ่อย')) {
-      const faqSection = rawContent.split(/###\s*(?:คำถามที่พบบ่อย|รายการคำถาม-คำตอบที่พบบ่อย)/i)[1] || '';
-      const lines = faqSection.split('\n').map((l: string) => l.trim()).filter(Boolean);
-      
-      const qList: string[] = [];
-      const aList: string[] = [];
-      let inAnswer = false;
-      let curA = '';
-
-      for (const line of lines) {
-        if (/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])/i.test(line)) {
-          if (curA) aList.push(curA.trim());
-          curA = '';
-          inAnswer = false;
-          qList.push(line.replace(/^(Q\d*[:.]|• คำถาม[:.]|คำถาม[:.])\s*/i, '').trim());
-        } else if (/^(\*\*คำตอบ:\*\*|คำตอบ:|A\d*[:.])/i.test(line)) {
-          inAnswer = true;
-          const aText = line.replace(/^(\*\*คำตอบ:\*\*|คำตอบ:|A\d*[:.])\s*/i, '').trim();
-          if (aText) curA += (curA ? ' ' : '') + aText;
-        } else if (inAnswer) {
-          if (line.startsWith('📄') || line.startsWith('🌐') || line.startsWith('###')) {
-            inAnswer = false;
-          } else {
-            const cleanL = line.replace(/^A\d*[:.]\s*/i, '').trim();
-            if (cleanL) curA += (curA ? '\n' : '') + cleanL;
-          }
+      keywords.forEach(kw => {
+        if (kw.length >= 2) {
+          if (qLow.includes(kw)) matchScore += 4;
+          if (aLow.includes(kw)) matchScore += 2;
         }
+      });
+
+      if (qAnalysis.cleanLow.includes(qLow) || qLow.includes(qAnalysis.cleanLow)) {
+        matchScore += 15;
       }
-      if (curA) aList.push(curA.trim());
 
-      // Match question against qList
-      let maxScore = 0;
-      for (let idx = 0; idx < qList.length; idx++) {
-        const qItem = qList[idx];
-        const aItem = aList[idx] || aList[0];
-        let matchScore = 0;
-        keywords.forEach(kw => {
-          if (kw.length >= 2) {
-            if (qItem.toLowerCase().includes(kw)) matchScore += 3;
-            if (aItem && aItem.toLowerCase().includes(kw)) matchScore += 1;
-          }
-        });
-        if (qAnalysis.cleanLow.includes(qItem.toLowerCase()) || qItem.toLowerCase().includes(qAnalysis.cleanLow)) {
-          matchScore += 10;
-        }
-        if (matchScore > maxScore && aItem) {
-          maxScore = matchScore;
-          bestFaqAnswer = cleanFaqArtifacts(aItem);
-        }
+      if (matchScore > maxScore && pair.answer) {
+        maxScore = matchScore;
+        bestFaqAnswer = cleanFaqArtifacts(pair.answer);
       }
     }
   }
@@ -878,9 +1053,16 @@ async function generateGroundedAnswer(
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (keywords.some(kw => line.toLowerCase().includes(kw) && kw.length >= 3)) {
+          let heading = '';
+          for (let j = i - 1; j >= Math.max(0, i - 6); j--) {
+            if (/^(การแต่งกาย|ระเบียบ|หลักเกณฑ์|การลงโทษ|###)/i.test(lines[j])) {
+              heading = lines[j].replace(/^[#*`\s]+/, '') + ': ';
+              break;
+            }
+          }
           const start = Math.max(0, i - 1);
-          const end = Math.min(lines.length, i + 6);
-          relevantSnippet = lines.slice(start, end).join('\n');
+          const end = Math.min(lines.length, i + 5);
+          relevantSnippet = (heading ? `${heading}\n` : '') + lines.slice(start, end).join('\n');
           break;
         }
       }
@@ -909,21 +1091,27 @@ async function generateGroundedAnswer(
 export function detectConversationalIntent(text: string): { isConversational: boolean; replyText?: string } {
   const clean = (text || '').toLowerCase().replace(/[\s\t\n!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/g, '');
   
-  // 1. Greetings (สวัสดี, ฮัลโหล, ดีครับ, hello, hi)
-  const greetings = ['สวัสดี', 'สวัสดีครับ', 'สวัสดีค่ะ', 'สวัสดีคีับ', 'สวัสดีคะ', 'สวัสดีคับ', 'สวัสดีจ้า', 'หวัดดี', 'หวัดดีครับ', 'หวัดดีค่ะ', 'ดีครับ', 'ดีค่ะ', 'ฮัลโหล', 'hello', 'hi', 'hey', 'sawasdee'];
-  if (greetings.includes(clean) || (clean.startsWith('สวัสดี') && clean.length <= 12) || (clean.startsWith('หวัดดี') && clean.length <= 10)) {
+  // 1. Greetings (สวัสดี, สวัสดีเจ้า, ฮัลโหล, ดีครับ, hello, hi)
+  const greetings = ['สวัสดี', 'สวัสดีครับ', 'สวัสดีค่ะ', 'สวัสดีคีับ', 'สวัสดีคะ', 'สวัสดีคับ', 'สวัสดีจ้า', 'สวัสดีเจ้า', 'หวัดดี', 'หวัดดีครับ', 'หวัดดีค่ะ', 'หวัดดีเจ้า', 'ดีครับ', 'ดีค่ะ', 'ดีเจ้า', 'ฮัลโหล', 'hello', 'hi', 'hey', 'sawasdee'];
+  if (greetings.includes(clean) || (clean.startsWith('สวัสดี') && clean.length <= 15) || (clean.startsWith('หวัดดี') && clean.length <= 12)) {
+    const isNorthernGreet = clean.includes('เจ้า') || clean.includes('เน้อ');
     return {
       isConversational: true,
-      replyText: 'สวัสดีครับ/ค่ะ ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nท่านสามารถพิมพ์คำถามหรือเรื่องที่ต้องการสอบถามได้ทันทีครับ เช่น:\n• ระเบียบวินัย / การแต่งกายและทรงผม\n• รายชื่อสาขาวิชาและหลักสูตรที่เปิดสอน\n• ช่องทางติดต่อฝ่ายงานและแผนกต่างๆ'
+      replyText: isNorthernGreet
+        ? 'สวัสดีเจ้า ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nสามารถสอบถามข้อมูลการเรียน, ระเบียบการสมัคร หรือติดต่อฝ่ายงานตี้ต้องการได้เลยเน้อเจ้า'
+        : 'สวัสดีครับ/ค่ะ ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nท่านสามารถพิมพ์คำถามหรือเรื่องที่ต้องการสอบถามได้ทันทีครับ เช่น:\n• ระเบียบวินัย / การแต่งกายและทรงผม\n• รายชื่อสาขาวิชาและหลักสูตรที่เปิดสอน\n• ช่องทางติดต่อฝ่ายงานและแผนกต่างๆ'
     };
   }
 
   // 2. Thank you
-  const thanks = ['ขอบคุณ', 'ขอบคุณครับ', 'ขอบคุณค่ะ', 'ขอบคุณคะ', 'ขอบคุณคับ', 'ขอบใจ', 'ขอบใจจ้า', 'ขอบพระคุณ', 'thanks', 'thankyou', 'thx'];
-  if (thanks.includes(clean) || (clean.startsWith('ขอบคุณ') && clean.length <= 12)) {
+  const thanks = ['ขอบคุณ', 'ขอบคุณครับ', 'ขอบคุณค่ะ', 'ขอบคุณคะ', 'ขอบคุณคับ', 'ขอบคุณเจ้า', 'ขอบใจ', 'ขอบใจเน้อ', 'ขอบใจจ้า', 'ขอบพระคุณ', 'thanks', 'thankyou', 'thx'];
+  if (thanks.includes(clean) || (clean.startsWith('ขอบคุณ') && clean.length <= 15)) {
+    const isNorthernThanks = clean.includes('เจ้า') || clean.includes('เน้อ');
     return {
       isConversational: true,
-      replyText: 'ยินดีให้บริการครับ/ค่ะ หากมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม สามารถพิมพ์ถามได้ตลอดเวลาครับ 😊'
+      replyText: isNorthernThanks
+        ? 'ยินดีนักๆ เจ้า ยินดีตี้ได้จ้วยเหลือ หากมีข้อสงสัยสอบถามเพิ่มเติมได้ตลอดเวลาเน้อเจ้า 🎓'
+        : 'ยินดีให้บริการครับ/ค่ะ หากมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม สามารถพิมพ์ถามได้ตลอดเวลาครับ 😊'
     };
   }
 
@@ -940,18 +1128,180 @@ export function detectConversationalIntent(text: string): { isConversational: bo
 }
 
 /**
- * Execute Full RAG Pipeline
+ * Transcribe and extract intent from voice audio buffer using Google Gemini Multimodal
+ */
+export async function transcribeAndProcessAudio(
+  audioBuffer: Buffer,
+  mimeType: string = 'audio/m4a'
+): Promise<{
+  transcription: string;
+  question: string;
+  isKhamMueang: boolean;
+}> {
+  const config = getActiveAiConfig();
+  const decryptedKey = decryptApiKey(config.api_key_encrypted || '');
+
+  if (!decryptedKey || decryptedKey.length < 10) {
+    return {
+      transcription: '',
+      question: '',
+      isKhamMueang: false
+    };
+  }
+
+  try {
+    // Normalize audio MIME type for Gemini API compatibility (e.g. LINE audio/x-m4a -> audio/m4a)
+    let cleanMime = (mimeType || 'audio/m4a').toLowerCase().trim();
+    if (cleanMime === 'audio/x-m4a' || cleanMime.includes('m4a')) {
+      cleanMime = 'audio/m4a';
+    } else if (cleanMime.includes('mp4')) {
+      cleanMime = 'audio/mp4';
+    } else if (cleanMime.includes('mpeg') || cleanMime.includes('mp3')) {
+      cleanMime = 'audio/mp3';
+    } else if (cleanMime.includes('wav')) {
+      cleanMime = 'audio/wav';
+    } else if (cleanMime.includes('ogg')) {
+      cleanMime = 'audio/ogg';
+    } else if (cleanMime.includes('aac')) {
+      cleanMime = 'audio/aac';
+    } else {
+      cleanMime = 'audio/m4a';
+    }
+
+    const base64Audio = audioBuffer.toString('base64');
+    const promptPayload = {
+      systemInstruction: {
+        parts: [
+          {
+            text: `คุณคือระบบผู้เชี่ยวชาญด้านการฟัง ถอดเสียง และทำความเข้าใจภาษาถิ่นเหนือ (คำเมือง) รวมถึงสำเนียงคำเมืองและภาษาไทยกลาง ประจำวิทยาลัยการอาชีพฝาง
+หน้าที่ของคุณคือรับฟังคลิปเสียงนี้อย่างละเอียดและแม่นยำสูงสุด:
+1. ถอดเสียงพูด (transcription): ถอดเสียงภาษาไทย/คำเมืองของผู้พูดเป็นตัวอักษรไทยอย่างถูกต้องตรงตามที่พูดทุกคำ โดยเว้นวรรคประโยคและจังหวะคำให้ตรงตามความหมายและจังหวะการพูดจริง เพื่อให้อ่านเข้าใจง่ายและเป็นธรรมชาติ
+2. สกัดคำถามและเจตนา (question): ทำความเข้าใจเจตนาของผู้พูดอย่างลึกซึ้ง แปลงคำเมืองหรือสำเนียงภาษาเหนือให้เป็นประโยคคำถามภาษาไทยมาตรฐานที่ชัดเจน รัดกุม เพื่อนำไปสืบค้นฐานข้อมูลองค์ความรู้ได้อย่างแม่นยำ
+3. ตรวจจับภาษาถิ่น/สำเนียงเหนือ (is_kham_mueang):
+   - ระบุเป็น true หากผู้พูดใช้ภาษาถิ่นเหนือ (คำเมือง), มีคำศัพท์ภาษาเหนือ, หรือพูดภาษาไทยด้วย "สำเนียงเหนือ" (เช่น คำเมืองไม่มีคำสร้อย, คำเมืองที่ไม่มีคำว่า "เจ้า", คำถามแบบกันเอง เช่น มีไผพ่อง, กี่บาท, ตี้ไหน, ยะจะได, วันใด, เปิดเทอมวันใด, อะหยัง, แป๋ง, บ่, ฮู้, ก่อ ฯลฯ)
+   - หากมีคำว่า "เจ้า" หรือคำสร้อย (เน้อ, กะเจ้า, เจ้าข้า) ยิ่งชัดเจนว่าเป็น true
+   - ระบุเป็น false เฉพาะเมื่อเป็นภาษาไทยกลางมาตรฐานที่ไม่มีสำเนียงหรือคำศัพท์ภาษาเหนือเลยเท่านั้น
+
+ตอบกลับเป็น JSON บริสุทธิ์ในรูปแบบ:
+{"transcription": "...", "question": "...", "is_kham_mueang": true/false}`
+          }
+        ]
+      },
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              inlineData: {
+                mimeType: cleanMime,
+                data: base64Audio
+              }
+            },
+            {
+              text: 'กรุณาถอดเสียงและสกัดคำถามจากคลิปเสียงนี้'
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 1024,
+        responseMimeType: 'application/json'
+      }
+    };
+
+    const candidateModels = Array.from(new Set([
+      config.model_name || 'gemini-2.5-flash',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-flash-latest',
+      'gemini-3.6-flash',
+      'gemini-3.8-flash'
+    ])).filter(Boolean);
+
+    for (const modelId of candidateModels) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${decryptedKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(promptPayload),
+          signal: AbortSignal.timeout(12000)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const parsed = JSON.parse(text);
+            return {
+              transcription: parsed.transcription || '',
+              question: parsed.question || parsed.transcription || '',
+              isKhamMueang: Boolean(parsed.is_kham_mueang) || detectNorthernDialect(parsed.transcription || '')
+            };
+          }
+        }
+      } catch (err) {
+        continue;
+      }
+    }
+  } catch (err) {
+    console.error('transcribeAndProcessAudio error:', err);
+  }
+
+  return {
+    transcription: '',
+    question: '',
+    isKhamMueang: false
+  };
+}
+
+/**
+ * Execute Full RAG Pipeline with Voice & Kham Mueang Support
  */
 export async function executeRAGPipeline(params: {
-  question: string;
+  question?: string;
+  audioBuffer?: Buffer;
+  audioMimeType?: string;
   lineUserId?: string;
   isPlayground?: boolean;
   includeDrafts?: boolean;
+  publicBaseUrl?: string;
 }): Promise<RAGExecutionResult> {
   const startTime = Date.now();
   const db = getDb();
   const config = getActiveAiConfig();
-  const { question, lineUserId = 'LINE_ANONYMOUS_USER', isPlayground = false, includeDrafts = false } = params;
+  const { lineUserId = 'LINE_ANONYMOUS_USER', isPlayground = false, includeDrafts = false, publicBaseUrl = '' } = params;
+
+  let question = (params.question || '').trim();
+  let transcribedQuestion: string | undefined;
+  let isAudioKhamMueang = false;
+
+  // If audio buffer is provided, transcribe with Gemini Multimodal
+  if (params.audioBuffer && params.audioBuffer.length > 0) {
+    const audioRes = await transcribeAndProcessAudio(params.audioBuffer, params.audioMimeType);
+    if (audioRes.transcription) {
+      transcribedQuestion = audioRes.transcription;
+      question = audioRes.question || audioRes.transcription;
+      isAudioKhamMueang = audioRes.isKhamMueang;
+    }
+  }
+
+  // Fallback if no question text could be determined
+  if (!question) {
+    const defaultMsg = 'ขออภัยครับ/ค่ะ ระบบไม่สามารถจับใจความเสียงได้ชัดเจน กรุณาลองพูดใหม่อีกครั้ง หรือพิมพ์ข้อความคำถามได้เลยครับ';
+    return {
+      question: '',
+      answer: defaultMsg,
+      confidence_score: 0.0,
+      is_fallback: true,
+      response_time_ms: Date.now() - startTime,
+      sources: []
+    };
+  }
+
+  const isDialect = config.voice_dialect_mode === 'always_kham_mueang' || 
+    (config.voice_dialect_mode !== 'always_central' && (detectNorthernDialect(question) || isAudioKhamMueang));
 
   // 0. Handle Conversational Greetings & Courtesy Messages
   const convIntent = detectConversationalIntent(question);
@@ -983,6 +1333,25 @@ export async function executeRAGPipeline(params: {
       } catch {}
     }
 
+    let greetingAudioUrl: string | undefined;
+    let greetingDurationMs: number | undefined;
+
+    if (config.voice_reply_enabled) {
+      try {
+        const audioRes = await generateAudioReply({
+          text: convIntent.replyText,
+          voiceGender: config.voice_gender,
+          speed: config.voice_speed,
+          publicBaseUrl,
+          dialect: isDialect ? 'kham_mueang' : 'central'
+        });
+        if (audioRes.success) {
+          greetingAudioUrl = audioRes.audioUrl;
+          greetingDurationMs = audioRes.durationMs;
+        }
+      } catch {}
+    }
+
     return {
       log_id: logId,
       question,
@@ -990,6 +1359,10 @@ export async function executeRAGPipeline(params: {
       confidence_score: 1.0,
       is_fallback: false,
       response_time_ms: responseTimeMs,
+      audioUrl: greetingAudioUrl,
+      audioDurationMs: greetingDurationMs,
+      detectedDialect: isDialect ? 'kham_mueang' : 'central',
+      transcribedQuestion,
       sources: []
     };
   }
@@ -1116,6 +1489,27 @@ export async function executeRAGPipeline(params: {
     } catch {}
   }
 
+  let audioUrl: string | undefined;
+  let audioDurationMs: number | undefined;
+
+  if (config.voice_reply_enabled && answerText) {
+    try {
+      const audioRes = await generateAudioReply({
+        text: answerText,
+        voiceGender: config.voice_gender,
+        speed: config.voice_speed,
+        publicBaseUrl,
+        dialect: isDialect ? 'kham_mueang' : 'central'
+      });
+      if (audioRes.success) {
+        audioUrl = audioRes.audioUrl;
+        audioDurationMs = audioRes.durationMs;
+      }
+    } catch (audioErr) {
+      console.warn('Audio generation warning:', audioErr);
+    }
+  }
+
   return {
     log_id: logId,
     question,
@@ -1125,6 +1519,10 @@ export async function executeRAGPipeline(params: {
     response_time_ms: responseTimeMs,
     imageUrl: mediaInfo?.imageUrl,
     imageCaption: mediaInfo?.caption,
+    audioUrl,
+    audioDurationMs,
+    detectedDialect: isDialect ? 'kham_mueang' : 'central',
+    transcribedQuestion,
     sources: retrievedSources.map(s => ({
       knowledge_id: s.knowledge_id,
       title: s.title,

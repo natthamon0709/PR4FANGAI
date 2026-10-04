@@ -45,3 +45,6 @@ Thumbs.db
 .turbo
 
 .agent/
+*.tsbuildinfo
+/public/audio/responses/*
+!/public/audio/responses/.gitkeep

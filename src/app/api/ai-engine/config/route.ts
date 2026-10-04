@@ -58,6 +58,10 @@ export async function GET(req: NextRequest) {
         retrieval_top_k: Number(config.retrieval_top_k),
         temperature: Number(config.temperature),
         is_active: Boolean(config.is_active),
+        voice_reply_enabled: config.voice_reply_enabled !== undefined ? Boolean(config.voice_reply_enabled) : true,
+        voice_gender: config.voice_gender || 'female',
+        voice_dialect_mode: config.voice_dialect_mode || 'adaptive',
+        voice_speed: Number(config.voice_speed) || 1.0,
         updated_at: config.updated_at
       },
       is_admin: session.role === 'administrator'
@@ -86,7 +90,11 @@ export async function PUT(req: NextRequest) {
       system_prompt,
       confidence_threshold = 0.70,
       retrieval_top_k = 5,
-      temperature = 0.3
+      temperature = 0.3,
+      voice_reply_enabled = true,
+      voice_gender = 'female',
+      voice_dialect_mode = 'adaptive',
+      voice_speed = 1.0
     } = body;
 
     if (!system_prompt || system_prompt.trim().length === 0) {
@@ -96,6 +104,10 @@ export async function PUT(req: NextRequest) {
     const thresholdNum = Math.max(0.0, Math.min(1.0, parseFloat(confidence_threshold) || 0.70));
     const topKNum = Math.max(1, Math.min(10, parseInt(retrieval_top_k) || 5));
     const tempNum = Math.max(0.0, Math.min(1.0, parseFloat(temperature) || 0.3));
+    const isVoiceEnabled = voice_reply_enabled === true || voice_reply_enabled === 1 || voice_reply_enabled === 'true';
+    const cleanGender = voice_gender === 'male' ? 'male' : 'female';
+    const cleanDialectMode = ['always_kham_mueang', 'always_central', 'adaptive'].includes(voice_dialect_mode) ? voice_dialect_mode : 'adaptive';
+    const speedNum = Math.max(0.5, Math.min(2.0, parseFloat(voice_speed) || 1.0));
 
     const db = getDb();
     const current = db.prepare('SELECT * FROM ai_engine_configs WHERE is_active = 1 LIMIT 1').get() as any;
@@ -154,6 +166,10 @@ export async function PUT(req: NextRequest) {
         confidence_threshold: thresholdNum,
         retrieval_top_k: topKNum,
         temperature: tempNum,
+        voice_reply_enabled: isVoiceEnabled ? 1 : 0,
+        voice_gender: cleanGender,
+        voice_dialect_mode: cleanDialectMode,
+        voice_speed: speedNum,
         is_active: 1,
         updated_by: session.user_id,
         updated_at: now
@@ -168,7 +184,9 @@ export async function PUT(req: NextRequest) {
         db.prepare(`
           UPDATE ai_engine_configs
           SET provider = ?, model_name = ?, api_key_encrypted = ?, system_prompt = ?,
-              confidence_threshold = ?, retrieval_top_k = ?, temperature = ?, updated_by = ?, updated_at = ?
+              confidence_threshold = ?, retrieval_top_k = ?, temperature = ?,
+              voice_reply_enabled = ?, voice_gender = ?, voice_dialect_mode = ?, voice_speed = ?,
+              updated_by = ?, updated_at = ?
           WHERE config_id = ?
         `).run(
           provider,
@@ -178,6 +196,10 @@ export async function PUT(req: NextRequest) {
           thresholdNum,
           topKNum,
           tempNum,
+          isVoiceEnabled ? 1 : 0,
+          cleanGender,
+          cleanDialectMode,
+          speedNum,
           session.user_id,
           now,
           current.config_id
@@ -186,8 +208,10 @@ export async function PUT(req: NextRequest) {
         db.prepare(`
           INSERT INTO ai_engine_configs (
             config_id, provider, model_name, api_key_encrypted, system_prompt,
-            confidence_threshold, retrieval_top_k, temperature, is_active, updated_by, updated_at
-          ) VALUES ('cfg-ai-001', ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            confidence_threshold, retrieval_top_k, temperature,
+            voice_reply_enabled, voice_gender, voice_dialect_mode, voice_speed,
+            is_active, updated_by, updated_at
+          ) VALUES ('cfg-ai-001', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
         `).run(
           provider,
           model_name,
@@ -196,15 +220,21 @@ export async function PUT(req: NextRequest) {
           thresholdNum,
           topKNum,
           tempNum,
+          isVoiceEnabled ? 1 : 0,
+          cleanGender,
+          cleanDialectMode,
+          speedNum,
           session.user_id,
           now
         );
       }
-    } catch {}
+    } catch (dbErr) {
+      console.error('SQLite AI config update error:', dbErr);
+    }
 
     return NextResponse.json({
       success: true,
-      message: `บันทึกการตั้งค่า AI Engine เรียบร้อยแล้ว${verificationNote} (มีผลทันที)`,
+      message: `บันทึกการตั้งค่า AI Engine และระบบเสียงเรียบร้อยแล้ว${verificationNote} (มีผลทันที)`,
       config: {
         provider,
         model_name,
@@ -213,6 +243,10 @@ export async function PUT(req: NextRequest) {
         confidence_threshold: thresholdNum,
         retrieval_top_k: topKNum,
         temperature: tempNum,
+        voice_reply_enabled: isVoiceEnabled,
+        voice_gender: cleanGender,
+        voice_dialect_mode: cleanDialectMode,
+        voice_speed: speedNum,
         updated_at: now
       }
     });

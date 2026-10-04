@@ -239,22 +239,86 @@ export interface TeacherMediaInfo {
   file_id: string;
 }
 
+let cachedPersonnelNames: Set<string> | null = null;
+let lastPersonnelCacheTime = 0;
+
+/**
+ * Retrieve cached set of personnel and teacher names from Knowledge Base and Master Users
+ */
+export function getPersonnelNamesSet(): Set<string> {
+  const now = Date.now();
+  if (cachedPersonnelNames && (now - lastPersonnelCacheTime < 600000)) {
+    return cachedPersonnelNames;
+  }
+
+  const set = new Set<string>();
+  try {
+    const db = getDb();
+    const rows = db.prepare("SELECT knowledge_id, title, content FROM knowledge_items WHERE title LIKE '%ครู%' OR title LIKE '%บุคลากร%' OR title LIKE '%ผู้บริหาร%'").all() as any[];
+    for (const row of rows) {
+      const text = (row.content || '') + '\n' + (row.title || '');
+      const matches = text.match(/(?:นาย|นางสาว|นาง|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|ครู|อาจารย์)\s*([^\s\n\r,•:—\(\)"]+)\s+([^\s\n\r,•:—\(\)"]+)/g);
+      if (matches) {
+        for (const m of matches) {
+          const clean = m.trim().toLowerCase();
+          set.add(clean);
+          const noPrefix = clean.replace(/^(?:นาย|นางสาว|นาง|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|ครู|อาจารย์)\s*/, '').trim();
+          if (noPrefix.length >= 3) {
+            set.add(noPrefix);
+            const [firstName] = noPrefix.split(/\s+/);
+            if (firstName && firstName.length >= 3) set.add(firstName);
+          }
+        }
+      }
+    }
+
+    const users = db.prepare('SELECT first_name, last_name FROM master_users').all() as any[];
+    for (const u of users) {
+      if (u.first_name && u.last_name) {
+        set.add(`${u.first_name} ${u.last_name}`.trim().toLowerCase());
+        set.add(u.first_name.trim().toLowerCase());
+      }
+    }
+  } catch (err) {
+    console.error('Error loading personnel names for isPersonMedia:', err);
+  }
+
+  cachedPersonnelNames = set;
+  lastPersonnelCacheTime = now;
+  return set;
+}
+
 /**
  * Helper to distinguish Teacher/Staff Portrait vs General Diagram/Map/Document
+ * Checks explicit titles, knowledge base personnel data, and department indicators
  */
 export function isPersonMedia(title: string): boolean {
   if (!title) return false;
   const lower = title.toLowerCase();
   
-  // Explicit non-person keywords (maps, diagrams, buildings, tables, plans)
+  // 1. Explicit non-person keywords (maps, diagrams, buildings, tables, plans)
   if (/แผนผัง|แผนที่|ผัง|โครงสร้าง|ตาราง|ปฏิทิน|แผนภาพ|แผนการ|อินโฟกราฟิก|อินโฟกราฟฟิก|สถานที่|อาคาร|map|plan|diagram|chart|building|structure|เอกสาร/i.test(lower)) {
     return false;
   }
 
-  // Explicit person titles
+  // 2. Explicit personnel keywords in title / parentheses
+  if (/รายชื่อครู|บุคลากร|ผู้บริหาร|อาจารย์|ครูประจำ|สาขาวิชา/i.test(lower)) {
+    return true;
+  }
+
+  // 3. Explicit person titles
   const raw = lower.split('(')[0].replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').trim();
   if (/^(นาย|นางสาว|นาง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|ว่าที่ร้อยตรีหญิง|ครู|อาจารย์|ดร\.|ผศ\.)/i.test(raw)) {
     return true;
+  }
+
+  // 4. Match against known personnel names in Knowledge Base & Master Users
+  const personnelSet = getPersonnelNamesSet();
+  if (personnelSet.has(raw)) return true;
+
+  const parts = raw.split(/[\s,]+/).filter(p => p.length >= 3);
+  for (const part of parts) {
+    if (personnelSet.has(part)) return true;
   }
 
   return false;
@@ -340,6 +404,37 @@ export async function pushLineImageMessage(lineUserId: string, imageUrl: string)
     console.error('pushLineImageMessage error:', err);
     return false;
   }
+}
+
+/**
+ * Fetch binary content (Audio, Image) from LINE Messaging Data API
+ */
+export async function fetchLineMessageContent(messageId: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const rawToken = getRawLineChannelAccessToken();
+  if (!rawToken || !messageId) return null;
+
+  try {
+    const res = await fetch(`https://api-data.line.me/v2/bot/message/${messageId}/content`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${rawToken.trim()}`
+      }
+    });
+
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || 'audio/m4a';
+      const arrayBuffer = await res.arrayBuffer();
+      return {
+        buffer: Buffer.from(arrayBuffer),
+        contentType
+      };
+    } else {
+      console.warn(`LINE content API returned ${res.status} for messageId ${messageId}`);
+    }
+  } catch (err) {
+    console.error('Error fetching LINE message content:', err);
+  }
+  return null;
 }
 
 /**
@@ -482,30 +577,60 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
     };
   }
 
-  if (eventType === 'message' && event.message?.type === 'text') {
-    const messageText = event.message.text.trim();
-
-    // Check if it's a 6-digit verification code
-    if (/^\d{6}$/.test(messageText)) {
-      const linkResult = verifyAccountLinkCode(messageText, lineUserId);
-      if (replyToken) {
-        await sendLineReplyMessage(replyToken, linkResult.message);
+  if (eventType === 'message') {
+    const messageType = event.message?.type;
+    const channelConfig = getLineChannelConfig();
+    let publicBaseUrl = '';
+    try {
+      if (channelConfig.webhook_url && channelConfig.webhook_url.startsWith('http')) {
+        publicBaseUrl = new URL(channelConfig.webhook_url).origin;
       }
-      return {
-        handled: true,
-        replyText: linkResult.message
-      };
+    } catch {}
+
+    let messageText = '';
+    let audioBuffer: Buffer | undefined;
+    let audioMimeType: string | undefined;
+
+    if (messageType === 'text') {
+      messageText = (event.message.text || '').trim();
+
+      // Check if it's a 6-digit verification code
+      if (/^\d{6}$/.test(messageText)) {
+        const linkResult = verifyAccountLinkCode(messageText, lineUserId);
+        if (replyToken) {
+          await sendLineReplyMessage(replyToken, linkResult.message);
+        }
+        return {
+          handled: true,
+          replyText: linkResult.message
+        };
+      }
+    } else if (messageType === 'audio') {
+      const messageId = event.message.id;
+      const audioContent = await fetchLineMessageContent(messageId);
+      if (audioContent) {
+        audioBuffer = audioContent.buffer;
+        audioMimeType = audioContent.contentType;
+      }
+    } else {
+      return { handled: true };
     }
 
-    // Pass to Phase 5 RAG Pipeline
+    // Pass to RAG Pipeline (Supports Text, Audio clips, and Kham Mueang Dialect)
     const ragResult = await executeRAGPipeline({
       question: messageText,
+      audioBuffer,
+      audioMimeType,
       lineUserId: lineUserId,
-      isPlayground: false
+      isPlayground: false,
+      publicBaseUrl
     });
 
+    const effectiveQueryText = ragResult.transcribedQuestion || messageText;
+
     // 1. Look up Matching Teachers vs General Images (Map, Plan, Diagram, etc.)
-    const combinedText = `${messageText} ${ragResult.answer}`.toLowerCase().replace(/ศุทธิชัย/g, 'ศุทิชัย');
+    const combinedText = `${effectiveQueryText} ${ragResult.answer}`.toLowerCase().replace(/ศุทธิชัย/g, 'ศุทิชัย');
+    const textWithoutCollege = combinedText.replace(/วิทยาลัย/g, '');
     const matchedTeachers: TeacherMediaInfo[] = [];
     let generalFullImageUrl: string | null = null;
 
@@ -534,20 +659,34 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
 
         // It is a person / teacher
         const rawName = (m.title_or_person_name.split('(')[0] || '')
-          .replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '')
+          .replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i)
           .trim()
           .toLowerCase();
         const normName = rawName.replace(/ศุทธิชัย/g, 'ศุทิชัย');
         const cleanName = normName.replace(/^(ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นาย|นางสาว|นาง|ครู|อาจารย์|ดร\.|ผศ\.)\s*/i, '').trim();
 
-        if (rawName && (
-          combinedText.includes(rawName) || 
-          combinedText.includes(normName) || 
-          (cleanName.length >= 3 && combinedText.includes(cleanName))
-        )) {
+        // Skip mock/dummy seeded file IDs ending in _01, _02 if it's a dummy ID
+        if (m.file_id && m.file_id.match(/_[0-9]{2,}$/)) continue;
+
+        const tokens = cleanName.split(/[\s,]+/).filter((tok: string) => tok.length >= 3);
+        if (tokens.length === 0) continue;
+
+        const firstName = tokens[0];
+        const lastName = tokens.length > 1 && tokens[1] !== tokens[0] ? tokens[1] : null;
+
+        let isMatch = false;
+        if (combinedText.includes(rawName) || (cleanName.length >= 4 && combinedText.includes(cleanName))) {
+          isMatch = true;
+        } else if (lastName && textWithoutCollege.includes(firstName) && textWithoutCollege.includes(lastName)) {
+          isMatch = true;
+        } else if (textWithoutCollege.includes(firstName) && firstName.length >= 4) {
+          isMatch = true;
+        }
+
+        if (isMatch) {
           if (!matchedTeachers.some(t => t.file_id === m.file_id)) {
             matchedTeachers.push({
-              name: m.title_or_person_name.split('(')[0].replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').trim(),
+              name: m.title_or_person_name.split('(')[0].replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').replace(/,/g, '').trim(),
               department: m.title_or_person_name.includes('(') ? m.title_or_person_name.split('(')[1].replace(')', '').trim() : 'วิทยาลัยการอาชีพฝาง',
               imageUrl: m.image_url || `https://lh3.googleusercontent.com/d/${m.file_id}`,
               file_id: m.file_id
@@ -559,9 +698,10 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
       console.error('Error finding media in webhook:', err);
     }
 
-    // 2. Build LINE Messages:
-    // - Person/Teachers -> Flex Profile Carousel (Micro 3:4 cards with Name & Dept)
-    // - Non-person (Map, Diagram, Infographic) -> Native Full-Size High-Res Image Message (zoomable & savable)
+    // 2. Build LINE Messages (Dual Delivery & Multi-Delivery):
+    // - Bubble 1: Concise text summary
+    // - Bubble 2: Audio Reply message (if available and valid HTTPS)
+    // - Bubble 3+: Visual Media (Teachers Carousel or Map Image)
     const replyMessages: any[] = [
       {
         type: 'text',
@@ -569,10 +709,21 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
       }
     ];
 
+    // Bubble 2: Spoken voice message (Audio Bubble)
+    // LINE Messaging API requires valid HTTPS URL for audio
+    if (ragResult.audioUrl && ragResult.audioUrl.startsWith('https://')) {
+      replyMessages.push({
+        type: 'audio',
+        originalContentUrl: ragResult.audioUrl,
+        duration: Math.round(Math.max(1000, Math.min(60000, ragResult.audioDurationMs || 3000)))
+      });
+    }
+
+    // Bubble 3+: Supporting media (Teachers carousel or Campus map)
     if (matchedTeachers.length > 0) {
       const flexCarousel = buildTeacherFlexCarousel(matchedTeachers);
       replyMessages.push(flexCarousel);
-    } else if (generalFullImageUrl) {
+    } else if (generalFullImageUrl && generalFullImageUrl.startsWith('https://')) {
       replyMessages.push({
         type: 'image',
         originalContentUrl: generalFullImageUrl,
@@ -596,10 +747,30 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
               messages: replyMessages
             })
           });
-          if (res.ok) replySuccess = true;
-          else {
+          if (res.ok) {
+            replySuccess = true;
+          } else {
             const errJson = await res.json().catch(() => ({}));
             console.error('LINE Reply API error response:', res.status, errJson);
+            // FAIL-SAFE: If multi-bubble reply failed (e.g. 400 on audio/media), retry immediately with text only!
+            if (replyMessages.length > 1) {
+              try {
+                const textOnlyRes = await fetch('https://api.line.me/v2/bot/message/reply', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${rawToken.trim()}`
+                  },
+                  body: JSON.stringify({
+                    replyToken,
+                    messages: [{ type: 'text', text: ragResult.answer }]
+                  })
+                });
+                if (textOnlyRes.ok) replySuccess = true;
+              } catch (textErr) {
+                console.error('Text-only retry reply failed:', textErr);
+              }
+            }
           }
         }
       } catch (e) {
@@ -611,17 +782,35 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
     if (!replySuccess && lineUserId) {
       const rawToken = getRawLineChannelAccessToken();
       if (rawToken) {
-        await fetch('https://api.line.me/v2/bot/message/push', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${rawToken.trim()}`
-          },
-          body: JSON.stringify({
-            to: lineUserId,
-            messages: replyMessages
-          })
-        });
+        try {
+          const pushRes = await fetch('https://api.line.me/v2/bot/message/push', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${rawToken.trim()}`
+            },
+            body: JSON.stringify({
+              to: lineUserId,
+              messages: replyMessages
+            })
+          });
+          if (!pushRes.ok && replyMessages.length > 1) {
+            // Retry text-only push to prevent total silence
+            await fetch('https://api.line.me/v2/bot/message/push', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${rawToken.trim()}`
+              },
+              body: JSON.stringify({
+                to: lineUserId,
+                messages: [{ type: 'text', text: ragResult.answer }]
+              })
+            });
+          }
+        } catch (pushErr) {
+          console.error('Push error:', pushErr);
+        }
       }
     }
 

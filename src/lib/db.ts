@@ -282,6 +282,10 @@ function initTables(db: Database.Database) {
       retrieval_top_k INTEGER NOT NULL DEFAULT 5,
       temperature REAL NOT NULL DEFAULT 0.3,
       is_active INTEGER NOT NULL DEFAULT 1,
+      voice_reply_enabled INTEGER NOT NULL DEFAULT 1,
+      voice_gender TEXT NOT NULL DEFAULT 'female',
+      voice_dialect_mode TEXT NOT NULL DEFAULT 'adaptive',
+      voice_speed REAL NOT NULL DEFAULT 1.0,
       updated_by TEXT NOT NULL,
       updated_at TEXT DEFAULT (datetime('now', 'localtime')),
       FOREIGN KEY (updated_by) REFERENCES master_users(user_id)
@@ -518,6 +522,10 @@ function initTables(db: Database.Database) {
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_display_name TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_basic_id TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_picture_url TEXT').run(); } catch {}
+  try { db.prepare('ALTER TABLE ai_engine_configs ADD COLUMN voice_reply_enabled INTEGER DEFAULT 1').run(); } catch {}
+  try { db.prepare("ALTER TABLE ai_engine_configs ADD COLUMN voice_gender TEXT DEFAULT 'female'").run(); } catch {}
+  try { db.prepare("ALTER TABLE ai_engine_configs ADD COLUMN voice_dialect_mode TEXT DEFAULT 'adaptive'").run(); } catch {}
+  try { db.prepare('ALTER TABLE ai_engine_configs ADD COLUMN voice_speed REAL DEFAULT 1.0').run(); } catch {}
 
   // 1. Seed Departments & Sub-departments if empty
   const deptCount = (db.prepare('SELECT COUNT(*) as c FROM departments').get() as any).c;

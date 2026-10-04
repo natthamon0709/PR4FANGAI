@@ -10,17 +10,30 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { question, includeDrafts } = body;
+    const { question, audioBase64, audioMimeType, includeDrafts } = body;
 
-    if (!question || question.trim().length === 0) {
-      return NextResponse.json({ error: 'กรุณาระบุข้อความคำถาม' }, { status: 400 });
+    if ((!question || question.trim().length === 0) && !audioBase64) {
+      return NextResponse.json({ error: 'กรุณาระบุข้อความคำถามหรือบันทึกเสียง' }, { status: 400 });
+    }
+
+    let audioBuffer: Buffer | undefined;
+    if (audioBase64) {
+      try {
+        const cleanBase64 = audioBase64.replace(/^data:[^;]+;base64,/, '');
+        audioBuffer = Buffer.from(cleanBase64, 'base64');
+      } catch (err) {
+        console.error('Error decoding audio buffer in playground:', err);
+      }
     }
 
     // Execute in playground mode (does not persist to actual ai_query_logs)
     const result = await executeRAGPipeline({
-      question: question.trim(),
+      question: question?.trim() || '',
+      audioBuffer,
+      audioMimeType: audioMimeType || 'audio/webm',
       isPlayground: true,
-      includeDrafts: Boolean(includeDrafts)
+      includeDrafts: Boolean(includeDrafts),
+      publicBaseUrl: req.nextUrl.origin
     });
 
     return NextResponse.json({
