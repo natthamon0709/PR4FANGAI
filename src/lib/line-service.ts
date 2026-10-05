@@ -685,9 +685,21 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
         }
 
         if (isMatch) {
-          if (!matchedTeachers.some(t => t.file_id === m.file_id)) {
+          let displayName = m.title_or_person_name.split('(')[0].replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+          const dParts = displayName.split(' ');
+          if (dParts.length === 2 && dParts[0] === dParts[1]) {
+            displayName = dParts[0];
+          }
+
+          const alreadyAdded = matchedTeachers.some(t => {
+            if (t.file_id === m.file_id) return true;
+            const tFirst = t.name.replace(/^(ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นาย|นางสาว|นาง|ครู|อาจารย์)\s*/i, '').split(/\s+/)[0];
+            return tFirst && firstName && tFirst === firstName;
+          });
+
+          if (!alreadyAdded) {
             matchedTeachers.push({
-              name: m.title_or_person_name.split('(')[0].replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').replace(/,/g, '').trim(),
+              name: displayName,
               department: m.title_or_person_name.includes('(') ? m.title_or_person_name.split('(')[1].replace(')', '').trim() : 'วิทยาลัยการอาชีพฝาง',
               imageUrl: m.image_url || `https://lh3.googleusercontent.com/d/${m.file_id}`,
               file_id: m.file_id

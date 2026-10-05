@@ -148,14 +148,18 @@ export const KHAM_MUEANG_DICTIONARY: Record<string, string[]> = {
   'ปิ๊ก': ['กลับ', 'เดินทางกลับ'],
   'อะหยัง': ['อะไร', 'ข้อมูล'],
   'อะหยังพ่อง': ['อะไรบ้าง', 'ข้อมูล', 'รายละเอียด'],
+  'อยัง': ['อะไร', 'ข้อมูล'],
+  'อยังพ่อง': ['อะไรบ้าง', 'ข้อมูล', 'รายละเอียด'],
   'จ๊าดนัก': ['มาก', 'เป็นอย่างมาก'],
   'สุมา': ['ขออภัย', 'ขอโทษ'],
-  'สุมาเต๊อะ': ['ขออภัย', 'ขอโทษ']
+  'สุมาเต๊อะ': ['ขออภัย', 'ขอโทษ'],
+  'ลงทะเบียนเฮียน': ['ลงทะเบียนเรียน', 'ลงทะเบียน', 'ค่าหน่วยกิต', 'งานทะเบียน'],
+  'ใบผลการเฮียน': ['ใบผลการเรียน', 'หนังสือรับรองผลการเรียน', 'ผลการเรียน', 'งานทะเบียน']
 };
 
 export const NORTHERN_MARKERS = [
   // คำสร้อย & คำลงท้าย & คำถาม
-  'เจ้า', 'เน้อเจ้า', 'กะเจ้า', 'เจ้าข้า', 'เน้อ', 'หนา', 'เน้อครับ', 'กั๊บ', 'พ่อง', 'เหย', 'แล',
+  'เจ้า', 'เจ้าา', 'เน้อเจ้า', 'เน้อเจ้าา', 'กะเจ้า', 'เจ้าข้า', 'เน้อ', 'หนา', 'เน้อครับ', 'กั๊บ', 'พ่อง', 'เหย', 'แล',
   'แม่นก่อ', 'ได้ก่อ', 'ดีก่อ', 'ก่อเจ้า', 'ก๋า', 'กาเจ้า',
   
   // สถานที่ & การถามทาง
@@ -179,7 +183,7 @@ export const NORTHERN_MARKERS = [
   // กริยา & คำเมืองทั่วไป
   'ฮู้', 'ฮู้เรื่อง', 'ผ่อ', 'อู้', 'แอ่ว', 'ปิ๊ก', 'ฮับ', 'ฮอด', 'ตึง', 'สุมา', 'สุมาเต๊อะ',
   'ยินดี', 'จ๊าดนัก', 'แต๊', 'แต้', 'ขนาด', 'แม่น', 'แม่นแล้ว',
-  'อะหยัง', 'อะหยังพ่อง', 'เฮียน', 'สมัครเฮียน', 'ขาดเฮียน', 'เข้าเฮียน', 'ขะใจ๋'
+  'อะหยัง', 'อะหยังพ่อง', 'อยัง', 'อยังพ่อง', 'เฮียน', 'สมัครเฮียน', 'ขาดเฮียน', 'เข้าเฮียน', 'ขะใจ๋'
 ];
 
 export function detectNorthernDialect(text: string): boolean {
@@ -189,6 +193,13 @@ export function detectNorthernDialect(text: string): boolean {
 }
 
 const THAI_SYNONYMS: Record<string, string[]> = {
+  'ลงทะเบียน': ['ลงทะเบียนเรียน', 'ค่าหน่วยกิต', 'งานทะเบียน', 'ขั้นตอนการลงทะเบียน', 'การลงทะเบียน'],
+  'ลงทะเบียนเรียน': ['ลงทะเบียน', 'ค่าหน่วยกิต', 'งานทะเบียน', 'ขั้นตอนการลงทะเบียนเรียน'],
+  'ทะเบียน': ['งานทะเบียน', 'ลงทะเบียน', 'เอกสารงานทะเบียน', 'ใบรับรอง', 'ฝ่ายทะเบียน'],
+  'ค่าเทอม': ['ค่าหน่วยกิต', 'ลงทะเบียนเรียน', 'การเงิน', 'ค่าธรรมเนียมการเรียน'],
+  'ผลการเรียน': ['ใบผลการเรียน', 'หนังสือรับรองผลการเรียน', 'เกรด', 'ใบ รบ', 'ปพ.', 'งานทะเบียน'],
+  'ใบผลการเรียน': ['ผลการเรียน', 'หนังสือรับรองผลการเรียน', 'งานทะเบียน', 'ขอผลการเรียน', 'ขอหนังสือรับรอง'],
+  'หนังสือรับรอง': ['หนังสือรับรองความประพฤติและผลการเรียน', 'ผลการเรียน', 'ใบรับรอง', 'งานทะเบียน'],
   'เนคไท': ['การแต่งกาย', 'เครื่องแต่งกาย', 'เครื่องแบบ', 'เนคไทสีกรมท่า', 'ระเบียบวินัย', 'ปวส', 'ปวช'],
   'แต่งกาย': ['เครื่องแต่งกาย', 'เครื่องแบบ', 'ทรงผม', 'ระเบียบการแต่งกาย', 'เนคไท', 'กางเกง', 'กระโปรง', 'เสื้อ'],
   'ทรงผม': ['การแต่งกาย', 'ระเบียบวินัย', 'ผม', 'ตัดผม', 'รองทรง'],
@@ -371,12 +382,17 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
     b.aliases.some(alias => cleanLow.includes(alias.toLowerCase()))
   );
 
-  // 3. Person Name Extraction (ordering prefixes from longest to shortest)
-  const strippedPerson = clean
-    .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i, '')
-    .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร|อยู่ตี้ไหน|อยู่ตี้ใด|มีไผพ่อง|มีไผ|คือไผ|สอนอะหยัง)$/i, '')
-    .trim();
-  const personName = strippedPerson.length >= 3 ? strippedPerson.toLowerCase() : null;
+  // 3. Person Name Extraction (only if teacher/person related query)
+  let personName: string | null = null;
+  if (isTeacherQuery || /^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i.test(clean)) {
+    const strippedPerson = clean
+      .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i, '')
+      .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร|อยู่ตี้ไหน|อยู่ตี้ใด|มีไผพ่อง|มีไผ|คือไผ|สอนอะหยัง)$/i, '')
+      .trim();
+    if (strippedPerson.length >= 3 && strippedPerson.length <= 40) {
+      personName = strippedPerson.toLowerCase();
+    }
+  }
 
   // 4. Substantive tokens
   const rawTokens = cleanLow
@@ -717,14 +733,22 @@ export async function searchKnowledgeBase(
       if (matchedInDoc) matchedTokensCount++;
     });
 
-    // Also factor in distinctive keywords (synonyms & n-grams)
-    keywords.forEach(kw => {
-      if (titleLow.includes(kw)) score += 1.5;
-      if (tagsLow.includes(kw)) score += 1.0;
+    // Also factor in distinctive keywords (synonyms, domain terms & n-grams)
+    let matchedDistinctiveCount = 0;
+    const meaningfulKeywords = keywords.filter(kw => kw.length >= 3 && !/^[0-9]+$/.test(kw));
+    meaningfulKeywords.forEach(kw => {
+      let kwMatched = false;
+      if (titleLow.includes(kw)) { score += 2.5; kwMatched = true; }
+      if (tagsLow.includes(kw)) { score += 1.5; kwMatched = true; }
+      if (summaryLow.includes(kw)) { score += 0.8; kwMatched = true; }
+      if (contentLow.includes(kw)) { score += 0.4; kwMatched = true; }
+      if (kwMatched) matchedDistinctiveCount++;
     });
 
     // E. Match ratio
     const tokenOverlap = qAnalysis.rawTokens.length > 0 ? matchedTokensCount / qAnalysis.rawTokens.length : 0;
+    const keywordOverlap = meaningfulKeywords.length > 0 ? matchedDistinctiveCount / meaningfulKeywords.length : 0;
+    const effectiveOverlap = Math.max(tokenOverlap, keywordOverlap);
 
     // F. Fallback / Penalty for mismatched intent
     if (item.content_type === 'news' && (qAnalysis.isTeacherQuery || qAnalysis.isRuleQuery)) {
@@ -738,14 +762,18 @@ export async function searchKnowledgeBase(
       confidence = 0.96;
     } else if (branchMatch) {
       confidence = 0.92;
-    } else if (tokenOverlap >= 0.6 && score >= 20.0) {
-      confidence = Math.min(0.92, 0.82 + (score / 300.0));
-    } else if (tokenOverlap >= 0.4 && score >= 10.0) {
-      confidence = Math.min(0.85, 0.72 + (score / 200.0));
-    } else if (tokenOverlap >= 0.25 && score >= 6.0) {
+    } else if (score >= 60.0) {
+      confidence = Math.min(0.95, 0.82 + (score / 400.0));
+    } else if (score >= 30.0) {
+      confidence = Math.min(0.90, 0.75 + (score / 300.0));
+    } else if (score >= 15.0) {
+      confidence = Math.min(0.85, 0.65 + (score / 200.0));
+    } else if (score >= 8.0) {
+      confidence = 0.65;
+    } else if (effectiveOverlap >= 0.25 && score >= 4.0) {
       confidence = 0.60;
     } else {
-      confidence = Math.min(0.40, Math.round(tokenOverlap * 50) / 100);
+      confidence = Math.min(0.40, Math.round(effectiveOverlap * 50) / 100);
     }
 
     return {
@@ -836,11 +864,14 @@ async function getFangLiveWeather() {
 async function generateGroundedAnswer(
   config: AiEngineConfig,
   question: string,
-  sources: any[]
+  sources: any[],
+  isDialectInput: boolean = false
 ): Promise<string> {
   const decryptedKey = decryptApiKey(config.api_key_encrypted || '');
   const primarySource = sources[0];
   const isWeatherQuery = question.includes('อากาศ') || (primarySource && (primarySource.title?.includes('อากาศ') || primarySource.content?.includes('อากาศ')));
+  const isDialect = config.voice_dialect_mode === 'always_kham_mueang' || 
+    (config.voice_dialect_mode !== 'always_central' && (isDialectInput || detectNorthernDialect(question)));
 
   let liveWeatherData: any = null;
   if (isWeatherQuery) {
@@ -881,8 +912,22 @@ async function generateGroundedAnswer(
    - จัดวรรคตอนของประโยคให้มีจังหวะหยุดหายใจพอเหมาะ ไม่เขียนข้อความยาวติดกันเป็นพืด
    - หลีกเลี่ยงการใช้อักษรย่อที่อ่านยาก และหลีกเลี่ยงสัญลักษณ์พิเศษที่ไม่จำเป็น เช่น *, #, /, |
    - เมื่อแจกแจงรายการ ให้เขียนเชื่อมด้วยภาษาพูดที่เป็นธรรมชาติ เช่น "โดยเปิดสอนในระดับ ปวช. และ ปวส. ได้แก่ สาขา..."
-${(config.voice_dialect_mode === 'always_kham_mueang' || (config.voice_dialect_mode !== 'always_central' && detectNorthernDialect(question)))
-  ? '7. คำแนะนำภาษาถิ่นเหนือ (คำเมือง): ผู้ใช้สอบถามด้วยภาษาถิ่นเหนือ (คำเมือง) หรือสำเนียงท้องถิ่น ให้ตอบกลับเป็นภาษาถิ่นเหนือที่สุภาพ ไพเราะ อ่อนหวาน นุ่มนวล เป็นกันเอง (เช่น ใช้คำลงท้าย "เจ้า", "เน้อเจ้า", "ยินดีเจ้า", "สามารถติดต่อได้ตี้...") โดยจัดจังหวะเว้นวรรคหลังคำลงท้ายให้ไพเราะน่าฟัง และคงความถูกต้องตามระเบียบ ขั้นตอน และข้อเท็จจริงของวิทยาลัยการอาชีพฝางอย่างแม่นยำ ไม่ตกหล่น'
+${isDialect
+  ? `7. กฎสำคัญบังคับตอบภาษาถิ่นเหนือ (คำเมือง) และสำเนียงเหนือ (STRICT KHAM MUEANG DIALECT):
+   - ผู้ใช้ถามด้วยภาษาถิ่นเหนือ/สำเนียงล้านนา ระบบต้องตอบกลับเป็น "ภาษาถิ่นเหนือ (คำเมือง)" อย่างไพเราะ อ่อนหวาน นุ่มนวล เป็นธรรมชาติของชาวเชียงใหม่/ชาวฝาง
+   - ห้ามใช้คำลงท้าย "ครับ" หรือ "ค่ะ" อย่างเด็ดขาด ให้ใช้คำลงท้ายแบบคำเมืองที่สุภาพ เช่น "เจ้า", "เน้อเจ้า", "ยินดีเจ้า", "กะเจ้า"
+   - ใช้คำศัพท์ภาษาเหนือที่ถูกต้องเป็นธรรมชาติ เช่น
+     • ใช้ "ตี้" แทน "ที่" (เช่น "ติดต่อได้ตี้งานทะเบียน", "ตี้อาคาร 1", "ตี้ห้องประชาสัมพันธ์")
+     • ใช้ "เฮียน" แทน "เรียน" (เช่น "ลงทะเบียนเฮียน", "สมัครเฮียน", "เข้าเฮียน")
+     • ใช้ "ฮับ" แทน "รับ" (เช่น "ฮับเอกสาร", "ฮับสมัคร")
+     • ใช้ "ยะจะได" หรือ "ทำจะได" แทน "ทำอย่างไร"
+     • ใช้ "เต้าใด" หรือ "กี่บาท" แทน "เท่าไหร่"
+     • ใช้ "เปิ้น" แทน "ทางวิทยาลัย/ท่าน"
+     • ใช้ "ตวย" แทน "ด้วย"
+     • ใช้ "ผ่อ" แทน "ดู/ตรวจดู"
+     • ใช้ "สุมาเต๊อะเจ้า" แทน "ขออภัยครับ/ค่ะ"
+   - เนื้อหาข้อเท็จจริง กฎระเบียบ รายชื่อ และขั้นตอนของวิทยาลัยการอาชีพฝาง ต้องคงความถูกต้องแม่นยำ 100% ไม่บิดเบือน
+   - เว้นวรรคจังหวะหลังคำลงท้าย "เจ้า" หรือ "เน้อเจ้า" ให้ฟังสบายและเหมาะสำหรับการแปลงเป็นเสียงพูด (TTS)`
   : '7. ตอบเป็นข้อความบรรยายภาษาไทยกลางที่สุภาพ นอบน้อม ถูกต้อง ชัดเจน น้ำเสียงนุ่มนวล และกระชับตรงประเด็น'}`
             }
           ]
@@ -963,7 +1008,7 @@ ${(config.voice_dialect_mode === 'always_kham_mueang' || (config.voice_dialect_m
           messages: [
             {
               role: 'system',
-              content: `${config.system_prompt}\n\nคำแนะนำและข้อกำหนดสำคัญสำหรับการตอบ:\n1. หากในองค์ความรู้มีหัวข้อ 'รายการคำถาม-คำตอบที่พบบ่อย (FAQ Pairs)' ที่ตรงกับสิ่งที่ผู้ใช้ถาม ให้นำคำตอบที่ระบุในคู่นั้นมาตอบผู้ใช้โดยตรง\n2. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ\n3. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด\n4. กฎเข้มงวดป้องกันการตอบผิด (Strict Anti-Hallucination): ตอบเฉพาะข้อมูลที่มีระบุอยู่ในเอกสารอ้างอิงเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร หากไม่พบข้อมูลให้ตอบอย่างสุภาพว่ายังไม่พบข้อมูลและแนะนำช่องทางติดต่อฝ่ายงานที่เกี่ยวข้องอย่างชัดเจน\n5. ตอบเป็นข้อความบรรยายภาษาไทยที่สุภาพ นอบน้อม ถูกต้อง และกระชับตรงประเด็น`
+              content: `${config.system_prompt}\n\nคำแนะนำและข้อกำหนดสำคัญสำหรับการตอบ:\n1. หากในองค์ความรู้มีหัวข้อ 'รายการคำถาม-คำตอบที่พบบ่อย (FAQ Pairs)' ที่ตรงกับสิ่งที่ผู้ใช้ถาม ให้นำคำตอบที่ระบุในคู่นั้นมาตอบผู้ใช้โดยตรง\n2. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ\n3. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด\n4. กฎเข้มงวดป้องกันการตอบผิด (Strict Anti-Hallucination): ตอบเฉพาะข้อมูลที่มีระบุอยู่ในเอกสารอ้างอิงเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร หากไม่พบข้อมูลให้ตอบอย่างสุภาพว่ายังไม่พบข้อมูลและแนะนำช่องทางติดต่อฝ่ายงานที่เกี่ยวข้องอย่างชัดเจน\n5. ${isDialect ? 'ผู้ใช้ถามภาษาถิ่นเหนือ ตอบกลับเป็นภาษาถิ่นเหนือ (คำเมือง) ที่สุภาพ อ่อนหวาน ใช้คำลงท้าย "เจ้า", "เน้อเจ้า" ห้ามมี "ครับ/ค่ะ" เด็ดขาด และใช้คำศัพท์คำเมือง เช่น ตี้, เฮียน, ฮับ, ยะจะได, เปิ้น' : 'ตอบเป็นข้อความบรรยายภาษาไทยที่สุภาพ นอบน้อม ถูกต้อง และกระชับตรงประเด็น'}`
             },
             {
               role: 'user',
@@ -1041,7 +1086,9 @@ ${(config.voice_dialect_mode === 'always_kham_mueang' || (config.voice_dialect_m
 
     if (formattedRoster.length > 0) {
       const branchTitle = primarySource.title.replace(/^รายชื่อครูและบุคลากรสาขาวิชา/i, '').trim();
-      answerBody = `${primarySource.title} วิทยาลัยการอาชีพฝาง มีดังนี้ครับ:\n\n` + formattedRoster.join('\n');
+      answerBody = isDialect
+        ? `${primarySource.title} วิทยาลัยการอาชีพฝาง มีจิ่มนี้เน้อเจ้า:\n\n` + formattedRoster.join('\n')
+        : `${primarySource.title} วิทยาลัยการอาชีพฝาง มีดังนี้ครับ:\n\n` + formattedRoster.join('\n');
     }
   }
 
@@ -1080,7 +1127,9 @@ ${(config.voice_dialect_mode === 'always_kham_mueang' || (config.voice_dialect_m
 
   const deptContact = primarySource.sub_department_name || primarySource.department_name || 'งานบริหารงานทั่วไป';
   const cleanBody = answerBody.replace(/^ตามข้อมูลจาก.*:\s*/i, '').trim();
-  const answer = `${cleanBody}\n\nหากท่านต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ที่${deptContact}ครับ`;
+  const answer = isDialect
+    ? `${cleanBody}\n\nหากต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ตี้${deptContact}เน้อเจ้า`
+    : `${cleanBody}\n\nหากท่านต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ที่${deptContact}ครับ`;
 
   return answer;
 }
@@ -1088,13 +1137,13 @@ ${(config.voice_dialect_mode === 'always_kham_mueang' || (config.voice_dialect_m
 /**
  * Detect Conversational & Small Talk Intents (Greetings, Thank You, System Status)
  */
-export function detectConversationalIntent(text: string): { isConversational: boolean; replyText?: string } {
+export function detectConversationalIntent(text: string, isDialectInput: boolean = false): { isConversational: boolean; replyText?: string } {
   const clean = (text || '').toLowerCase().replace(/[\s\t\n!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/g, '');
   
   // 1. Greetings (สวัสดี, สวัสดีเจ้า, ฮัลโหล, ดีครับ, hello, hi)
   const greetings = ['สวัสดี', 'สวัสดีครับ', 'สวัสดีค่ะ', 'สวัสดีคีับ', 'สวัสดีคะ', 'สวัสดีคับ', 'สวัสดีจ้า', 'สวัสดีเจ้า', 'หวัดดี', 'หวัดดีครับ', 'หวัดดีค่ะ', 'หวัดดีเจ้า', 'ดีครับ', 'ดีค่ะ', 'ดีเจ้า', 'ฮัลโหล', 'hello', 'hi', 'hey', 'sawasdee'];
   if (greetings.includes(clean) || (clean.startsWith('สวัสดี') && clean.length <= 15) || (clean.startsWith('หวัดดี') && clean.length <= 12)) {
-    const isNorthernGreet = clean.includes('เจ้า') || clean.includes('เน้อ');
+    const isNorthernGreet = isDialectInput || clean.includes('เจ้า') || clean.includes('เน้อ');
     return {
       isConversational: true,
       replyText: isNorthernGreet
@@ -1106,7 +1155,7 @@ export function detectConversationalIntent(text: string): { isConversational: bo
   // 2. Thank you
   const thanks = ['ขอบคุณ', 'ขอบคุณครับ', 'ขอบคุณค่ะ', 'ขอบคุณคะ', 'ขอบคุณคับ', 'ขอบคุณเจ้า', 'ขอบใจ', 'ขอบใจเน้อ', 'ขอบใจจ้า', 'ขอบพระคุณ', 'thanks', 'thankyou', 'thx'];
   if (thanks.includes(clean) || (clean.startsWith('ขอบคุณ') && clean.length <= 15)) {
-    const isNorthernThanks = clean.includes('เจ้า') || clean.includes('เน้อ');
+    const isNorthernThanks = isDialectInput || clean.includes('เจ้า') || clean.includes('เน้อ');
     return {
       isConversational: true,
       replyText: isNorthernThanks
@@ -1305,10 +1354,14 @@ export async function executeRAGPipeline(params: {
   }
 
   const isDialect = config.voice_dialect_mode === 'always_kham_mueang' || 
-    (config.voice_dialect_mode !== 'always_central' && (detectNorthernDialect(question) || isAudioKhamMueang));
+    (config.voice_dialect_mode !== 'always_central' && (
+      detectNorthernDialect(question) || 
+      detectNorthernDialect(transcribedQuestion || '') || 
+      isAudioKhamMueang
+    ));
 
   // 0. Handle Conversational Greetings & Courtesy Messages
-  const convIntent = detectConversationalIntent(question);
+  const convIntent = detectConversationalIntent(question, isDialect);
   if (convIntent.isConversational && convIntent.replyText) {
     const responseTimeMs = Date.now() - startTime;
     let logId: string | undefined;
@@ -1385,7 +1438,9 @@ export async function executeRAGPipeline(params: {
   let responseTimeMs = 0;
 
   if (isFallback) {
-    answerText = 'ขออภัยครับ/ค่ะ ขณะนี้ยังไม่พบข้อมูลที่ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝาง\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติม:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการ';
+    answerText = isDialect
+      ? 'สุมาเต๊อะเจ้า ขณะนี้ยังบ่ปะข้อมูลตี้ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝางเน้อเจ้า\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติมเจ้า:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการเจ้า'
+      : 'ขออภัยครับ/ค่ะ ขณะนี้ยังไม่พบข้อมูลที่ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝาง\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติม:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการ';
 
     // Auto-record to knowledge_gap_logs if not playground
     if (!isPlayground) {
@@ -1420,7 +1475,7 @@ export async function executeRAGPipeline(params: {
       }
     }
   } else {
-    answerText = await generateGroundedAnswer(config, question, retrievedSources);
+    answerText = await generateGroundedAnswer(config, question, retrievedSources, isDialect);
   }
 
   responseTimeMs = Date.now() - startTime;

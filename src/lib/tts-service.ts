@@ -180,10 +180,15 @@ export function cleanTextForSpeech(text: string): string {
 /**
  * Build SSML for Microsoft Edge Neural TTS with natural prosody and breathing pauses
  */
-export function buildSsmlForSpeech(text: string, voiceName: string, speed: number = 1.0): string {
+export function buildSsmlForSpeech(
+  text: string, 
+  voiceName: string, 
+  speed: number = 1.0, 
+  dialect: 'kham_mueang' | 'central' = 'central'
+): string {
   // Base rate adjustment: default speed 1.0 produces a relaxed, warm pace (-5%)
-  // This immediately removes the hurried, robotic announcer effect and sounds gentle, polite, and human.
-  const baseRate = -5;
+  // For Kham Mueang (Northern dialect), apply a melodic, gentle cadence (-9%)
+  const baseRate = dialect === 'kham_mueang' ? -9 : -5;
   const ratePercent = baseRate + Math.round((speed - 1.0) * 100);
   const rateStr = ratePercent >= 0 ? `+${ratePercent}%` : `${ratePercent}%`;
 
@@ -192,6 +197,11 @@ export function buildSsmlForSpeech(text: string, voiceName: string, speed: numbe
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+
+  if (dialect === 'kham_mueang') {
+    // Insert natural melodious breath pauses after Northern polite particles
+    ssmlBody = ssmlBody.replace(/(เน้อเจ้า|กะเจ้า|เจ้าข้า|ยินดีเจ้า|เจ้า|เน้อ)\s*/g, `$1<break time='320ms'/> `);
+  }
 
   // Convert commas into natural SSML breaks (~220ms pause)
   ssmlBody = ssmlBody.replace(/,\s*/g, `<break time='220ms'/> `);
@@ -263,7 +273,12 @@ export function calculateMp3Duration(buffer: Buffer): number {
 /**
  * Synthesize speech via Microsoft Edge Neural TTS (High quality, free, natural Thai neural voice)
  */
-async function synthesizeViaEdgeTts(text: string, voiceName: string, speed: number = 1.0): Promise<Buffer | null> {
+async function synthesizeViaEdgeTts(
+  text: string, 
+  voiceName: string, 
+  speed: number = 1.0, 
+  dialect: 'kham_mueang' | 'central' = 'central'
+): Promise<Buffer | null> {
   if (typeof globalThis.WebSocket === 'undefined') return null;
 
   return new Promise<Buffer | null>((resolve) => {
@@ -311,7 +326,7 @@ async function synthesizeViaEdgeTts(text: string, voiceName: string, speed: numb
         ws.send(configMsg);
 
         // 2. Format SSML with natural breathing pauses and warm, human prosody
-        const ssml = buildSsmlForSpeech(text, voiceName, speed);
+        const ssml = buildSsmlForSpeech(text, voiceName, speed, dialect);
 
         const ssmlMsg =
           `X-RequestId:${reqId}\r\n` +
@@ -424,7 +439,8 @@ export async function generateAudioReply(options: TTSOptions): Promise<TTSResult
     text,
     voiceGender = 'female',
     speed = 1.0,
-    publicBaseUrl = ''
+    publicBaseUrl = '',
+    dialect = 'central'
   } = options;
 
   const cleanText = cleanTextForSpeech(text);
@@ -441,7 +457,7 @@ export async function generateAudioReply(options: TTSOptions): Promise<TTSResult
 
   // 1. Try Microsoft Edge Neural TTS (Natural, sweet, warm voice)
   try {
-    audioBuffer = await synthesizeViaEdgeTts(cleanText, voiceName, speed);
+    audioBuffer = await synthesizeViaEdgeTts(cleanText, voiceName, speed, dialect);
   } catch {}
 
   // 2. Fallback to Google TTS if Edge was unreachable
