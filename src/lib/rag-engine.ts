@@ -35,7 +35,7 @@ export function getActiveAiConfig(): AiEngineConfig {
     return {
       config_id: 'cfg-default',
       provider: 'gemini',
-      model_name: 'gemini-2.5-flash',
+      model_name: 'gemini-3.1-flash-lite',
       api_key_masked: '••••••••4f2a',
       api_key_encrypted: '',
       system_prompt: 'คุณคือผู้ช่วย AI อัจฉริยะประจำวิทยาลัยการอาชีพฝาง ให้ตอบคำถามอย่างสุภาพ ถูกต้อง กระชับ และอ้างอิงจากข้อมูลองค์ความรู้ที่ได้รับเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร',
@@ -901,16 +901,16 @@ ${(config.voice_dialect_mode === 'always_kham_mueang' || (config.voice_dialect_m
         }
       };
 
-      // Map official Google Gemini models resiliently
-      const primaryModel = config.model_name || 'gemini-2.5-flash';
+      // Map official Google Gemini models resiliently (prioritizing active models with available quota)
+      const primaryModel = config.model_name || 'gemini-3.1-flash-lite';
       const candidateModels = Array.from(new Set([
         primaryModel,
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-flash-latest',
+        'gemini-3.1-flash-lite',
+        'gemini-3.5-flash-lite',
+        'gemini-flash-lite-latest',
+        'gemini-3.8-flash',
         'gemini-3.6-flash',
-        'gemini-3.8-flash'
+        'gemini-flash-latest'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -1211,13 +1211,13 @@ export async function transcribeAndProcessAudio(
     };
 
     const candidateModels = Array.from(new Set([
-      config.model_name || 'gemini-2.5-flash',
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-flash-latest',
+      config.model_name || 'gemini-3.1-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-3.8-flash',
       'gemini-3.6-flash',
-      'gemini-3.8-flash'
+      'gemini-flash-latest'
     ])).filter(Boolean);
 
     for (const modelId of candidateModels) {
@@ -1233,7 +1233,8 @@ export async function transcribeAndProcessAudio(
           const data = await res.json();
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) {
-            const parsed = JSON.parse(text);
+            const cleanText = text.replace(/^```(json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+            const parsed = JSON.parse(cleanText);
             return {
               transcription: parsed.transcription || '',
               question: parsed.question || parsed.transcription || '',

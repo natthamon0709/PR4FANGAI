@@ -85,7 +85,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const {
       provider = 'gemini',
-      model_name = 'gemini-2.5-flash',
+      model_name = 'gemini-3.1-flash-lite',
       api_key,
       system_prompt,
       confidence_threshold = 0.70,

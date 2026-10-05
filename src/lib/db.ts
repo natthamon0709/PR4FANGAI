@@ -275,7 +275,7 @@ function initTables(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS ai_engine_configs (
       config_id TEXT PRIMARY KEY,
       provider TEXT NOT NULL CHECK (provider IN ('gemini','openai')) DEFAULT 'gemini',
-      model_name TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
+      model_name TEXT NOT NULL DEFAULT 'gemini-3.1-flash-lite',
       api_key_encrypted TEXT NOT NULL,
       system_prompt TEXT NOT NULL,
       confidence_threshold REAL NOT NULL DEFAULT 0.70,
@@ -681,7 +681,7 @@ function initTables(db: Database.Database) {
       INSERT INTO ai_engine_configs (
         config_id, provider, model_name, api_key_encrypted, system_prompt,
         confidence_threshold, retrieval_top_k, temperature, is_active, updated_by, updated_at
-      ) VALUES (?, 'gemini', 'gemini-2.5-flash', ?, ?, 0.70, 5, 0.3, 1, 'usr-admin-001', datetime('now', 'localtime'))
+      ) VALUES (?, 'gemini', 'gemini-3.1-flash-lite', ?, ?, 0.70, 5, 0.3, 1, 'usr-admin-001', datetime('now', 'localtime'))
     `).run(
       'cfg-ai-001',
       'enc_AIzaSyDefaultMockGeminiApiKeyLive20264f2a',
