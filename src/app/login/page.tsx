@@ -34,7 +34,15 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password, rememberMe }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        setError(`เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (${res.status}): กรุณารีเฟรชหน้าเว็บหรือลองใหม่อีกครั้ง`);
+        return;
+      }
 
       if (!res.ok) {
         setError(data.error || 'เข้าสู่ระบบไม่สำเร็จ');
@@ -48,7 +56,7 @@ export default function LoginPage() {
       }
       router.refresh();
     } catch (err: any) {
-      setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + err.message);
+      setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + (err.message || 'โปรดตรวจสอบสัญญาณอินเทอร์เน็ต'));
     } finally {
       setLoading(false);
     }
