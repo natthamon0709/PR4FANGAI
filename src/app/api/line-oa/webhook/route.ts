@@ -5,6 +5,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const maxDuration = 60;
 
+export async function GET() {
+  return NextResponse.json({
+    status: 'online',
+    message: 'LINE OA Webhook is active and ready to receive events'
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
@@ -28,8 +35,13 @@ export async function POST(req: NextRequest) {
     const results = [];
 
     for (const event of events) {
-      const res = await handleLineWebhookEvent(event);
-      results.push(res);
+      try {
+        const res = await handleLineWebhookEvent(event);
+        results.push(res);
+      } catch (eventErr: any) {
+        console.error('Error handling individual LINE event:', eventErr);
+        results.push({ handled: false, error: eventErr.message });
+      }
     }
 
     return NextResponse.json({
