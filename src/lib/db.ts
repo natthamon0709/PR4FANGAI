@@ -65,6 +65,19 @@ export function getDb(): Database.Database {
     try {
       dbInstance.pragma('foreign_keys = ON');
     } catch {}
+
+    // Prepared statement cache to eliminate GC churn and native hook assertion errors
+    const origPrepare = dbInstance.prepare.bind(dbInstance);
+    const stmtCache = new Map<string, Database.Statement>();
+    (dbInstance as any).prepare = (sql: string) => {
+      let stmt = stmtCache.get(sql);
+      if (!stmt) {
+        stmt = origPrepare(sql);
+        stmtCache.set(sql, stmt);
+      }
+      return stmt;
+    };
+
     initTables(dbInstance);
   }
   return dbInstance;
