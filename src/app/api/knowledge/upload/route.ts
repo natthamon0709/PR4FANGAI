@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
 import { uploadToStorage } from '@/lib/supabase';
+import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {

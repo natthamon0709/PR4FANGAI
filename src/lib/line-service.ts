@@ -664,15 +664,16 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
 
       // Fallback matching for student uniform / dress code topic
       if (!generalFullImageUrl && /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|ระเบียบวินัย/i.test(combinedText)) {
-        const isPws = /ปวส/i.test(combinedText);
-        const isPwc = /ปวช/i.test(combinedText);
-        const isAvt = /อวท/i.test(combinedText);
+        const qLower = effectiveQueryText.toLowerCase();
+        const qHasPws = qLower.includes('ปวส') || qLower.includes('ประกาศนียบัตรวิชาชีพชั้นสูง');
+        const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
+        const qHasAvt = qLower.includes('อวท');
 
         const foundUniform = cachedMedia.find(m => {
           const t = (m.title_or_person_name || '').toLowerCase();
-          if (isPws && t.includes('ชุดนร.ปวส')) return true;
-          if (isPwc && t.includes('ชุดนร.ปวช')) return true;
-          if (isAvt && (t.includes('ชุดอวท.ปวส') || t.includes('ชุดอวท'))) return true;
+          if (qHasPwc && t.includes('ชุดนร.ปวช') && !t.includes('ปวส')) return true;
+          if (qHasPws && t.includes('ชุดนร.ปวส')) return true;
+          if (qHasAvt && (t.includes('ชุดอวท.ปวส') || t.includes('ชุดอวท'))) return true;
           return false;
         });
 

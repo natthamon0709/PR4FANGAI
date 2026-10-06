@@ -1776,15 +1776,60 @@ export async function resolveDriveImageForQuery(
         const pickBestImg = (atts: any[]) => {
           const valid = atts.filter(validFilter);
           if (valid.length === 0) return null;
-          // Prefer keyword-specific matches (e.g. ปวส vs ปวช)
-          const matched = valid.find(att => {
-            const fn = (att.file_name || '').toLowerCase();
-            if (combinedText.includes('ปวส') && fn.includes('ปวส')) return true;
-            if (combinedText.includes('ปวช') && fn.includes('ปวช') && !fn.includes('ปวส')) return true;
-            if (combinedText.includes('อวท') && fn.includes('อวท')) return true;
-            return false;
-          });
-          return matched || valid[0];
+
+          const qLower = question.toLowerCase();
+          const ansLower = answerText.toLowerCase();
+
+          // 1. Direct question intent (Highest priority)
+          const qHasPws = qLower.includes('ปวส') || qLower.includes('ประกาศนียบัตรวิชาชีพชั้นสูง');
+          const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
+          const qHasAvt = qLower.includes('อวท');
+
+          if (qHasPwc) {
+            const pwcMatch = valid.find(att => {
+              const fn = (att.file_name || '').toLowerCase();
+              return fn.includes('ปวช') && !fn.includes('ปวส');
+            });
+            if (pwcMatch) return pwcMatch;
+          }
+
+          if (qHasPws) {
+            const pwsMatch = valid.find(att => {
+              const fn = (att.file_name || '').toLowerCase();
+              return fn.includes('ปวส');
+            });
+            if (pwsMatch) return pwsMatch;
+          }
+
+          if (qHasAvt) {
+            const avtMatch = valid.find(att => {
+              const fn = (att.file_name || '').toLowerCase();
+              return fn.includes('อวท');
+            });
+            if (avtMatch) return avtMatch;
+          }
+
+          // 2. Answer intent if question didn't specify
+          const ansHasPws = ansLower.includes('ปวส');
+          const ansHasPwc = ansLower.includes('ปวช') && !ansHasPws;
+
+          if (ansHasPwc) {
+            const pwcMatch = valid.find(att => {
+              const fn = (att.file_name || '').toLowerCase();
+              return fn.includes('ปวช') && !fn.includes('ปวส');
+            });
+            if (pwcMatch) return pwcMatch;
+          }
+
+          if (ansHasPws) {
+            const pwsMatch = valid.find(att => {
+              const fn = (att.file_name || '').toLowerCase();
+              return fn.includes('ปวส');
+            });
+            if (pwsMatch) return pwsMatch;
+          }
+
+          return valid[0];
         };
 
         let foundWebImg = pickBestImg(webAttachments);
@@ -1866,22 +1911,23 @@ export async function resolveDriveImageForQuery(
       }
     }
 
-    // Third pass: match student uniform / dress code topic
+    // Third pass: match student uniform / dress code topic using question intent
     const isUniformTopic = /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|ระเบียบวินัย/i.test(combinedText);
     if (isUniformTopic) {
-      const isPws = /ปวส/i.test(combinedText);
-      const isPwc = /ปวช/i.test(combinedText);
-      const isAvt = /อวท/i.test(combinedText);
+      const qLower = question.toLowerCase();
+      const qHasPws = qLower.includes('ปวส') || qLower.includes('ประกาศนียบัตรวิชาชีพชั้นสูง');
+      const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
+      const qHasAvt = qLower.includes('อวท');
 
       for (const m of cachedMedia) {
         const title = (m.title_or_person_name || '').toLowerCase();
-        if (isPws && title.includes('ชุดนร.ปวส')) {
-          return { imageUrl: m.image_url, caption: 'ชุดนักศึกษา ปวส.', isWebAttachment: false };
-        }
-        if (isPwc && title.includes('ชุดนร.ปวช')) {
+        if (qHasPwc && title.includes('ชุดนร.ปวช') && !title.includes('ปวส')) {
           return { imageUrl: m.image_url, caption: 'ชุดนักเรียน ปวช.', isWebAttachment: false };
         }
-        if (isAvt && (title.includes('ชุดอวท.ปวส') || title.includes('ชุดอวท'))) {
+        if (qHasPws && title.includes('ชุดนร.ปวส')) {
+          return { imageUrl: m.image_url, caption: 'ชุดนักศึกษา ปวส.', isWebAttachment: false };
+        }
+        if (qHasAvt && (title.includes('ชุดอวท.ปวส') || title.includes('ชุดอวท'))) {
           return { imageUrl: m.image_url, caption: 'ชุด อวท.', isWebAttachment: false };
         }
       }
