@@ -4,6 +4,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || 'placeholder-anon-key';
 const supabaseSecretKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || 'placeholder-secret-key';
 
+import crypto from 'crypto';
+
 // Standard client (Public / Browser / SSR)
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -53,7 +55,10 @@ export async function uploadToStorage(
   folder: string = 'documents'
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const filePath = `${folder}/${Date.now()}-${fileName.replace(/\s+/g, '_')}`;
+    const ext = fileName.includes('.') ? '.' + fileName.split('.').pop()!.toLowerCase() : '';
+    const randomSuffix = crypto.randomUUID().slice(0, 8);
+    // Use safe ASCII path for S3 storage key to prevent InvalidKey error with Thai characters
+    const filePath = `${folder}/${Date.now()}-${randomSuffix}${ext}`;
     const { data, error } = await supabaseAdmin.storage
       .from(STORAGE_BUCKET)
       .upload(filePath, fileBody, {

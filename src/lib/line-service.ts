@@ -128,6 +128,16 @@ export function isValidReplyToken(token?: string): boolean {
   return token.trim().length >= 10;
 }
 
+export function isValidLineImageUrl(url?: string | null): boolean {
+  if (!url) return false;
+  if (!url.startsWith('https://')) return false;
+  if (url.includes('sample_')) return false;
+  if (url.includes('drive.google.com/drive/folders')) return false;
+  if (url.includes('docs.google.com')) return false;
+  if (url.match(/_[0-9]{2,}$/)) return false; // mock dummy id
+  return true;
+}
+
 /**
  * Send REAL message reply via LINE Messaging API (https://api.line.me/v2/bot/message/reply)
  * Supports both Text and Image (e.g. Google Drive Personnel / Map photos) with Push fallback
@@ -149,17 +159,12 @@ export async function sendLineReplyMessage(
       text: text
     };
 
-    const isValidImage = Boolean(
-      media?.imageUrl && 
-      media.imageUrl.startsWith('https://') && 
-      !media.imageUrl.match(/_[0-9]{2,}$/) &&
-      !media.imageUrl.includes('drive.google.com/drive/folders')
-    );
+    const isValidImage = isValidLineImageUrl(media?.imageUrl);
 
     const imageMessage = isValidImage ? {
       type: 'image',
-      originalContentUrl: media!.imageUrl,
-      previewImageUrl: media!.imageUrl
+      originalContentUrl: media!.imageUrl!,
+      previewImageUrl: media!.imageUrl!
     } : null;
 
     let replySuccess = false;
@@ -638,8 +643,12 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
     try {
       const cachedMedia = db.prepare('SELECT * FROM drive_media_cache ORDER BY updated_at DESC').all() as any[];
 
+      if (ragResult.imageUrl && ragResult.imageUrl.startsWith('/') && publicBaseUrl) {
+        ragResult.imageUrl = `${publicBaseUrl}${ragResult.imageUrl}`;
+      }
+
       // Check if ragResult already identified a direct image
-      if (ragResult.imageUrl) {
+      if (ragResult.imageUrl && isValidLineImageUrl(ragResult.imageUrl)) {
         if (ragResult.isWebAttachment) {
           // Priority 1: Web-uploaded image attached to knowledge item
           generalFullImageUrl = ragResult.imageUrl;
@@ -653,12 +662,37 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
         }
       }
 
+      // Fallback matching for student uniform / dress code topic
+      if (!generalFullImageUrl && /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|ระเบียบวินัย/i.test(combinedText)) {
+        const isPws = /ปวส/i.test(combinedText);
+        const isPwc = /ปวช/i.test(combinedText);
+        const isAvt = /อวท/i.test(combinedText);
+
+        const foundUniform = cachedMedia.find(m => {
+          const t = (m.title_or_person_name || '').toLowerCase();
+          if (isPws && t.includes('ชุดนร.ปวส')) return true;
+          if (isPwc && t.includes('ชุดนร.ปวช')) return true;
+          if (isAvt && (t.includes('ชุดอวท.ปวส') || t.includes('ชุดอวท'))) return true;
+          return false;
+        });
+
+        if (foundUniform) {
+          const uUrl = foundUniform.image_url || `https://lh3.googleusercontent.com/d/${foundUniform.file_id}`;
+          if (isValidLineImageUrl(uUrl)) {
+            generalFullImageUrl = uUrl;
+          }
+        }
+      }
+
       for (const m of cachedMedia) {
         // If it's a non-person media (e.g. Map / Building / Plan)
         if (!isPersonMedia(m.title_or_person_name)) {
           const rawDocName = (m.title_or_person_name.split('(')[0] || '').replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').trim().toLowerCase();
           if (rawDocName && combinedText.includes(rawDocName) && !generalFullImageUrl) {
-            generalFullImageUrl = m.image_url || `https://lh3.googleusercontent.com/d/${m.file_id}`;
+            const candidateUrl = m.image_url || `https://lh3.googleusercontent.com/d/${m.file_id}`;
+            if (isValidLineImageUrl(candidateUrl)) {
+              generalFullImageUrl = candidateUrl;
+            }
           }
           continue;
         }
@@ -737,22 +771,16 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
       });
     }
 
-    // Bubble 3+: Supporting media (Priority 1: Web upload image, Priority 2: Teachers carousel / Drive map)
-    if (ragResult.isWebAttachment && generalFullImageUrl && generalFullImageUrl.startsWith('https://')) {
+    // Bubble 3+: Supporting media (Priority 1: Direct/Web upload image, Priority 2: Teachers carousel)
+    if (isValidLineImageUrl(generalFullImageUrl)) {
       replyMessages.push({
         type: 'image',
-        originalContentUrl: generalFullImageUrl,
-        previewImageUrl: generalFullImageUrl
+        originalContentUrl: generalFullImageUrl!,
+        previewImageUrl: generalFullImageUrl!
       });
     } else if (matchedTeachers.length > 0) {
       const flexCarousel = buildTeacherFlexCarousel(matchedTeachers);
       replyMessages.push(flexCarousel);
-    } else if (generalFullImageUrl && generalFullImageUrl.startsWith('https://')) {
-      replyMessages.push({
-        type: 'image',
-        originalContentUrl: generalFullImageUrl,
-        previewImageUrl: generalFullImageUrl
-      });
     }
 
     let replySuccess = false;

@@ -36,9 +36,29 @@ export async function POST(req: NextRequest) {
 
     // Upload to Supabase Storage bucket
     const uploadRes = await uploadToStorage(fileName, buffer, contentType, 'documents');
-    const fileUrl = uploadRes.success && uploadRes.url 
-      ? uploadRes.url 
-      : `https://drive.google.com/file/d/sample_${Date.now()}/view?usp=sharing`;
+    let fileUrl = uploadRes.success && uploadRes.url ? uploadRes.url : '';
+
+    // Local Disk Fallback if cloud storage is unavailable
+    if (!fileUrl) {
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'documents');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        const safeLocalName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}${ext ? '.' + ext : ''}`;
+        const localPath = path.join(uploadDir, safeLocalName);
+        fs.writeFileSync(localPath, buffer);
+        fileUrl = `/uploads/documents/${safeLocalName}`;
+      } catch (localErr) {
+        console.error('Local fallback storage error:', localErr);
+      }
+    }
+
+    if (!fileUrl) {
+      return NextResponse.json({ error: 'ไม่สามารถบันทึกไฟล์ได้ กรุณาลองใหม่อีกครั้ง' }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,

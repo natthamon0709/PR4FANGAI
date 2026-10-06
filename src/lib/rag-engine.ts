@@ -1762,13 +1762,32 @@ export async function resolveDriveImageForQuery(
           ORDER BY uploaded_at DESC
         `).all(...knowledgeIds) as any[];
 
-        let foundWebImg = webAttachments.find(att => {
+        const validFilter = (att: any) => {
           if (!att.file_url) return false;
+          if (att.file_url.includes('sample_')) return false;
+          if (att.file_url.includes('drive.google.com/drive/folders')) return false;
+          if (att.file_url.includes('docs.google.com')) return false;
           const isImgType = att.file_type === 'image';
           const isImgExt = /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(att.file_name || '') ||
                            /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(att.file_url);
-          return (isImgType || isImgExt) && !att.file_url.includes('drive.google.com/drive/folders');
-        });
+          return isImgType || isImgExt;
+        };
+
+        const pickBestImg = (atts: any[]) => {
+          const valid = atts.filter(validFilter);
+          if (valid.length === 0) return null;
+          // Prefer keyword-specific matches (e.g. ปวส vs ปวช)
+          const matched = valid.find(att => {
+            const fn = (att.file_name || '').toLowerCase();
+            if (combinedText.includes('ปวส') && fn.includes('ปวส')) return true;
+            if (combinedText.includes('ปวช') && fn.includes('ปวช') && !fn.includes('ปวส')) return true;
+            if (combinedText.includes('อวท') && fn.includes('อวท')) return true;
+            return false;
+          });
+          return matched || valid[0];
+        };
+
+        let foundWebImg = pickBestImg(webAttachments);
 
         // If not found in SQLite, check Supabase
         if (!foundWebImg) {
@@ -1780,13 +1799,7 @@ export async function resolveDriveImageForQuery(
               .order('uploaded_at', { ascending: false });
 
             if (sbAtts && sbAtts.length > 0) {
-              foundWebImg = sbAtts.find(att => {
-                if (!att.file_url) return false;
-                const isImgType = att.file_type === 'image';
-                const isImgExt = /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(att.file_name || '') ||
-                                 /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(att.file_url);
-                return (isImgType || isImgExt) && !att.file_url.includes('drive.google.com/drive/folders');
-              });
+              foundWebImg = pickBestImg(sbAtts);
             }
           } catch {}
         }
@@ -1813,7 +1826,8 @@ export async function resolveDriveImageForQuery(
 
   // 2. PRIORITY 2: Check Google Drive media cache (drive_media_cache)
   try {
-    const cachedMedia = db.prepare('SELECT * FROM drive_media_cache ORDER BY updated_at DESC').all() as any[];
+    const cachedMedia = (db.prepare('SELECT * FROM drive_media_cache ORDER BY updated_at DESC').all() as any[])
+      .filter(m => m.file_id && m.file_id.length <= 35 && !m.title_or_person_name?.startsWith('KB-'));
     const normalizedCombined = combinedText.replace(/ศุทธิชัย/g, 'ศุทิชัย');
     
     // First pass: match exact person name
@@ -1849,6 +1863,27 @@ export async function resolveDriveImageForQuery(
           caption: m.title_or_person_name,
           isWebAttachment: false
         };
+      }
+    }
+
+    // Third pass: match student uniform / dress code topic
+    const isUniformTopic = /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|ระเบียบวินัย/i.test(combinedText);
+    if (isUniformTopic) {
+      const isPws = /ปวส/i.test(combinedText);
+      const isPwc = /ปวช/i.test(combinedText);
+      const isAvt = /อวท/i.test(combinedText);
+
+      for (const m of cachedMedia) {
+        const title = (m.title_or_person_name || '').toLowerCase();
+        if (isPws && title.includes('ชุดนร.ปวส')) {
+          return { imageUrl: m.image_url, caption: 'ชุดนักศึกษา ปวส.', isWebAttachment: false };
+        }
+        if (isPwc && title.includes('ชุดนร.ปวช')) {
+          return { imageUrl: m.image_url, caption: 'ชุดนักเรียน ปวช.', isWebAttachment: false };
+        }
+        if (isAvt && (title.includes('ชุดอวท.ปวส') || title.includes('ชุดอวท'))) {
+          return { imageUrl: m.image_url, caption: 'ชุด อวท.', isWebAttachment: false };
+        }
       }
     }
   } catch (e) {}
