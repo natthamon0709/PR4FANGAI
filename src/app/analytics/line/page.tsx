@@ -11,7 +11,7 @@ import DonutChart from '@/components/analytics/DonutChart';
 import RelativeTimeLabel from '@/components/dashboard/RelativeTimeLabel';
 import { DateRangePreset, LineAnalyticsResponse } from '@/types/analytics';
 import { SessionUser } from '@/types';
-import { Smartphone, UserCheck, Send, MessageSquare, Loader2 } from 'lucide-react';
+import { Smartphone, UserCheck, Send, MessageSquare, Loader2, RefreshCw } from 'lucide-react';
 
 export default function LineAnalyticsPage() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function LineAnalyticsPage() {
   const [startDate, setStartDate] = useState<string | undefined>();
   const [endDate, setEndDate] = useState<string | undefined>();
   const [data, setData] = useState<LineAnalyticsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function checkAuth() {
@@ -34,6 +35,7 @@ export default function LineAnalyticsPage() {
   }, [router]);
 
   const loadData = async () => {
+    setLoading(true);
     const params = new URLSearchParams();
     params.set('preset', preset);
     if (startDate) params.set('startDate', startDate);
@@ -43,9 +45,12 @@ export default function LineAnalyticsPage() {
     if (res.ok && res.data?.success) {
       setData(res.data);
     }
+    setLoading(false);
   };
 
-  useEffect(() => { if (user) loadData(); }, [user, preset, startDate, endDate]);
+  useEffect(() => {
+    if (user) loadData();
+  }, [user, preset, startDate, endDate]);
 
   if (!user) {
     return (
@@ -76,20 +81,36 @@ export default function LineAnalyticsPage() {
               การเติบโตของผู้ติดตาม การผูกบัญชีบุคลากร/นักศึกษา และสถิติการส่งข้อความบรอดแคสต์
             </p>
           </div>
-          <DateRangePicker
-            preset={preset}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={(p, s, e) => { setPreset(p); setStartDate(s); setEndDate(e); }}
-          />
+          <div className="flex items-center gap-2">
+            <DateRangePicker
+              preset={preset}
+              startDate={startDate}
+              endDate={endDate}
+              onRangeChange={(p, s, e) => { setPreset(p); setStartDate(s); setEndDate(e); }}
+            />
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="p-2 rounded-full border border-outline/30 bg-surface-card hover:bg-surface text-onSurface-muted hover:text-primary transition-all disabled:opacity-50"
+              title="รีเฟรชข้อมูล"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-primary' : ''}`} />
+            </button>
+          </div>
         </div>
 
         <AnalyticsTabNav isAdmin={user.role === 'administrator'} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {data?.kpis.map((kpi, idx) => (
-            <AnalyticsKpiCard key={kpi.key} kpi={kpi} icon={kpiIcons[idx % kpiIcons.length]} />
-          ))}
+          {data?.kpis ? (
+            data.kpis.map((kpi, idx) => (
+              <AnalyticsKpiCard key={kpi.key} kpi={kpi} icon={kpiIcons[idx % kpiIcons.length]} />
+            ))
+          ) : (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="h-28 bg-surface-card rounded-2xl border border-outline/20 animate-pulse" />
+            ))
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -127,23 +148,31 @@ export default function LineAnalyticsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline/10">
-                {data?.recentBroadcasts.map((bc) => (
-                  <tr key={bc.broadcast_id} className="hover:bg-primary-container/10 transition-colors">
-                    <td className="p-2.5 font-bold text-onSurface">{bc.title}</td>
-                    <td className="p-2.5 text-onSurface-muted">
-                      {bc.target_type === 'all_followers' ? 'ผู้ติดตามทั้งหมด' : 'เฉพาะฝ่ายงาน'}
-                    </td>
-                    <td className="p-2.5 font-bold text-primary">{bc.delivered_count.toLocaleString()} คน</td>
-                    <td className="p-2.5">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                        {bc.status}
-                      </span>
-                    </td>
-                    <td className="p-2.5 text-right text-onSurface-muted">
-                      <RelativeTimeLabel dateString={bc.sent_at} />
+                {data?.recentBroadcasts && data.recentBroadcasts.length > 0 ? (
+                  data.recentBroadcasts.map((bc) => (
+                    <tr key={bc.broadcast_id} className="hover:bg-primary-container/10 transition-colors">
+                      <td className="p-2.5 font-bold text-onSurface">{bc.title}</td>
+                      <td className="p-2.5 text-onSurface-muted">
+                        {bc.target_type === 'all_followers' ? 'ผู้ติดตามทั้งหมด' : 'เฉพาะฝ่ายงาน'}
+                      </td>
+                      <td className="p-2.5 font-bold text-primary">{bc.delivered_count.toLocaleString()} คน</td>
+                      <td className="p-2.5">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          {bc.status}
+                        </span>
+                      </td>
+                      <td className="p-2.5 text-right text-onSurface-muted">
+                        <RelativeTimeLabel dateString={bc.sent_at} />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="p-6 text-center text-onSurface-muted">
+                      {loading ? 'กำลังโหลดข้อมูล...' : 'ไม่พบประวัติการส่งบรอดแคสต์ในช่วงเวลานี้'}
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

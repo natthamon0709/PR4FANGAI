@@ -11,7 +11,7 @@ import DonutChart from '@/components/analytics/DonutChart';
 import RankingList from '@/components/analytics/RankingList';
 import { DateRangePreset, KnowledgeAnalyticsResponse } from '@/types/analytics';
 import { SessionUser } from '@/types';
-import { BookOpen, CheckCircle, Zap, Layers, Loader2 } from 'lucide-react';
+import { BookOpen, CheckCircle, Zap, Layers, Loader2, RefreshCw } from 'lucide-react';
 
 export default function KnowledgeAnalyticsPage() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function KnowledgeAnalyticsPage() {
   const [startDate, setStartDate] = useState<string | undefined>();
   const [endDate, setEndDate] = useState<string | undefined>();
   const [data, setData] = useState<KnowledgeAnalyticsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function checkAuth() {
@@ -34,6 +35,7 @@ export default function KnowledgeAnalyticsPage() {
   }, [router]);
 
   const loadData = async () => {
+    setLoading(true);
     const params = new URLSearchParams();
     params.set('preset', preset);
     if (startDate) params.set('startDate', startDate);
@@ -43,9 +45,12 @@ export default function KnowledgeAnalyticsPage() {
     if (res.ok && res.data?.success) {
       setData(res.data);
     }
+    setLoading(false);
   };
 
-  useEffect(() => { if (user) loadData(); }, [user, preset, startDate, endDate]);
+  useEffect(() => {
+    if (user) loadData();
+  }, [user, preset, startDate, endDate]);
 
   if (!user) {
     return (
@@ -62,7 +67,7 @@ export default function KnowledgeAnalyticsPage() {
       user={user}
       breadcrumbs={[
         { label: 'สถิติและรายงาน', href: '/analytics' },
-        { label: 'ประสิทธิภาพองค์ความรู้' },
+        { label: 'ประสิทธิภาพคลังความรู้' },
       ]}
     >
       <div className="space-y-6 pb-12">
@@ -76,20 +81,36 @@ export default function KnowledgeAnalyticsPage() {
               อัตราการเติบโตของเนื้อหา สัดส่วนประเภทบทความ และการนำไปใช้ตอบคำถาม
             </p>
           </div>
-          <DateRangePicker
-            preset={preset}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={(p, s, e) => { setPreset(p); setStartDate(s); setEndDate(e); }}
-          />
+          <div className="flex items-center gap-2">
+            <DateRangePicker
+              preset={preset}
+              startDate={startDate}
+              endDate={endDate}
+              onRangeChange={(p, s, e) => { setPreset(p); setStartDate(s); setEndDate(e); }}
+            />
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="p-2 rounded-full border border-outline/30 bg-surface-card hover:bg-surface text-onSurface-muted hover:text-primary transition-all disabled:opacity-50"
+              title="รีเฟรชข้อมูล"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-primary' : ''}`} />
+            </button>
+          </div>
         </div>
 
         <AnalyticsTabNav isAdmin={user.role === 'administrator'} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {data?.kpis.map((kpi, idx) => (
-            <AnalyticsKpiCard key={kpi.key} kpi={kpi} icon={kpiIcons[idx % kpiIcons.length]} />
-          ))}
+          {data?.kpis ? (
+            data.kpis.map((kpi, idx) => (
+              <AnalyticsKpiCard key={kpi.key} kpi={kpi} icon={kpiIcons[idx % kpiIcons.length]} />
+            ))
+          ) : (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="h-28 bg-surface-card rounded-2xl border border-outline/20 animate-pulse" />
+            ))
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -98,29 +119,29 @@ export default function KnowledgeAnalyticsPage() {
               data={data?.growthTrend || []}
               title="การเติบโตขององค์ความรู้สะสม"
               subtitle="จำนวนบทความสะสมในคลังความรู้ตลอดช่วงเวลา"
-              color="#2563EB"
-              unit="บทความ"
+              color="#800000"
+              unit="รายการ"
             />
           </div>
           <DonutChart
             data={data?.contentTypeBreakdown || []}
-            title="สัดส่วนประเภทองค์ความรู้"
-            subtitle="แยกตาม FAQ, ข่าว, ประกาศ และเอกสาร"
+            title="สัดส่วนประเภทเนื้อหา"
+            subtitle="การกระจายตัวของประเภทองค์ความรู้ในระบบ"
           />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <RankingList
             items={data?.topUsedArticles || []}
-            title="บทความที่ AI เรียกใช้สูงสุด"
-            subtitle="จัดอันดับตามจำนวนครั้งที่ AI นำข้อมูลไปสังเคราะห์คำตอบ"
+            title="บทความที่ถูกนำไปใช้สูงสุด"
+            subtitle="จัดอันดับตามจำนวนครั้งที่ AI นำไปสังเคราะห์คำตอบใน LINE OA"
             unit="ครั้ง"
             viewAllLink="/knowledge"
           />
           <RankingList
             items={data?.departmentContributions || []}
-            title="สัดส่วนการสร้างองค์ความรู้แยกตามฝ่าย"
-            subtitle="จัดอันดับฝ่ายที่มีจำนวนบทความในระบบมากที่สุด"
+            title="ปริมาณการบันทึกข้อมูลแยกตามฝ่าย"
+            subtitle="จัดอันดับฝ่ายที่มีการเผยแพร่องค์ความรู้มากที่สุด"
             unit="รายการ"
           />
         </div>

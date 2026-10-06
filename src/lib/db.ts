@@ -761,31 +761,60 @@ function initTables(db: Database.Database) {
     `).run();
   }
 
-  // Seed default Report Snapshots for historical charts if empty
-  const snapCount = (db.prepare('SELECT COUNT(*) as c FROM report_snapshots').get() as any).c;
-  if (snapCount < 10) {
-    const insertStmt = db.prepare(`
-      INSERT OR REPLACE INTO report_snapshots (snapshot_id, metric_key, scope, department_id, period_type, period_date, metric_value, created_at)
-      VALUES (?, ?, ?, ?, 'daily', ?, ?, datetime('now', 'localtime'))
-    `);
+  // Seed line_broadcasts if empty
+  try {
+    const bcCount = (db.prepare('SELECT COUNT(*) as c FROM line_broadcasts').get() as any)?.c || 0;
+    if (bcCount === 0) {
+      const insertBc = db.prepare(`
+        INSERT INTO line_broadcasts (
+          broadcast_id, title, message_text, target_type, department_id, status, delivered_count, created_by, sent_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, 'sent', ?, 'usr-admin-001', ?, ?)
+      `);
+      const now = new Date();
+      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+      const daysAgo = (d: number, hour: number, min: number) => {
+        const dt = new Date(now);
+        dt.setDate(dt.getDate() - d);
+        return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(hour)}:${pad(min)}:00`;
+      };
+      insertBc.run('bc-001', 'ประชาสัมพันธ์กำหนดการเปิดภาคเรียนและลงทะเบียนเรียน 2/2569', 'วิทยาลัยการอาชีพฝาง ขอแจ้งกำหนดการลงทะเบียนเรียนและเปิดภาคเรียนที่ 2/2569 ตั้งแต่วันที่ 15 ต.ค. 2569 เป็นต้นไป', 'all_followers', 'dept-04-academic', 245, daysAgo(2, 9, 30), daysAgo(2, 9, 0));
+      insertBc.run('bc-002', 'ประกาศแจ้งกำหนดการตรวจสุขภาพนักเรียน นักศึกษาใหม่', 'ขอให้นักเรียน นักศึกษา เข้ารับการตรวจสุขภาพประจำปี ณ อาคารวิทยบริการ', 'all_followers', 'dept-03-student', 218, daysAgo(8, 14, 15), daysAgo(8, 13, 45));
+      insertBc.run('bc-003', 'แจ้งเตือนการส่งคำร้องขอรับทุนการศึกษาเพื่อการศึกษา', 'เปิดรับคำร้องขอรับทุนการศึกษา ประจำปีการศึกษา 2569 สิ้นสุดวันที่ 30 ต.ค. นี้', 'all_followers', 'dept-03-student', 180, daysAgo(18, 10, 0), daysAgo(18, 9, 30));
+      insertBc.run('bc-004', 'กิจกรรมวันไหว้ครูและพิธีมอบเกียรติบัตรเรียนดีเด่น 2569', 'ขอเชิญคณะครู บุคลากร และนักเรียนร่วมกิจกรรมวันไหว้ครู ณ หอประชุมใหญ่', 'all_followers', 'dept-01-resource', 232, daysAgo(26, 8, 45), daysAgo(26, 8, 0));
+    }
+  } catch {}
+
+  // Seed default Report Snapshots for historical charts up to today
+  try {
     const now = new Date();
     const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
-    for (let i = 30; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-      const dayFactor = (30 - i) + Math.sin(i) * 5;
-      const qCount = Math.max(12, Math.round(35 + dayFactor * 2.2 + (i % 7 === 0 ? -15 : 10)));
-      const activeUsers = Math.max(5, Math.round(18 + (i % 5)));
-      const confidence = Math.min(0.96, Math.max(0.72, 0.82 + (Math.sin(i * 0.8) * 0.08)));
-      const followers = 140 + Math.round((30 - i) * 3.5);
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const latestDate = (db.prepare("SELECT MAX(period_date) as max_date FROM report_snapshots WHERE metric_key = 'follower_count'").get() as any)?.max_date;
 
-      insertStmt.run(`snap-q-${dateStr}`, 'ai_question_count', 'global', null, dateStr, qCount);
-      insertStmt.run(`snap-u-${dateStr}`, 'active_users', 'global', null, dateStr, activeUsers);
-      insertStmt.run(`snap-c-${dateStr}`, 'avg_confidence', 'global', null, dateStr, Math.round(confidence * 100) / 100);
-      insertStmt.run(`snap-f-${dateStr}`, 'follower_count', 'global', null, dateStr, followers);
+    if (!latestDate || latestDate < todayStr) {
+      const insertStmt = db.prepare(`
+        INSERT OR REPLACE INTO report_snapshots (snapshot_id, metric_key, scope, department_id, period_type, period_date, metric_value, created_at)
+        VALUES (?, ?, ?, ?, 'daily', ?, ?, datetime('now', 'localtime'))
+      `);
+      for (let i = 60; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const dayFactor = (60 - i) + Math.sin(i) * 5;
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+        const qCount = Math.max(10, Math.round((isWeekend ? 15 : 38) + Math.sin(i * 0.4) * 8));
+        const activeUsers = Math.max(5, Math.round((isWeekend ? 8 : 22) + Math.sin(i * 0.3) * 3));
+        const confidence = Math.min(0.96, Math.max(0.72, 0.84 + (Math.sin(i * 0.5) * 0.06)));
+        const followers = Math.max(135, Math.round(248 - (i * 1.5) + Math.sin(i * 0.2) * 2));
+
+        insertStmt.run(`snap-q-${dateStr}`, 'ai_question_count', 'global', null, dateStr, qCount);
+        insertStmt.run(`snap-u-${dateStr}`, 'active_users', 'global', null, dateStr, activeUsers);
+        insertStmt.run(`snap-c-${dateStr}`, 'avg_confidence', 'global', null, dateStr, Math.round(confidence * 100) / 100);
+        insertStmt.run(`snap-f-${dateStr}`, 'follower_count', 'global', null, dateStr, followers);
+      }
     }
-  }
+  } catch {}
 }
 
 // -------------------------------------------------------------------------

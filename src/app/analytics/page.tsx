@@ -111,9 +111,15 @@ export default function AnalyticsOverviewPage() {
 
         {/* KPI Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {data?.kpis.map((kpi, idx) => (
-            <AnalyticsKpiCard key={kpi.key} kpi={kpi} icon={kpiIcons[idx % kpiIcons.length]} />
-          ))}
+          {data?.kpis ? (
+            data.kpis.map((kpi, idx) => (
+              <AnalyticsKpiCard key={kpi.key} kpi={kpi} icon={kpiIcons[idx % kpiIcons.length]} />
+            ))
+          ) : (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="h-28 bg-surface-card rounded-2xl border border-outline/20 animate-pulse" />
+            ))
+          )}
         </div>
 
         {/* 30-Day Trend Chart */}

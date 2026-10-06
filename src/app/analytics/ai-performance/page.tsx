@@ -12,7 +12,7 @@ import TrendLineChart from '@/components/analytics/TrendLineChart';
 import RankingList from '@/components/analytics/RankingList';
 import { DateRangePreset, AiPerformanceResponse } from '@/types/analytics';
 import { SessionUser } from '@/types';
-import { Bot, CheckCircle, Target, Clock, Loader2 } from 'lucide-react';
+import { Bot, CheckCircle, Target, Clock, Loader2, RefreshCw } from 'lucide-react';
 
 export default function AiPerformancePage() {
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function AiPerformancePage() {
   const [startDate, setStartDate] = useState<string | undefined>();
   const [endDate, setEndDate] = useState<string | undefined>();
   const [data, setData] = useState<AiPerformanceResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function checkAuth() {
@@ -35,6 +36,7 @@ export default function AiPerformancePage() {
   }, [router]);
 
   const loadData = async () => {
+    setLoading(true);
     const params = new URLSearchParams();
     params.set('preset', preset);
     if (startDate) params.set('startDate', startDate);
@@ -44,9 +46,12 @@ export default function AiPerformancePage() {
     if (res.ok && res.data?.success) {
       setData(res.data);
     }
+    setLoading(false);
   };
 
-  useEffect(() => { if (user) loadData(); }, [user, preset, startDate, endDate]);
+  useEffect(() => {
+    if (user) loadData();
+  }, [user, preset, startDate, endDate]);
 
   if (!user) {
     return (
@@ -63,7 +68,7 @@ export default function AiPerformancePage() {
       user={user}
       breadcrumbs={[
         { label: 'สถิติและรายงาน', href: '/analytics' },
-        { label: 'ประสิทธิภาพ AI (RAG)' },
+        { label: 'ประสิทธิภาพ AI & RAG' },
       ]}
     >
       <div className="space-y-6 pb-12">
@@ -71,58 +76,72 @@ export default function AiPerformancePage() {
           <div>
             <h1 className="font-heading font-black text-xl md:text-2xl text-onSurface flex items-center gap-2">
               <Bot className="w-6 h-6 text-primary" />
-              <span>รายงานประสิทธิภาพ AI (AI Processing & RAG Performance)</span>
+              <span>รายงานประสิทธิภาพ AI & RAG (AI Performance Report)</span>
             </h1>
             <p className="text-xs md:text-sm text-onSurface-muted mt-0.5">
-              การวิเคราะห์ความแม่นยำ ระดับความมั่นใจ เวลาตอบสนอง และผลตอบรับจากผู้ใช้งาน
+              ความแม่นยำในการตอบ ระดับ Confidence คะแนน Feedback และช่องว่างความรู้ (Knowledge Gaps)
             </p>
           </div>
-          <DateRangePicker
-            preset={preset}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={(p, s, e) => { setPreset(p); setStartDate(s); setEndDate(e); }}
-          />
+          <div className="flex items-center gap-2">
+            <DateRangePicker
+              preset={preset}
+              startDate={startDate}
+              endDate={endDate}
+              onRangeChange={(p, s, e) => { setPreset(p); setStartDate(s); setEndDate(e); }}
+            />
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="p-2 rounded-full border border-outline/30 bg-surface-card hover:bg-surface text-onSurface-muted hover:text-primary transition-all disabled:opacity-50"
+              title="รีเฟรชข้อมูล"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-primary' : ''}`} />
+            </button>
+          </div>
         </div>
 
         <AnalyticsTabNav isAdmin={user.role === 'administrator'} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {data?.kpis.map((kpi, idx) => (
-            <AnalyticsKpiCard key={kpi.key} kpi={kpi} icon={kpiIcons[idx % kpiIcons.length]} />
-          ))}
+          {data?.kpis ? (
+            data.kpis.map((kpi, idx) => (
+              <AnalyticsKpiCard key={kpi.key} kpi={kpi} icon={kpiIcons[idx % kpiIcons.length]} />
+            ))
+          ) : (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="h-28 bg-surface-card rounded-2xl border border-outline/20 animate-pulse" />
+            ))
+          )}
         </div>
 
-        {/* Stacked Confidence Bar Chart */}
         <StackedBarChart
           data={data?.confidenceStackedTrend || []}
-          title="สัดส่วนระดับความมั่นใจของคำตอบ AI รายวัน"
-          subtitle="แยกตามระดับคะแนนความเกี่ยวข้อง (สูง / กลาง / ต่ำ / Fallback)"
+          title="การกระจายระดับความมั่นใจรายวัน (AI Confidence Distribution)"
+          subtitle="เปรียบเทียบสัดส่วนคำตอบความมั่นใจสูง กลาง ต่ำ และที่ตัดเข้า Fallback ในแต่ละวัน"
         />
 
-        {/* Donut Feedback & Latency Trend */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DonutChart
             data={data?.feedbackBreakdown || []}
-            title="ผลตอบรับจากผู้ใช้งาน (User Feedback)"
-            subtitle="สัดส่วนคำตอบที่มีประโยชน์ (👍) และต้องปรับปรุง (👎)"
+            title="ผลตอบรับจากผู้ใช้งาน (Feedback Breakdown)"
+            subtitle="สัดส่วนการกดประเมินคำตอบ (Thumbs Up / Down) ผ่าน LINE OA"
           />
+
           <TrendLineChart
             data={data?.avgLatencyTrend || []}
-            title="เวลาตอบสนองเฉลี่ย (Response Latency)"
-            subtitle="ความเร็วเฉลี่ยในการประมวลผลคำตอบ (วินาที)"
-            color="#D97706"
+            title="แนวโน้มเวลาตอบสนองเฉลี่ย (Response Latency)"
+            subtitle="ระยะเวลาที่ใช้ในการประมวลผลคำตอบ (วินาที)"
+            color="#2563EB"
             unit="วินาที"
           />
         </div>
 
-        {/* Knowledge Gaps Ranking */}
         <RankingList
           items={data?.topKnowledgeGaps || []}
-          title="คำถามที่ AI ตอบไม่ได้บ่อยที่สุด (Knowledge Gaps)"
-          subtitle="ประเด็นที่ผู้ใช้งานถามบ่อยแต่ยังไม่มีข้อมูลในระบบ (กดเพื่อสร้างบทความตอบคำถาม)"
+          title="คำถามที่ระบบยังไม่มีข้อมูล (Top Knowledge Gaps)"
+          subtitle="คำถามที่ผู้ใช้ถามซ้ำบ่อยแต่ AI ไม่สามารถสังเคราะห์คำตอบได้ ควรเร่งเพิ่มลงในคลังความรู้"
           unit="ครั้ง"
-          viewAllLink="/ai-logs?filter=unanswered"
+          viewAllLink="/knowledge/new"
         />
       </div>
     </DashboardLayout>
