@@ -143,12 +143,13 @@ code, pre, .font-mono {
     width: 100% !important;
   }
 
-  /* Hide all dashboard chrome: sidebar, top navbar, footer, buttons, controls */
+  /* Hide all dashboard chrome: sidebar, top navbar, footer, buttons, controls, spinners */
   aside,
   header,
   footer,
   nav,
   .no-print,
+  .animate-spin,
   [data-print-hide="true"] {
     display: none !important;
   }

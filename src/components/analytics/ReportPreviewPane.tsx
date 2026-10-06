@@ -433,7 +433,7 @@ export default function ReportPreviewPane({
       className="max-w-4xl mx-auto font-sans relative space-y-8"
     >
       {loading && (
-        <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-2xl">
+        <div className="no-print print:hidden absolute inset-0 bg-white/70 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-2xl pointer-events-none">
           <Loader2 className="w-8 h-8 text-[#800000] animate-spin mb-2" />
           <p className="text-xs font-semibold text-slate-600">กำลังดึงข้อมูลรายงานล่าสุดจากฐานข้อมูล...</p>
         </div>
@@ -466,7 +466,7 @@ export default function ReportPreviewPane({
                 </p>
               </div>
             </div>
-            <div className="text-right text-[10.5px] text-slate-500 shrink-0 hidden sm:block">
+            <div className="text-right text-[10.5px] text-slate-500 shrink-0 hidden sm:block print:block whitespace-nowrap">
               <div className="inline-flex items-center gap-1 text-[#800000] font-bold text-xs mb-0.5">
                 <FileText className="w-3.5 h-3.5" />
                 <span>เอกสารรายงานทางการ</span>

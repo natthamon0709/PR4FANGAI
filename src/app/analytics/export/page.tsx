@@ -109,9 +109,13 @@ export default function CustomReportExportPage() {
         a.click();
         a.remove();
       } else {
-        // PDF mode: Refresh data first if needed then print clean report
-        await loadReportData();
-        window.print();
+        // PDF mode: Ensure report data is ready before printing
+        if (!reportData) {
+          await loadReportData();
+        }
+        setTimeout(() => {
+          window.print();
+        }, 120);
       }
     } catch (err) {
       console.error('Export error:', err);
