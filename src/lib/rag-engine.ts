@@ -14,6 +14,7 @@ export interface RAGExecutionResult {
   response_time_ms: number;
   imageUrl?: string;
   imageCaption?: string;
+  isWebAttachment?: boolean;
   audioUrl?: string;
   audioDurationMs?: number;
   detectedDialect?: 'kham_mueang' | 'central';
@@ -803,13 +804,91 @@ export async function searchKnowledgeBase(
   }));
 }
 
-export function cleanFaqArtifacts(text: string): string {
+/**
+ * Clean Markdown asterisks and artifacts from output text:
+ * - Strip bold/italic markdown (**text**, *text*)
+ * - Convert bullet asterisks (* item, - item) to clean bullets (• item)
+ * - Remove stray asterisks (*) completely
+ * - Remove Q/A prefix artifacts
+ */
+export function cleanAiMarkdownArtifacts(text: string): string {
   if (!text) return '';
   return text
+    // Convert bullet asterisks & dashes (* item, - item) to clean bullet (• item)
+    .replace(/^[\t ]*[*•\-][\t ]+/gm, '• ')
+    // Strip bold & italics markdown markers
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    // Remove any remaining stray asterisks
+    .replace(/\*/g, '')
+    // Remove markdown heading marks (### Heading -> Heading)
+    .replace(/^#{1,6}\s+(.+)$/gm, '$1')
+    // Remove Q:/A: markers
     .replace(/^(\s*Q\d*[:.]\s*|\s*A\d*[:.]\s*|\s*คำถาม[:.]\s*|\s*คำตอบ[:.]\s*)+/gmi, '')
     .replace(/(\n|\s+)(Q\d*[:.]|A\d*[:.]|คำถาม[:.]|คำตอบ[:.])\s*/gmi, '$1')
     .replace(/\b(A|Q)\d*\s*:\s*/gi, '')
     .trim();
+}
+
+export function cleanFaqArtifacts(text: string): string {
+  return cleanAiMarkdownArtifacts(text);
+}
+
+/**
+ * Strict Gender Persona filter to guarantee no mixed "ครับ/ค่ะ" or wrong gender particles.
+ */
+export function enforceGenderPersonaInText(
+  text: string,
+  gender: 'male' | 'female' = 'female',
+  isDialect: boolean = false
+): string {
+  if (!text) return '';
+  let cleaned = text;
+
+  // Always eliminate ambiguous combined slashes
+  cleaned = cleaned.replace(/ครับ\/ค่ะ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
+  cleaned = cleaned.replace(/ค่ะ\/ครับ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
+  cleaned = cleaned.replace(/ครับ\s*\/\s*ค่ะ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
+  cleaned = cleaned.replace(/ค่ะ\s*\/\s*ครับ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
+
+  if (isDialect) {
+    if (gender === 'male') {
+      // Male Northern: Must use ครับ, เน้อครับ. Never use เจ้า, เน้อเจ้า, ค่ะ, คะ
+      cleaned = cleaned.replace(/เน้อเจ้า/g, 'เน้อครับ');
+      cleaned = cleaned.replace(/กะเจ้า/g, 'กะครับ');
+      cleaned = cleaned.replace(/ยินดีเจ้า/g, 'ยินดีครับ');
+      cleaned = cleaned.replace(/สุมาเต๊อะเจ้า/g, 'สุมาเต๊อะครับ');
+      cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ครับ');
+      cleaned = cleaned.replace(/นะคะ/g, 'นะครับ');
+      cleaned = cleaned.replace(/ค่ะ/g, 'ครับ');
+      cleaned = cleaned.replace(/คะ(?=[ \n.,!?•]|$)/g, 'ครับ');
+    } else {
+      // Female Northern: Must use เจ้า, เน้อเจ้า. Never use ครับ, นะครับ, เน้อครับ
+      cleaned = cleaned.replace(/เน้อครับ/g, 'เน้อเจ้า');
+      cleaned = cleaned.replace(/กะครับ/g, 'กะเจ้า');
+      cleaned = cleaned.replace(/ยินดีครับ/g, 'ยินดีเจ้า');
+      cleaned = cleaned.replace(/สุมาเต๊อะครับ/g, 'สุมาเต๊อะเจ้า');
+      cleaned = cleaned.replace(/นะครับ/g, 'เน้อเจ้า');
+      cleaned = cleaned.replace(/ครับ(?=[ \n.,!?•]|$)/g, 'เจ้า');
+    }
+  } else {
+    // Central Thai
+    if (gender === 'male') {
+      // Male Central: Must use ครับ, นะครับ. Never use ค่ะ, คะ, นะคะ, เจ้า
+      cleaned = cleaned.replace(/นะคะ/g, 'นะครับ');
+      cleaned = cleaned.replace(/ค่ะ/g, 'ครับ');
+      cleaned = cleaned.replace(/คะ(?=[ \n.,!?•]|$)/g, 'ครับ');
+      cleaned = cleaned.replace(/เน้อเจ้า/g, 'นะครับ');
+      cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ครับ');
+    } else {
+      // Female Central: Must use ค่ะ, คะ, นะคะ. Never use ครับ, นะครับ
+      cleaned = cleaned.replace(/นะครับ/g, 'นะคะ');
+      cleaned = cleaned.replace(/ครับ(?=[ \n.,!?•]|$)/g, 'ค่ะ');
+      cleaned = cleaned.replace(/เน้อครับ/g, 'นะคะ');
+    }
+  }
+
+  return cleaned;
 }
 
 async function getFangLiveWeather() {
@@ -910,25 +989,32 @@ async function generateGroundedAnswer(
 6. รูปแบบการตอบสำหรับการแปลงเป็นเสียงพูดสังเคราะห์ (Text-to-Speech & Spoken Rhythm):
    - ใช้ภาษาพูดที่นุ่มนวล เป็นมิตร สุภาพ และเป็นธรรมชาติเสมือนครูอาจารย์ที่ปรึกษาของวิทยาลัยการอาชีพฝางกำลังพูดคุยให้คำแนะนำ
    - จัดวรรคตอนของประโยคให้มีจังหวะหยุดหายใจพอเหมาะ ไม่เขียนข้อความยาวติดกันเป็นพืด
+   - กฎสำคัญเรื่องเครื่องหมาย: ห้ามใช้เครื่องหมายดอกจัน (*) หรือ Markdown ตัวหนา (**...**) ในคำตอบอย่างเด็ดขาด หากเป็นรายการหัวข้อย่อยให้ใช้สัญลักษณ์จุดกลม (•) หรือขึ้นบรรทัดใหม่แทน
    - หลีกเลี่ยงการใช้อักษรย่อที่อ่านยาก และหลีกเลี่ยงสัญลักษณ์พิเศษที่ไม่จำเป็น เช่น *, #, /, |
    - เมื่อแจกแจงรายการ ให้เขียนเชื่อมด้วยภาษาพูดที่เป็นธรรมชาติ เช่น "โดยเปิดสอนในระดับ ปวช. และ ปวส. ได้แก่ สาขา..."
 ${isDialect
-  ? `7. กฎสำคัญบังคับตอบภาษาถิ่นเหนือ (คำเมือง) และสำเนียงเหนือ (STRICT KHAM MUEANG DIALECT):
-   - ผู้ใช้ถามด้วยภาษาถิ่นเหนือ/สำเนียงล้านนา ระบบต้องตอบกลับเป็น "ภาษาถิ่นเหนือ (คำเมือง)" อย่างไพเราะ อ่อนหวาน นุ่มนวล เป็นธรรมชาติของชาวเชียงใหม่/ชาวฝาง
-   - ห้ามใช้คำลงท้าย "ครับ" หรือ "ค่ะ" อย่างเด็ดขาด ให้ใช้คำลงท้ายแบบคำเมืองที่สุภาพ เช่น "เจ้า", "เน้อเจ้า", "ยินดีเจ้า", "กะเจ้า"
-   - ใช้คำศัพท์ภาษาเหนือที่ถูกต้องเป็นธรรมชาติ เช่น
-     • ใช้ "ตี้" แทน "ที่" (เช่น "ติดต่อได้ตี้งานทะเบียน", "ตี้อาคาร 1", "ตี้ห้องประชาสัมพันธ์")
-     • ใช้ "เฮียน" แทน "เรียน" (เช่น "ลงทะเบียนเฮียน", "สมัครเฮียน", "เข้าเฮียน")
-     • ใช้ "ฮับ" แทน "รับ" (เช่น "ฮับเอกสาร", "ฮับสมัคร")
-     • ใช้ "ยะจะได" หรือ "ทำจะได" แทน "ทำอย่างไร"
-     • ใช้ "เต้าใด" หรือ "กี่บาท" แทน "เท่าไหร่"
-     • ใช้ "เปิ้น" แทน "ทางวิทยาลัย/ท่าน"
-     • ใช้ "ตวย" แทน "ด้วย"
-     • ใช้ "ผ่อ" แทน "ดู/ตรวจดู"
-     • ใช้ "สุมาเต๊อะเจ้า" แทน "ขออภัยครับ/ค่ะ"
+  ? (config.voice_gender === 'male'
+      ? `7. กฎสำคัญบังคับตอบภาษาถิ่นเหนือ (คำเมือง) สำหรับผู้ชาย (STRICT KHAM MUEANG - MALE):
+   - ผู้ใช้ถามด้วยภาษาถิ่นเหนือ/สำเนียงล้านนา ระบบต้องตอบกลับเป็น "ภาษาถิ่นเหนือ (คำเมือง)" อย่างสุภาพ นุ่มนวล สุขุม
+   - ในฐานะผู้ชาย ให้ใช้คำลงท้าย "ครับ", "เน้อครับ", "ยินดีครับ" ห้ามมีคำลงท้าย "เจ้า" หรือ "ค่ะ/คะ" เด็ดขาด
+   - ใช้คำศัพท์ภาษาเหนือที่ถูกต้องเป็นธรรมชาติ เช่น ตี้, เฮียน, ฮับ, ยะจะได, เต้าใด, เปิ้น, ตวย, ผ่อ, สุมาเต๊อะครับ
+   - ห้ามใช้ "ครับ/ค่ะ" ปนกันเด็ดขาด
    - เนื้อหาข้อเท็จจริง กฎระเบียบ รายชื่อ และขั้นตอนของวิทยาลัยการอาชีพฝาง ต้องคงความถูกต้องแม่นยำ 100% ไม่บิดเบือน
-   - เว้นวรรคจังหวะหลังคำลงท้าย "เจ้า" หรือ "เน้อเจ้า" ให้ฟังสบายและเหมาะสำหรับการแปลงเป็นเสียงพูด (TTS)`
-  : '7. ตอบเป็นข้อความบรรยายภาษาไทยกลางที่สุภาพ นอบน้อม ถูกต้อง ชัดเจน น้ำเสียงนุ่มนวล และกระชับตรงประเด็น'}`
+   - เว้นวรรคจังหวะหลังคำลงท้าย "ครับ" หรือ "เน้อครับ" ให้ฟังสบายและเหมาะสำหรับการแปลงเป็นเสียงพูด (TTS)`
+      : `7. กฎสำคัญบังคับตอบภาษาถิ่นเหนือ (คำเมือง) สำหรับผู้หญิง (STRICT KHAM MUEANG - FEMALE):
+   - ผู้ใช้ถามด้วยภาษาถิ่นเหนือ/สำเนียงล้านนา ระบบต้องตอบกลับเป็น "ภาษาถิ่นเหนือ (คำเมือง)" อย่างไพเราะ อ่อนหวาน นุ่มนวล
+   - ในฐานะผู้หญิง ให้ใช้คำลงท้าย "เจ้า", "เน้อเจ้า", "ยินดีเจ้า", "กะเจ้า" ห้ามมีคำลงท้าย "ครับ" เด็ดขาด
+   - ใช้คำศัพท์ภาษาเหนือที่ถูกต้องเป็นธรรมชาติ เช่น ตี้, เฮียน, ฮับ, ยะจะได, เต้าใด, เปิ้น, ตวย, ผ่อ, สุมาเต๊อะเจ้า
+   - ห้ามใช้ "ครับ/ค่ะ" ปนกันเด็ดขาด
+   - เนื้อหาข้อเท็จจริง กฎระเบียบ รายชื่อ และขั้นตอนของวิทยาลัยการอาชีพฝาง ต้องคงความถูกต้องแม่นยำ 100% ไม่บิดเบือน
+   - เว้นวรรคจังหวะหลังคำลงท้าย "เจ้า" หรือ "เน้อเจ้า" ให้ฟังสบายและเหมาะสำหรับการแปลงเป็นเสียงพูด (TTS)`)
+  : (config.voice_gender === 'male'
+      ? `7. กฎบุคลิกภาพเพศชาย (Male Persona):
+   - ตอบเป็นข้อความบรรยายภาษาไทยกลางที่สุภาพ สุขุม นอบน้อม ถูกต้อง ชัดเจน น้ำเสียงน่าเชื่อถือ
+   - ให้ใช้คำลงท้ายเพศชาย "ครับ", "นะครับ" เท่านั้น ห้ามใช้ "ค่ะ", "คะ", "นะคะ" หรือ "ครับ/ค่ะ" อย่างเด็ดขาด`
+      : `7. กฎบุคลิกภาพเพศหญิง (Female Persona):
+   - ตอบเป็นข้อความบรรยายภาษาไทยกลางที่สุภาพ อ่อนหวาน นอบน้อม ถูกต้อง ชัดเจน น้ำเสียงเป็นมิตร
+   - ให้ใช้คำลงท้ายเพศหญิง "ค่ะ", "คะ", "นะคะ" เท่านั้น ห้ามใช้ "ครับ", "นะครับ" หรือ "ครับ/ค่ะ" อย่างเด็ดขาด`)}`
             }
           ]
         },
@@ -1008,7 +1094,13 @@ ${isDialect
           messages: [
             {
               role: 'system',
-              content: `${config.system_prompt}\n\nคำแนะนำและข้อกำหนดสำคัญสำหรับการตอบ:\n1. หากในองค์ความรู้มีหัวข้อ 'รายการคำถาม-คำตอบที่พบบ่อย (FAQ Pairs)' ที่ตรงกับสิ่งที่ผู้ใช้ถาม ให้นำคำตอบที่ระบุในคู่นั้นมาตอบผู้ใช้โดยตรง\n2. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ\n3. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด\n4. กฎเข้มงวดป้องกันการตอบผิด (Strict Anti-Hallucination): ตอบเฉพาะข้อมูลที่มีระบุอยู่ในเอกสารอ้างอิงเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร หากไม่พบข้อมูลให้ตอบอย่างสุภาพว่ายังไม่พบข้อมูลและแนะนำช่องทางติดต่อฝ่ายงานที่เกี่ยวข้องอย่างชัดเจน\n5. ${isDialect ? 'ผู้ใช้ถามภาษาถิ่นเหนือ ตอบกลับเป็นภาษาถิ่นเหนือ (คำเมือง) ที่สุภาพ อ่อนหวาน ใช้คำลงท้าย "เจ้า", "เน้อเจ้า" ห้ามมี "ครับ/ค่ะ" เด็ดขาด และใช้คำศัพท์คำเมือง เช่น ตี้, เฮียน, ฮับ, ยะจะได, เปิ้น' : 'ตอบเป็นข้อความบรรยายภาษาไทยที่สุภาพ นอบน้อม ถูกต้อง และกระชับตรงประเด็น'}`
+              content: `${config.system_prompt}\n\nคำแนะนำและข้อกำหนดสำคัญสำหรับการตอบ:\n1. หากในองค์ความรู้มีหัวข้อ 'รายการคำถาม-คำตอบที่พบบ่อย (FAQ Pairs)' ที่ตรงกับสิ่งที่ผู้ใช้ถาม ให้นำคำตอบที่ระบุในคู่นั้นมาตอบผู้ใช้โดยตรง\n2. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ\n3. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด\n4. กฎเข้มงวดเรื่องเครื่องหมาย: ห้ามใช้เครื่องหมายดอกจัน (*) หรือ Markdown ตัวหนา (**...**) ในคำตอบอย่างเด็ดขาด ให้ใช้สัญลักษณ์จุดกลม (•) หรือข้อความธรรมดาแทน\n5. กฎเข้มงวดป้องกันการตอบผิด (Strict Anti-Hallucination): ตอบเฉพาะข้อมูลที่มีระบุอยู่ในเอกสารอ้างอิงเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร หากไม่พบข้อมูลให้ตอบอย่างสุภาพว่ายังไม่พบข้อมูลและแนะนำช่องทางติดต่อฝ่ายงานที่เกี่ยวข้องอย่างชัดเจน\n6. ${isDialect
+                ? (config.voice_gender === 'male'
+                    ? 'ผู้ใช้ถามภาษาถิ่นเหนือ ตอบกลับเป็นภาษาถิ่นเหนือ (คำเมือง) สำหรับผู้ชาย สุภาพ สุขุม ใช้คำลงท้าย "ครับ", "เน้อครับ" ห้ามใช้ "เจ้า" หรือ "ค่ะ/คะ" เด็ดขาด และใช้คำศัพท์คำเมือง เช่น ตี้, เฮียน, ฮับ, ยะจะได, เปิ้น'
+                    : 'ผู้ใช้ถามภาษาถิ่นเหนือ ตอบกลับเป็นภาษาถิ่นเหนือ (คำเมือง) สำหรับผู้หญิง สุภาพ อ่อนหวาน ใช้คำลงท้าย "เจ้า", "เน้อเจ้า" ห้ามใช้ "ครับ" หรือ "ค่ะ/คะ" เด็ดขาด และใช้คำศัพท์คำเมือง เช่น ตี้, เฮียน, ฮับ, ยะจะได, เปิ้น')
+                : (config.voice_gender === 'male'
+                    ? 'ตอบเป็นข้อความบรรยายภาษาไทยที่สุภาพ นอบน้อม ถูกต้อง และกระชับตรงประเด็น โดยใช้คำลงท้ายเพศชาย "ครับ", "นะครับ" เท่านั้น ห้ามใช้ "ค่ะ", "คะ" หรือ "ครับ/ค่ะ" เด็ดขาด'
+                    : 'ตอบเป็นข้อความบรรยายภาษาไทยที่สุภาพ นอบน้อม ถูกต้อง และกระชับตรงประเด็น โดยใช้คำลงท้ายเพศหญิง "ค่ะ", "คะ", "นะคะ" เท่านั้น ห้ามใช้ "ครับ" หรือ "ครับ/ค่ะ" เด็ดขาด')}`
             },
             {
               role: 'user',
@@ -1032,8 +1124,10 @@ ${isDialect
   let answerBody = '';
 
   if (isWeatherQuery && liveWeatherData) {
-    answerBody = `🌤️ สภาพอากาศจริง อ.ฝาง จ.เชียงใหม่ (${liveWeatherData.dateStr}):\n• อุณหภูมิ: ${liveWeatherData.temp}°C (รู้สึกเหมือน ${liveWeatherData.feelsLike}°C)\n• สภาพอากาศ: ${liveWeatherData.desc}\n• ความชื้นสัมพัทธ์: ${liveWeatherData.humidity}%\n• คำแนะนำ: สภาพอากาศเหมาะสำหรับการเดินทาง แต่อาจมีฝนตกโปรยปราย แนะนำให้พกร่มเมื่อเดินทางมายังวิทยาลัยการอาชีพฝางครับ 🎓`;
-    return answerBody;
+    const isMale = config.voice_gender === 'male';
+    const polite = isDialect ? (isMale ? 'เน้อครับ' : 'เน้อเจ้า') : (isMale ? 'ครับ' : 'ค่ะ');
+    answerBody = `🌤️ สภาพอากาศจริง อ.ฝาง จ.เชียงใหม่ (${liveWeatherData.dateStr}):\n• อุณหภูมิ: ${liveWeatherData.temp}°C (รู้สึกเหมือน ${liveWeatherData.feelsLike}°C)\n• สภาพอากาศ: ${liveWeatherData.desc}\n• ความชื้นสัมพัทธ์: ${liveWeatherData.humidity}%\n• คำแนะนำ: สภาพอากาศเหมาะสำหรับการเดินทาง แต่อาจมีฝนตกโปรยปราย แนะนำให้พกร่มเมื่อเดินทางมายังวิทยาลัยการอาชีพฝาง${polite} 🎓`;
+    return cleanAiMarkdownArtifacts(answerBody);
   }
 
   const keywords = extractDistinctiveKeywords(question);
@@ -1085,10 +1179,11 @@ ${isDialect
     }
 
     if (formattedRoster.length > 0) {
-      const branchTitle = primarySource.title.replace(/^รายชื่อครูและบุคลากรสาขาวิชา/i, '').trim();
-      answerBody = isDialect
-        ? `${primarySource.title} วิทยาลัยการอาชีพฝาง มีจิ่มนี้เน้อเจ้า:\n\n` + formattedRoster.join('\n')
-        : `${primarySource.title} วิทยาลัยการอาชีพฝาง มีดังนี้ครับ:\n\n` + formattedRoster.join('\n');
+      const isMale = config.voice_gender === 'male';
+      const introParticle = isDialect
+        ? (isMale ? 'มีจิ่มนี้เน้อครับ:' : 'มีจิ่มนี้เน้อเจ้า:')
+        : (isMale ? 'มีดังนี้ครับ:' : 'มีดังนี้ค่ะ:');
+      answerBody = `${primarySource.title} วิทยาลัยการอาชีพฝาง ${introParticle}\n\n` + formattedRoster.join('\n');
     }
   }
 
@@ -1127,41 +1222,72 @@ ${isDialect
 
   const deptContact = primarySource.sub_department_name || primarySource.department_name || 'งานบริหารงานทั่วไป';
   const cleanBody = answerBody.replace(/^ตามข้อมูลจาก.*:\s*/i, '').trim();
-  const answer = isDialect
-    ? `${cleanBody}\n\nหากต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ตี้${deptContact}เน้อเจ้า`
-    : `${cleanBody}\n\nหากท่านต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ที่${deptContact}ครับ`;
+  const isMale = config.voice_gender === 'male';
+  let closing = '';
+  if (isDialect) {
+    closing = isMale
+      ? `\n\nหากต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ตี้${deptContact}เน้อครับ`
+      : `\n\nหากต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ตี้${deptContact}เน้อเจ้า`;
+  } else {
+    closing = isMale
+      ? `\n\nหากท่านต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ที่${deptContact}ครับ`
+      : `\n\nหากท่านต้องการสอบถามข้อมูลเพิ่มเติม สามารถติดต่อได้ที่${deptContact}นะคะ`;
+  }
 
-  return answer;
+  return cleanAiMarkdownArtifacts(`${cleanBody}${closing}`);
 }
 
 /**
  * Detect Conversational & Small Talk Intents (Greetings, Thank You, System Status)
  */
-export function detectConversationalIntent(text: string, isDialectInput: boolean = false): { isConversational: boolean; replyText?: string } {
+export function detectConversationalIntent(
+  text: string, 
+  isDialectInput: boolean = false,
+  voiceGender: 'female' | 'male' = 'female'
+): { isConversational: boolean; replyText?: string } {
   const clean = (text || '').toLowerCase().replace(/[\s\t\n!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/g, '');
+  const isMale = voiceGender === 'male';
   
   // 1. Greetings (สวัสดี, สวัสดีเจ้า, ฮัลโหล, ดีครับ, hello, hi)
   const greetings = ['สวัสดี', 'สวัสดีครับ', 'สวัสดีค่ะ', 'สวัสดีคีับ', 'สวัสดีคะ', 'สวัสดีคับ', 'สวัสดีจ้า', 'สวัสดีเจ้า', 'หวัดดี', 'หวัดดีครับ', 'หวัดดีค่ะ', 'หวัดดีเจ้า', 'ดีครับ', 'ดีค่ะ', 'ดีเจ้า', 'ฮัลโหล', 'hello', 'hi', 'hey', 'sawasdee'];
   if (greetings.includes(clean) || (clean.startsWith('สวัสดี') && clean.length <= 15) || (clean.startsWith('หวัดดี') && clean.length <= 12)) {
     const isNorthernGreet = isDialectInput || clean.includes('เจ้า') || clean.includes('เน้อ');
-    return {
-      isConversational: true,
-      replyText: isNorthernGreet
-        ? 'สวัสดีเจ้า ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nสามารถสอบถามข้อมูลการเรียน, ระเบียบการสมัคร หรือติดต่อฝ่ายงานตี้ต้องการได้เลยเน้อเจ้า'
-        : 'สวัสดีครับ/ค่ะ ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nท่านสามารถพิมพ์คำถามหรือเรื่องที่ต้องการสอบถามได้ทันทีครับ เช่น:\n• ระเบียบวินัย / การแต่งกายและทรงผม\n• รายชื่อสาขาวิชาและหลักสูตรที่เปิดสอน\n• ช่องทางติดต่อฝ่ายงานและแผนกต่างๆ'
-    };
+    if (isNorthernGreet) {
+      return {
+        isConversational: true,
+        replyText: isMale
+          ? 'สวัสดีครับ ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nสามารถสอบถามข้อมูลการเรียน, ระเบียบการสมัคร หรือติดต่อฝ่ายงานตี้ต้องการได้เลยเน้อครับ'
+          : 'สวัสดีเจ้า ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nสามารถสอบถามข้อมูลการเรียน, ระเบียบการสมัคร หรือติดต่อฝ่ายงานตี้ต้องการได้เลยเน้อเจ้า'
+      };
+    } else {
+      return {
+        isConversational: true,
+        replyText: isMale
+          ? 'สวัสดีครับ ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nท่านสามารถพิมพ์คำถามหรือเรื่องที่ต้องการสอบถามได้ทันทีครับ เช่น:\n• ระเบียบวินัย / การแต่งกายและทรงผม\n• รายชื่อสาขาวิชาและหลักสูตรที่เปิดสอน\n• ช่องทางติดต่อฝ่ายงานและแผนกต่างๆ'
+          : 'สวัสดีค่ะ ยินดีต้อนรับสู่ระบบ AI วิทยาลัยการอาชีพฝาง 🎓\n\nท่านสามารถพิมพ์คำถามหรือเรื่องที่ต้องการสอบถามได้ทันทีค่ะ เช่น:\n• ระเบียบวินัย / การแต่งกายและทรงผม\n• รายชื่อสาขาวิชาและหลักสูตรที่เปิดสอน\n• ช่องทางติดต่อฝ่ายงานและแผนกต่างๆ'
+      };
+    }
   }
 
   // 2. Thank you
   const thanks = ['ขอบคุณ', 'ขอบคุณครับ', 'ขอบคุณค่ะ', 'ขอบคุณคะ', 'ขอบคุณคับ', 'ขอบคุณเจ้า', 'ขอบใจ', 'ขอบใจเน้อ', 'ขอบใจจ้า', 'ขอบพระคุณ', 'thanks', 'thankyou', 'thx'];
   if (thanks.includes(clean) || (clean.startsWith('ขอบคุณ') && clean.length <= 15)) {
     const isNorthernThanks = isDialectInput || clean.includes('เจ้า') || clean.includes('เน้อ');
-    return {
-      isConversational: true,
-      replyText: isNorthernThanks
-        ? 'ยินดีนักๆ เจ้า ยินดีตี้ได้จ้วยเหลือ หากมีข้อสงสัยสอบถามเพิ่มเติมได้ตลอดเวลาเน้อเจ้า 🎓'
-        : 'ยินดีให้บริการครับ/ค่ะ หากมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม สามารถพิมพ์ถามได้ตลอดเวลาครับ 😊'
-    };
+    if (isNorthernThanks) {
+      return {
+        isConversational: true,
+        replyText: isMale
+          ? 'ยินดีนักๆ ครับ ยินดีตี้ได้จ้วยเหลือ หากมีข้อสงสัยสอบถามเพิ่มเติมได้ตลอดเวลาเน้อครับ 🎓'
+          : 'ยินดีนักๆ เจ้า ยินดีตี้ได้จ้วยเหลือ หากมีข้อสงสัยสอบถามเพิ่มเติมได้ตลอดเวลาเน้อเจ้า 🎓'
+      };
+    } else {
+      return {
+        isConversational: true,
+        replyText: isMale
+          ? 'ยินดีให้บริการครับ หากมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม สามารถพิมพ์ถามได้ตลอดเวลานะครับ 😊'
+          : 'ยินดีให้บริการค่ะ หากมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม สามารถพิมพ์ถามได้ตลอดเวลานะคะ 😊'
+      };
+    }
   }
 
   // 3. Test
@@ -1169,7 +1295,9 @@ export function detectConversationalIntent(text: string, isDialectInput: boolean
   if (tests.includes(clean)) {
     return {
       isConversational: true,
-      replyText: 'ระบบ AI วิทยาลัยการอาชีพฝาง พร้อมให้บริการตามปกติครับ 🟢 ท่านสามารถพิมพ์คำถามเพื่อค้นหาข้อมูลได้ทันทีครับ'
+      replyText: isMale
+        ? 'ระบบ AI วิทยาลัยการอาชีพฝาง พร้อมให้บริการตามปกติครับ 🟢 ท่านสามารถพิมพ์คำถามเพื่อค้นหาข้อมูลได้ทันทีนะครับ'
+        : 'ระบบ AI วิทยาลัยการอาชีพฝาง พร้อมให้บริการตามปกติค่ะ 🟢 ท่านสามารถพิมพ์คำถามเพื่อค้นหาข้อมูลได้ทันทีนะคะ'
     };
   }
 
@@ -1342,7 +1470,9 @@ export async function executeRAGPipeline(params: {
 
   // Fallback if no question text could be determined
   if (!question) {
-    const defaultMsg = 'ขออภัยครับ/ค่ะ ระบบไม่สามารถจับใจความเสียงได้ชัดเจน กรุณาลองพูดใหม่อีกครั้ง หรือพิมพ์ข้อความคำถามได้เลยครับ';
+    const isMale = config.voice_gender === 'male';
+    const polite = isMale ? 'ครับ' : 'ค่ะ';
+    const defaultMsg = `ขออภัย${polite} ระบบไม่สามารถจับใจความเสียงได้ชัดเจน กรุณาลองพูดใหม่อีกครั้ง หรือพิมพ์ข้อความคำถามได้เลย${polite}`;
     return {
       question: '',
       answer: defaultMsg,
@@ -1361,7 +1491,7 @@ export async function executeRAGPipeline(params: {
     ));
 
   // 0. Handle Conversational Greetings & Courtesy Messages
-  const convIntent = detectConversationalIntent(question, isDialect);
+  const convIntent = detectConversationalIntent(question, isDialect, config.voice_gender);
   if (convIntent.isConversational && convIntent.replyText) {
     const responseTimeMs = Date.now() - startTime;
     let logId: string | undefined;
@@ -1438,9 +1568,16 @@ export async function executeRAGPipeline(params: {
   let responseTimeMs = 0;
 
   if (isFallback) {
-    answerText = isDialect
-      ? 'สุมาเต๊อะเจ้า ขณะนี้ยังบ่ปะข้อมูลตี้ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝางเน้อเจ้า\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติมเจ้า:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการเจ้า'
-      : 'ขออภัยครับ/ค่ะ ขณะนี้ยังไม่พบข้อมูลที่ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝาง\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติม:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการ';
+    const isMale = config.voice_gender === 'male';
+    if (isDialect) {
+      answerText = isMale
+        ? 'สุมาเต๊อะครับ ขณะนี้ยังบ่ปะข้อมูลตี้ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝางเน้อครับ\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติมครับ:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการครับ'
+        : 'สุมาเต๊อะเจ้า ขณะนี้ยังบ่ปะข้อมูลตี้ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝางเน้อเจ้า\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติมเจ้า:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการเจ้า';
+    } else {
+      answerText = isMale
+        ? 'ขออภัยครับ ขณะนี้ยังไม่พบข้อมูลที่ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝางครับ\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติมครับ:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการครับ'
+        : 'ขออภัยค่ะ ขณะนี้ยังไม่พบข้อมูลที่ระบุในคำถามอย่างชัดเจนในระบบฐานความรู้ของวิทยาลัยการอาชีพฝางค่ะ\n\n📌 แนะนำช่องทางติดต่อสอบถามเพิ่มเติมค่ะ:\n• ฝ่ายบริหารทรัพยากร / งานธุรการ: 053-451234\n• งานศูนย์ข้อมูลสารสนเทศและดิจิทัล / งานทะเบียน: อาคาร 1\n• สอบถามเจ้าหน้าที่ผู้ดูแลระบบโดยตรงผ่าน LINE Official Account ในวันและเวลาราชการค่ะ';
+    }
 
     // Auto-record to knowledge_gap_logs if not playground
     if (!isPlayground) {
@@ -1477,6 +1614,10 @@ export async function executeRAGPipeline(params: {
   } else {
     answerText = await generateGroundedAnswer(config, question, retrievedSources, isDialect);
   }
+
+  // Enforce consistent gender persona and clean markdown asterisks
+  answerText = enforceGenderPersonaInText(answerText, config.voice_gender, isDialect);
+  answerText = cleanAiMarkdownArtifacts(answerText);
 
   responseTimeMs = Date.now() - startTime;
 
@@ -1578,6 +1719,7 @@ export async function executeRAGPipeline(params: {
     response_time_ms: responseTimeMs,
     imageUrl: mediaInfo?.imageUrl,
     imageCaption: mediaInfo?.caption,
+    isWebAttachment: mediaInfo?.isWebAttachment,
     audioUrl,
     audioDurationMs,
     detectedDialect: isDialect ? 'kham_mueang' : 'central',
@@ -1594,18 +1736,82 @@ export async function executeRAGPipeline(params: {
 }
 
 /**
- * Resolve Drive Photo/Image matching a person's name or document in the query/answer
+ * Resolve Image matching retrieved knowledge items or Google Drive
+ * Priority 1: Web-uploaded images from knowledge_attachments for retrieved knowledge sources
+ * Priority 2: Google Drive media cache (drive_media_cache) or Drive links in content
  */
 export async function resolveDriveImageForQuery(
   question: string,
   answerText: string,
   sources: any[]
-): Promise<{ imageUrl?: string; caption?: string } | null> {
+): Promise<{ imageUrl?: string; caption?: string; isWebAttachment?: boolean } | null> {
   const db = getDb();
   const primarySource = sources[0];
   const combinedText = `${question} ${answerText} ${primarySource?.title || ''}`.toLowerCase();
 
-  // 1. Check drive_media_cache first
+  // 1. PRIORITY 1: Check Web-uploaded Attachments (knowledge_attachments) for retrieved knowledge sources
+  if (sources && sources.length > 0) {
+    try {
+      const knowledgeIds = sources.map(s => s.knowledge_id).filter(Boolean);
+      if (knowledgeIds.length > 0) {
+        // First check SQLite knowledge_attachments
+        const placeholders = knowledgeIds.map(() => '?').join(',');
+        const webAttachments = db.prepare(`
+          SELECT * FROM knowledge_attachments 
+          WHERE knowledge_id IN (${placeholders})
+          ORDER BY uploaded_at DESC
+        `).all(...knowledgeIds) as any[];
+
+        let foundWebImg = webAttachments.find(att => {
+          if (!att.file_url) return false;
+          const isImgType = att.file_type === 'image';
+          const isImgExt = /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(att.file_name || '') ||
+                           /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(att.file_url);
+          return (isImgType || isImgExt) && !att.file_url.includes('drive.google.com/drive/folders');
+        });
+
+        // If not found in SQLite, check Supabase
+        if (!foundWebImg) {
+          try {
+            const { data: sbAtts } = await supabaseAdmin
+              .from('knowledge_attachments')
+              .select('*')
+              .in('knowledge_id', knowledgeIds)
+              .order('uploaded_at', { ascending: false });
+
+            if (sbAtts && sbAtts.length > 0) {
+              foundWebImg = sbAtts.find(att => {
+                if (!att.file_url) return false;
+                const isImgType = att.file_type === 'image';
+                const isImgExt = /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(att.file_name || '') ||
+                                 /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i.test(att.file_url);
+                return (isImgType || isImgExt) && !att.file_url.includes('drive.google.com/drive/folders');
+              });
+            }
+          } catch {}
+        }
+
+        if (foundWebImg) {
+          let finalWebImgUrl = foundWebImg.file_url;
+          const dMatch = finalWebImgUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+          if (dMatch && dMatch[1]) {
+            finalWebImgUrl = `https://lh3.googleusercontent.com/d/${dMatch[1]}`;
+          }
+
+          const matchedSource = sources.find(s => s.knowledge_id === foundWebImg.knowledge_id);
+          return {
+            imageUrl: finalWebImgUrl,
+            caption: foundWebImg.file_name || matchedSource?.title || 'ภาพประกอบ',
+            isWebAttachment: true
+          };
+        }
+      }
+    } catch (attErr) {
+      console.warn('Error checking web attachments in RAG:', attErr);
+    }
+  }
+
+  // 2. PRIORITY 2: Check Google Drive media cache (drive_media_cache)
   try {
     const cachedMedia = db.prepare('SELECT * FROM drive_media_cache ORDER BY updated_at DESC').all() as any[];
     const normalizedCombined = combinedText.replace(/ศุทธิชัย/g, 'ศุทิชัย');
@@ -1628,7 +1834,8 @@ export async function resolveDriveImageForQuery(
       )) {
         return {
           imageUrl: m.image_url,
-          caption: m.title_or_person_name
+          caption: m.title_or_person_name,
+          isWebAttachment: false
         };
       }
     }
@@ -1639,13 +1846,14 @@ export async function resolveDriveImageForQuery(
       if (primarySource?.title && fullTitle.includes(primarySource.title.replace(/^รายชื่อครูและบุคลากรสาขาวิชา/i, '').trim().toLowerCase())) {
         return {
           imageUrl: m.image_url,
-          caption: m.title_or_person_name
+          caption: m.title_or_person_name,
+          isWebAttachment: false
         };
       }
     }
   } catch (e) {}
 
-  // 2. Extract Drive URL from top sources
+  // 3. Extract Drive URL from top sources
   if (!primarySource) return null;
 
   const fullContent = `${primarySource.title || ''} ${primarySource.content || ''} ${primarySource.summary || ''}`;
@@ -1656,7 +1864,8 @@ export async function resolveDriveImageForQuery(
     const fileId = fileMatch[1];
     return {
       imageUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
-      caption: primarySource.title
+      caption: primarySource.title,
+      isWebAttachment: false
     };
   }
 
@@ -1694,7 +1903,8 @@ export async function resolveDriveImageForQuery(
               if (combinedText.includes(f.name.toLowerCase()) || (cleanFileName.length >= 3 && combinedText.includes(cleanFileName))) {
                 return {
                   imageUrl: f.url,
-                  caption: f.name
+                  caption: f.name,
+                  isWebAttachment: false
                 };
               }
             }

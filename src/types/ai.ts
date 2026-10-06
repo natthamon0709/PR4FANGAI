@@ -61,6 +61,7 @@ export interface RAGPlaygroundResult {
   response_time_ms: number;
   imageUrl?: string;
   imageCaption?: string;
+  isWebAttachment?: boolean;
   audioUrl?: string;
   audioDurationMs?: number;
   detectedDialect?: 'kham_mueang' | 'central' | 'unknown';

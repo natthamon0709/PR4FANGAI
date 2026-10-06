@@ -640,11 +640,16 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
 
       // Check if ragResult already identified a direct image
       if (ragResult.imageUrl) {
-        const found = cachedMedia.find(m => m.image_url === ragResult.imageUrl || ragResult.imageUrl?.includes(m.file_id));
-        if (found && !isPersonMedia(found.title_or_person_name)) {
+        if (ragResult.isWebAttachment) {
+          // Priority 1: Web-uploaded image attached to knowledge item
           generalFullImageUrl = ragResult.imageUrl;
-        } else if (!found && !/^(นาย|นางสาว|นาง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|ครู|อาจารย์)/i.test(ragResult.answer)) {
-          generalFullImageUrl = ragResult.imageUrl;
+        } else {
+          const found = cachedMedia.find(m => m.image_url === ragResult.imageUrl || ragResult.imageUrl?.includes(m.file_id));
+          if (found && !isPersonMedia(found.title_or_person_name)) {
+            generalFullImageUrl = ragResult.imageUrl;
+          } else if (!found && !/^(นาย|นางสาว|นาง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|ครู|อาจารย์)/i.test(ragResult.answer)) {
+            generalFullImageUrl = ragResult.imageUrl;
+          }
         }
       }
 
@@ -732,8 +737,14 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
       });
     }
 
-    // Bubble 3+: Supporting media (Teachers carousel or Campus map)
-    if (matchedTeachers.length > 0) {
+    // Bubble 3+: Supporting media (Priority 1: Web upload image, Priority 2: Teachers carousel / Drive map)
+    if (ragResult.isWebAttachment && generalFullImageUrl && generalFullImageUrl.startsWith('https://')) {
+      replyMessages.push({
+        type: 'image',
+        originalContentUrl: generalFullImageUrl,
+        previewImageUrl: generalFullImageUrl
+      });
+    } else if (matchedTeachers.length > 0) {
       const flexCarousel = buildTeacherFlexCarousel(matchedTeachers);
       replyMessages.push(flexCarousel);
     } else if (generalFullImageUrl && generalFullImageUrl.startsWith('https://')) {

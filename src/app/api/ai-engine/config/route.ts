@@ -32,6 +32,10 @@ export async function GET(req: NextRequest) {
             retrieval_top_k: Number(sbConfig.retrieval_top_k),
             temperature: Number(sbConfig.temperature),
             is_active: Boolean(sbConfig.is_active),
+            voice_reply_enabled: sbConfig.voice_reply_enabled !== undefined ? Boolean(sbConfig.voice_reply_enabled) : true,
+            voice_gender: sbConfig.voice_gender || 'female',
+            voice_dialect_mode: sbConfig.voice_dialect_mode || 'adaptive',
+            voice_speed: Number(sbConfig.voice_speed) || 1.0,
             updated_at: sbConfig.updated_at
           },
           is_admin: session.role === 'administrator'

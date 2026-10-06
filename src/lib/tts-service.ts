@@ -24,15 +24,81 @@ const VOICE_MAP = {
   male: 'th-TH-NiwatNeural'         // เสียงนิวัฒน์: โทนสุขุม ทางการ น่าเชื่อถือ
 };
 
+const THAI_DIGIT_WORDS: Record<string, string> = {
+  '0': 'ศูนย์',
+  '1': 'หนึ่ง',
+  '2': 'สอง',
+  '3': 'สาม',
+  '4': 'สี่',
+  '5': 'ห้า',
+  '6': 'หก',
+  '7': 'เจ็ด',
+  '8': 'แปด',
+  '9': 'เก้า'
+};
+
+const THAI_UNITS = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน'];
+
+/**
+ * Convert integer to spoken Thai words according to proper Royal Institute grammar
+ * e.g. 2500 -> สองพันห้าร้อย, 2567 -> สองพันห้าร้อยหกสิบเจ็ด, 21 -> ยี่สิบเอ็ด
+ */
+export function numberToThaiWords(num: number | string): string {
+  const cleanStr = String(num).replace(/,/g, '').trim();
+  const n = parseInt(cleanStr, 10);
+  if (isNaN(n)) return String(num);
+  if (n === 0) return 'ศูนย์';
+  if (n < 0) return 'ลบ' + numberToThaiWords(Math.abs(n));
+
+  if (n >= 1000000) {
+    const millions = Math.floor(n / 1000000);
+    const remainder = n % 1000000;
+    return numberToThaiWords(millions) + 'ล้าน' + (remainder > 0 ? numberToThaiWords(remainder) : '');
+  }
+
+  const digits = n.toString().split('').map(Number);
+  const len = digits.length;
+  let result = '';
+
+  for (let i = 0; i < len; i++) {
+    const digit = digits[i];
+    const unitIndex = len - i - 1;
+    if (digit === 0) continue;
+
+    if (unitIndex === 0 && digit === 1 && len > 1 && digits[len - 2] !== 0) {
+      result += 'เอ็ด';
+    } else if (unitIndex === 1 && digit === 1) {
+      result += 'สิบ';
+    } else if (unitIndex === 1 && digit === 2) {
+      result += 'ยี่สิบ';
+    } else {
+      result += (THAI_DIGIT_WORDS[String(digit)] || '') + THAI_UNITS[unitIndex];
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Convert individual digits to spaced Thai words
+ * e.g. '053' -> 'ศูนย์ ห้า สาม'
+ */
+export function digitsToSpokenThai(digitStr: string): string {
+  return digitStr
+    .split('')
+    .map(d => THAI_DIGIT_WORDS[d] || d)
+    .join(' ');
+}
+
 /**
  * Advanced Thai & Kham Mueang Phonetic Normalizer & Prosody Enhancer for Speech:
  * - Expands educational abbreviations (ปวช., ปวส., ป.ตรี, ผอ., อ., ว่าที่ ร.ต.)
- * - Normalizes phone numbers (053-451111 -> 0 5 3, 4 5 1 1 1 1)
- * - Normalizes times (08.30 น. -> 8 นาฬิกา 30 นาที)
- * - Normalizes dates & years (พ.ศ. 2567 -> พุทธศักราช 2567)
- * - Normalizes symbols (%, /, +, -, @)
- * - Inserts natural breathing pauses and commas after polite particles (เจ้า, เน้อเจ้า, นะคะ, ครับ, ค่ะ)
- * - Structures list items with natural transitional pauses
+ * - Normalizes phone numbers to spoken digits (053-451111 -> ศูนย์ ห้า สาม, สี่ ห้า หนึ่ง, หนึ่ง หนึ่ง หนึ่ง หนึ่ง)
+ * - Normalizes times (08.30 น. -> แปด นาฬิกา สามสิบ นาที)
+ * - Normalizes dates & years (พ.ศ. 2567 -> พุทธศักราช สองพันห้าร้อยหกสิบเจ็ด)
+ * - Normalizes currency (2,500 บาท -> สองพันห้าร้อย บาท)
+ * - Normalizes percentages (10.5% -> สิบจุดห้า เปอร์เซ็นต์)
+ * - Inserts natural breathing pauses and commas after polite particles
  */
 export function normalizeThaiForSpeech(text: string): string {
   if (!text) return '';
@@ -43,31 +109,76 @@ export function normalizeThaiForSpeech(text: string): string {
   t = t.replace(/https?:\/\/[^\s)]+/g, 'เว็บไซต์วิทยาลัยการอาชีพฝาง');
   t = t.replace(/www\.[^\s)]+/g, 'เว็บไซต์วิทยาลัยการอาชีพฝาง');
 
-  // 2. Normalize Currency & commas inside numbers: 2,500 บาท -> 2500 บาท
-  t = t.replace(/(\d+),(\d+)/g, '$1$2');
+  // 2. Phone numbers & extensions (Normalize before general numbers to preserve leading zero):
+  // Extension: ต่อ 123
+  t = t.replace(/(?:ต่อ|เบอร์ต่อ)\s*(\d{2,5})\b/g, (m, ext) => `ต่อ ${digitsToSpokenThai(ext)}`);
 
-  // 3. Time formats:
-  // e.g. 08:30 - 16:30 น. or 08.30-16.30 น.
-  t = t.replace(/(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})\s*น\.?/g, '$1 นาฬิกา $2 นาที ถึง $3 นาฬิกา $4 นาที');
-  // e.g. 08:30 น. or 08.30 น.
-  t = t.replace(/(\d{1,2})[:.](\d{2})\s*น\.?/g, '$1 นาฬิกา $2 นาที');
-  // e.g. 08.00 น. -> 8 นาฬิกา
-  t = t.replace(/(\d{1,2})[:.]00\s*น\.?/g, '$1 นาฬิกาตรง');
+  // Mobile: 08x-xxx-xxxx, 09x-xxx-xxxx, 06x-xxx-xxxx
+  t = t.replace(/\b(0[689]\d)[-–—\s](\d{3})[-–—\s](\d{4})\b/g, (m, p1, p2, p3) => {
+    return `${digitsToSpokenThai(p1)}, ${digitsToSpokenThai(p2)}, ${digitsToSpokenThai(p3)}`;
+  });
+  t = t.replace(/\b(0[689]\d)(\d{3})(\d{4})\b/g, (m, p1, p2, p3) => {
+    return `${digitsToSpokenThai(p1)}, ${digitsToSpokenThai(p2)}, ${digitsToSpokenThai(p3)}`;
+  });
 
-  // 4. Phone numbers: 053-451111 or 053-451-111 or 081-234-5678
-  t = t.replace(/\b(0\d{1,2})[-–—](\d{3})[-–—](\d{4})\b/g, '$1, $2, $3');
-  t = t.replace(/\b(0\d{1,2})[-–—](\d{3})[-–—](\d{3})\b/g, '$1, $2, $3');
+  // Landline: 053-451111, 053-451-111, 053-451234
+  t = t.replace(/\b(0\d{1,2})[-–—\s](\d{3})[-–—\s](\d{3,4})\b/g, (m, p1, p2, p3) => {
+    return `${digitsToSpokenThai(p1)}, ${digitsToSpokenThai(p2)}, ${digitsToSpokenThai(p3)}`;
+  });
   t = t.replace(/\b(0\d{1,2})[-–—](\d{6,7})\b/g, (match, p1, p2) => {
     const p2a = p2.slice(0, 3);
     const p2b = p2.slice(3);
-    return `${p1}, ${p2a}, ${p2b}`;
+    return `${digitsToSpokenThai(p1)}, ${digitsToSpokenThai(p2a)}, ${digitsToSpokenThai(p2b)}`;
+  });
+  // Clean continuous 9-10 digit numbers starting with 0 when preceded by call/phone keywords
+  t = t.replace(/(โทรศัพท์|เบอร์โทร|โทร|เบอร์|ติดต่อ)\s*(?:ที่|:)?\s*(0\d{8,9})\b/g, (m, kw, phone) => {
+    const p1 = phone.slice(0, 3);
+    const p2 = phone.slice(3, 6);
+    const p3 = phone.slice(6);
+    return `${kw} ${digitsToSpokenThai(p1)}, ${digitsToSpokenThai(p2)}, ${digitsToSpokenThai(p3)}`;
   });
 
-  // 5. Academic years and calendar:
-  t = t.replace(/พ\.ศ\.\s*(\d{4})/g, 'พุทธศักราช $1');
-  t = t.replace(/ปีการศึกษา\s*(\d{4})/g, 'ปีการศึกษา $1');
+  // 3. Time formats:
+  // e.g. 08:30 - 16:30 น. or 08.30-16.30 น.
+  t = t.replace(/(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})\s*น\.?/g, (m, h1, m1, h2, m2) => {
+    const min1Str = m1 === '00' ? '' : ` ${numberToThaiWords(m1)} นาที`;
+    const min2Str = m2 === '00' ? 'ตรง' : ` ${numberToThaiWords(m2)} นาที`;
+    return `${numberToThaiWords(h1)} นาฬิกา${min1Str} ถึง ${numberToThaiWords(h2)} นาฬิกา${min2Str}`;
+  });
+  // e.g. 08:30 น. or 08.30 น.
+  t = t.replace(/(\d{1,2})[:.](\d{2})\s*น\.?/g, (m, h, min) => {
+    const minStr = min === '00' ? 'ตรง' : ` ${numberToThaiWords(min)} นาที`;
+    return `${numberToThaiWords(h)} นาฬิกา${minStr}`;
+  });
 
-  // 6. Educational titles & levels:
+  // 4. Currency: 2,500 บาท -> สองพันห้าร้อย บาท
+  t = t.replace(/(\d[\d,]*)\s*(บาท|สตางค์)/g, (m, val, unit) => `${numberToThaiWords(val)} ${unit}`);
+
+  // 5. Academic years and calendar:
+  t = t.replace(/พ\.ศ\.\s*(\d{4})/g, (m, y) => `พุทธศักราช ${numberToThaiWords(y)}`);
+  t = t.replace(/ปีการศึกษา\s*(\d{4})/g, (m, y) => `ปีการศึกษา ${numberToThaiWords(y)}`);
+  t = t.replace(/ค\.ศ\.\s*(\d{4})/g, (m, y) => `คริสต์ศักราช ${numberToThaiWords(y)}`);
+
+  // 6. Dates: วันที่ 15 -> วันที่ สิบห้า
+  t = t.replace(/วันที่\s*(\d{1,2})\b/g, (m, d) => `วันที่ ${numberToThaiWords(d)}`);
+
+  // 7. Decimals & Percentages:
+  t = t.replace(/(\d+)\.(\d+)\s*%/g, (m, intPart, decPart) => `${numberToThaiWords(intPart)}จุด${digitsToSpokenThai(decPart)} เปอร์เซ็นต์`);
+  t = t.replace(/(\d+)\s*%/g, (m, val) => `${numberToThaiWords(val)} เปอร์เซ็นต์`);
+  t = t.replace(/(\d+)\.(\d+)\b/g, (m, intPart, decPart) => `${numberToThaiWords(intPart)}จุด${digitsToSpokenThai(decPart)}`);
+
+  // 8. Number ranges with units: 1-3 วัน -> หนึ่ง ถึง สาม วัน
+  t = t.replace(/(\d+)\s*[-–—]\s*(\d+)\s*(วัน|เดือน|ปี|คน|ชั่วโมง|นาที|เทอม|ภาคเรียน)/g, (m, n1, n2, u) => {
+    return `${numberToThaiWords(n1)} ถึง ${numberToThaiWords(n2)} ${u}`;
+  });
+  t = t.replace(/(\d+)\s*[-–—]\s*(\d+)\b/g, (m, n1, n2) => `${numberToThaiWords(n1)} ถึง ${numberToThaiWords(n2)}`);
+
+  // 9. Buildings, Floors, and Rooms:
+  t = t.replace(/อาคาร\s*(\d+)\b/g, (m, b) => `อาคาร ${numberToThaiWords(b)}`);
+  t = t.replace(/ชั้น\s*(\d+)\b/g, (m, fl) => `ชั้น ${numberToThaiWords(fl)}`);
+  t = t.replace(/ห้อง\s*(\d{2,4})\b/g, (m, rm) => `ห้อง ${digitsToSpokenThai(rm)}`);
+
+  // 10. Educational titles & levels:
   t = t.replace(/รอง\s*ผอ\./g, 'รองผู้อำนวยการ');
   t = t.replace(/ผอ\./g, 'ผู้อำนวยการ');
   t = t.replace(/ว่าที่\s*ร\.ต\.\s*หญิง/g, 'ว่าที่ร้อยตรีหญิง ');
@@ -76,33 +187,32 @@ export function normalizeThaiForSpeech(text: string): string {
   t = t.replace(/อ\.([ก-๙]+)/g, 'อาจารย์$1');
   t = t.replace(/วท\.ฝาง|วก\.ฝาง/g, 'วิทยาลัยการอาชีพฝาง');
   t = t.replace(/ป\.ตรี/g, 'ระดับปริญญาตรี');
-  // ปวช. / ปวส. handling: ensure clean spacing so TTS neural model pronounces naturally
-  t = t.replace(/ปวช\.\s*[\/และ,]+\s*ปวส\./g, 'ระดับ ปวช. และ ระดับ ปวส.');
-  t = t.replace(/ปวช\./g, 'ระดับ ปวช. ');
-  t = t.replace(/ปวส\./g, 'ระดับ ปวส. ');
+  t = t.replace(/(?:ระดับ\s*)?ปวช\.\s*[\/และ,]+\s*(?:ระดับ\s*)?ปวส\./g, 'ระดับ ปวช. และระดับ ปวส.');
+  t = t.replace(/(?:ระดับ\s*)?ปวช\.\s*(\d)\b/g, (m, yr) => `ระดับ ปวช. ชั้นปีที่ ${numberToThaiWords(yr)} `);
+  t = t.replace(/(?:ระดับ\s*)?ปวส\.\s*(\d)\b/g, (m, yr) => `ระดับ ปวส. ชั้นปีที่ ${numberToThaiWords(yr)} `);
+  t = t.replace(/(?:ระดับ\s*)?ปวช\./g, 'ระดับ ปวช. ');
+  t = t.replace(/(?:ระดับ\s*)?ปวส\./g, 'ระดับ ปวส. ');
+  t = t.replace(/(?:ระดับ\s*){2,}/g, 'ระดับ ');
   t = t.replace(/กศน\./g, 'กอ ศอ นอ');
   t = t.replace(/อวท\./g, 'ออ วอ ทอ');
 
-  // 7. Symbols and punctuation:
-  t = t.replace(/%/g, ' เปอร์เซ็นต์');
+  // 11. Symbols and punctuation:
   t = t.replace(/และ\/หรือ/g, 'และหรือ');
   t = t.replace(/([ก-๙]+)\/([ก-๙]+)/g, '$1 หรือ $2');
-  t = t.replace(/(\d+)\s*[-–—]\s*(\d+)/g, '$1 ถึง $2'); // number ranges: 1-3 -> 1 ถึง 3
   t = t.replace(/&/g, ' และ ');
   t = t.replace(/@/g, ' แอด ');
-  t = t.replace(/[()]/g, ', '); // Parentheses converted to soft pauses
+  t = t.replace(/[()]/g, ', ');
 
-  // 8. Polite endings & breath points (Lanna Kham Mueang + Central):
-  // Insert a natural breath pause (comma) after polite endings if not already followed by punctuation
+  // 12. Polite endings & breath points:
   t = t.replace(/(เน้อเจ้า|นะเจ้า|จ๊าดนักเจ้า|แต๊เจ้า|เจ้า)(?=[^\s,.\?!;])/g, '$1, ');
   t = t.replace(/(เน้อเจ้า|นะเจ้า|จ๊าดนักเจ้า|แต๊เจ้า|เจ้า)\s+(?![,.\?!])/g, '$1, ');
-  t = t.replace(/(นะคะ|นะครับ|ค่ะ|ครับ)(?=[^\s,.\?!;])/g, '$1, ');
-  t = t.replace(/(นะคะ|นะครับ|ค่ะ|ครับ)\s+(?![,.\?!])/g, '$1, ');
+  t = t.replace(/(เน้อครับ|นะครับ|ครับผม|ครับ|นะคะ|ค่ะ)(?=[^\s,.\?!;])/g, '$1, ');
+  t = t.replace(/(เน้อครับ|นะครับ|ครับผม|ครับ|นะคะ|ค่ะ)\s+(?![,.\?!])/g, '$1, ');
 
-  // 9. Natural spoken conjunction transitions:
+  // 13. Natural spoken conjunction transitions:
   t = t.replace(/([^\s,])\s*(โดยเฉพาะ|นอกจากนี้|ทั้งนี้|หากมีข้อสงสัย|สามารถติดต่อได้ที่|สามารถสอบถามเพิ่มเติม)/g, '$1, $2');
 
-  // 10. Clean up duplicate punctuation and spacing:
+  // 14. Clean up duplicate punctuation and spacing:
   t = t.replace(/,\s*,+/g, ',');
   t = t.replace(/\s+,/g, ',');
   t = t.replace(/,+/g, ', ');
@@ -117,8 +227,13 @@ export function normalizeThaiForSpeech(text: string): string {
  * - Remove system tags or emojis
  * - Keep Northern dialect phrasing intact (e.g. เจ้า, เน้อเจ้า, ตี้ไหน, ยินดีเจ้า)
  * - Apply Thai phonetic and prosody normalizer
+ * - If text is long, summarize gracefully under 45 seconds with natural closing wrap-up
  */
-export function cleanTextForSpeech(text: string): string {
+export function cleanTextForSpeech(
+  text: string,
+  voiceGender: 'female' | 'male' = 'female',
+  dialect: 'kham_mueang' | 'central' = 'central'
+): string {
   if (!text) return '';
 
   let cleaned = text
@@ -139,9 +254,47 @@ export function cleanTextForSpeech(text: string): string {
     .replace(/<[^>]+>/g, '')
     // Remove common emojis
     .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]/g, '')
-    // Normalize newlines to comma/period breaks instead of stripping them blindly
+    // Normalize newlines to comma/period breaks
     .replace(/\n\s*\n+/g, '. ')
     .replace(/\n+/g, ', ');
+
+  // Enforce gender persona particles strictly
+  cleaned = cleaned.replace(/ครับ\/ค่ะ/g, voiceGender === 'male' ? 'ครับ' : 'ค่ะ');
+  cleaned = cleaned.replace(/ค่ะ\/ครับ/g, voiceGender === 'male' ? 'ครับ' : 'ค่ะ');
+  cleaned = cleaned.replace(/ครับ\s*\/\s*ค่ะ/g, voiceGender === 'male' ? 'ครับ' : 'ค่ะ');
+  cleaned = cleaned.replace(/ค่ะ\s*\/\s*ครับ/g, voiceGender === 'male' ? 'ครับ' : 'ค่ะ');
+
+  if (voiceGender === 'female') {
+    if (dialect === 'kham_mueang') {
+      cleaned = cleaned.replace(/เน้อครับ/g, 'เน้อเจ้า');
+      cleaned = cleaned.replace(/ยินดีครับ/g, 'ยินดีเจ้า');
+      cleaned = cleaned.replace(/สุมาเต๊อะครับ/g, 'สุมาเต๊อะเจ้า');
+      cleaned = cleaned.replace(/นะครับ/g, 'เน้อเจ้า');
+      cleaned = cleaned.replace(/ครับ(?=[ \n.,!?•]|$)/g, 'เจ้า');
+    } else {
+      cleaned = cleaned.replace(/นะครับ/g, 'นะคะ');
+      cleaned = cleaned.replace(/ครับ(?=[ \n.,!?•]|$)/g, 'ค่ะ');
+      cleaned = cleaned.replace(/เน้อเจ้า/g, 'นะคะ');
+      cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ค่ะ');
+    }
+  } else {
+    // Male
+    if (dialect === 'kham_mueang') {
+      cleaned = cleaned.replace(/เน้อเจ้า/g, 'เน้อครับ');
+      cleaned = cleaned.replace(/ยินดีเจ้า/g, 'ยินดีครับ');
+      cleaned = cleaned.replace(/สุมาเต๊อะเจ้า/g, 'สุมาเต๊อะครับ');
+      cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ครับ');
+      cleaned = cleaned.replace(/นะคะ/g, 'นะครับ');
+      cleaned = cleaned.replace(/ค่ะ/g, 'ครับ');
+      cleaned = cleaned.replace(/คะ(?=[ \n.,!?•]|$)/g, 'ครับ');
+    } else {
+      cleaned = cleaned.replace(/นะคะ/g, 'นะครับ');
+      cleaned = cleaned.replace(/ค่ะ/g, 'ครับ');
+      cleaned = cleaned.replace(/คะ(?=[ \n.,!?•]|$)/g, 'ครับ');
+      cleaned = cleaned.replace(/เน้อเจ้า/g, 'นะครับ');
+      cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ครับ');
+    }
+  }
 
   // Apply Thai phonetic and prosody normalizer
   cleaned = normalizeThaiForSpeech(cleaned);
@@ -153,24 +306,36 @@ export function cleanTextForSpeech(text: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Limit speech length to ~450 characters with graceful natural ending
-  if (cleaned.length > 450) {
-    const sliced = cleaned.slice(0, 450);
+  // Limit spoken speech length to ~270 characters (approx 30-40 seconds)
+  // Ensures audio NEVER exceeds LINE Messaging API 60-second limit and ends gracefully
+  if (cleaned.length > 270) {
+    const sliced = cleaned.slice(0, 270);
     const lastPunct = Math.max(
       sliced.lastIndexOf('เน้อเจ้า'),
+      sliced.lastIndexOf('เน้อครับ'),
       sliced.lastIndexOf('เจ้า'),
       sliced.lastIndexOf('ครับ'),
       sliced.lastIndexOf('ค่ะ'),
       sliced.lastIndexOf('.'),
+      sliced.lastIndexOf(','),
       sliced.lastIndexOf(' ')
     );
-    if (lastPunct > 300) {
-      cleaned = sliced.slice(0, lastPunct);
-      if (sliced.slice(lastPunct).includes('เจ้า')) {
-        cleaned += 'เจ้า';
-      }
+
+    let naturalWrap = '';
+    if (dialect === 'kham_mueang') {
+      naturalWrap = voiceGender === 'male'
+        ? ', สามารถผ่อรายละเอียดเพิ่มเติมทั้งหมดตี้ข้อความด้านบนได้เลยเน้อครับ'
+        : ', สามารถผ่อรายละเอียดเพิ่มเติมทั้งหมดตี้ข้อความด้านบนได้เลยเน้อเจ้า';
     } else {
-      cleaned = sliced + '...';
+      naturalWrap = voiceGender === 'male'
+        ? ', สามารถดูรายละเอียดเพิ่มเติมทั้งหมดได้จากข้อความด้านบนได้เลยนะครับ'
+        : ', สามารถดูรายละเอียดเพิ่มเติมทั้งหมดได้จากข้อความด้านบนได้เลยนะคะ';
+    }
+
+    if (lastPunct > 150) {
+      cleaned = sliced.slice(0, lastPunct).trim() + naturalWrap;
+    } else {
+      cleaned = sliced.trim() + naturalWrap;
     }
   }
 
@@ -270,8 +435,22 @@ export function calculateMp3Duration(buffer: Buffer): number {
   return Math.max(2000, Math.min(60000, estimatedMs));
 }
 
+const WIN_EPOCH = 11644473600n;
+const S_TO_NS = 1000000000n;
+const EDGE_TRUSTED_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+
+function getEdgeSecMsGec(): string {
+  const unixNow = BigInt(Math.floor(Date.now() / 1000));
+  let ticks = unixNow + WIN_EPOCH;
+  ticks -= ticks % 300n;
+  ticks *= (S_TO_NS / 100n);
+  const strToHash = ticks.toString() + EDGE_TRUSTED_TOKEN;
+  return crypto.createHash('sha256').update(strToHash, 'ascii').digest('hex').toUpperCase();
+}
+
 /**
  * Synthesize speech via Microsoft Edge Neural TTS (High quality, free, natural Thai neural voice)
+ * Works for both Female (PremwadeeNeural) and Male (NiwatNeural)
  */
 async function synthesizeViaEdgeTts(
   text: string, 
@@ -286,17 +465,22 @@ async function synthesizeViaEdgeTts(
     try {
       const connId = crypto.randomUUID().replace(/-/g, '');
       const reqId = crypto.randomUUID().replace(/-/g, '');
-      const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readahead/edge/v1?TrustedClientToken=6A5AA1D4EA654081830088481A31D63F&ConnectionId=${connId}`;
+      const gec = getEdgeSecMsGec();
+      const muid = crypto.randomBytes(16).toString('hex').toUpperCase();
+
+      const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TRUSTED_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=1-143.0.3650.75&ConnectionId=${connId}`;
 
       const ws = new globalThis.WebSocket(wsUrl, {
         headers: {
           'Pragma': 'no-cache',
           'Cache-Control': 'no-cache',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
-          'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0',
+          'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
+          'Cookie': `muid=${muid};`
         }
       } as any);
 
+      (ws as any).binaryType = 'arraybuffer';
       const audioChunks: Buffer[] = [];
 
       timeoutId = setTimeout(() => {
@@ -336,8 +520,11 @@ async function synthesizeViaEdgeTts(
         ws.send(ssmlMsg);
       };
 
-      ws.onmessage = (event: any) => {
-        const data = event.data;
+      ws.onmessage = async (event: any) => {
+        let data = event.data;
+        if (typeof Blob !== 'undefined' && data instanceof Blob) {
+          data = await data.arrayBuffer();
+        }
         if (typeof data === 'string') {
           if (data.includes('Path:turn.end')) {
             clearTimeout(timeoutId);
@@ -443,7 +630,7 @@ export async function generateAudioReply(options: TTSOptions): Promise<TTSResult
     dialect = 'central'
   } = options;
 
-  const cleanText = cleanTextForSpeech(text);
+  const cleanText = cleanTextForSpeech(text, voiceGender, dialect);
   if (!cleanText || cleanText.length < 2) {
     return {
       success: false,

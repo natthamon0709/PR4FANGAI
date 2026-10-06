@@ -352,6 +352,28 @@ export default function PlaygroundChatWindow() {
                   </div>
                 )}
 
+                {/* Visual Media Delivery Preview if available */}
+                {msg.result?.imageUrl && (
+                  <div className="p-3 rounded-2xl bg-surface-card border border-outline/30 shadow-sm space-y-2 animate-fadeIn max-w-sm">
+                    <div className="flex items-center justify-between text-xs font-semibold text-onSurface">
+                      <span className="flex items-center gap-1.5 text-primary">
+                        🖼️ {msg.result.isWebAttachment ? 'ภาพจากฐานความรู้ (หน้าเว็บ)' : 'ภาพประกอบ (Google Drive)'}
+                      </span>
+                      {msg.result.imageCaption && (
+                        <span className="text-[11px] text-onSurface-muted truncate max-w-[150px]">
+                          {msg.result.imageCaption}
+                        </span>
+                      )}
+                    </div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={msg.result.imageUrl}
+                      alt={msg.result.imageCaption || 'ภาพประกอบ'}
+                      className="w-full max-h-60 object-contain rounded-xl bg-black/5 border border-outline/10"
+                    />
+                  </div>
+                )}
+
                 {/* AI Metadata: Confidence Bar & Retrieved Sources */}
                 {msg.result && (
                   <div className="p-3 rounded-2xl bg-surface-card border border-outline/30 shadow-level1 space-y-2.5 max-w-full text-xs animate-fadeIn">
