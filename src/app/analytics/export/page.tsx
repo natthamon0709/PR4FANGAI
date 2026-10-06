@@ -6,20 +6,39 @@ import { safeFetchJson } from '@/lib/api-client';
 import AnalyticsTabNav from '@/components/analytics/AnalyticsTabNav';
 import ReportCategoryCheckboxGroup from '@/components/analytics/ReportCategoryCheckboxGroup';
 import ExportFormatSelector from '@/components/analytics/ExportFormatSelector';
-import ReportPreviewPane from '@/components/analytics/ReportPreviewPane';
+import ReportPreviewPane, { ReportExportData } from '@/components/analytics/ReportPreviewPane';
 import { formatThaiDate } from '@/lib/date-utils';
 import { SessionUser } from '@/types';
-import { FileSpreadsheet, Download, Printer, CheckCircle, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, Download, Printer, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 
 export default function CustomReportExportPage() {
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [title, setTitle] = useState('รายงานสรุปการวิเคราะห์ระบบ PR4Fang AI');
-  const [categories, setCategories] = useState<('usage' | 'knowledge' | 'ai' | 'line')[]>(['usage', 'knowledge', 'ai', 'line']);
+  const [categories, setCategories] = useState<('usage' | 'knowledge' | 'ai' | 'line')[]>([
+    'usage',
+    'knowledge',
+    'ai',
+    'line'
+  ]);
   const [format, setFormat] = useState<'pdf' | 'xlsx'>('pdf');
-  const [startDate, setStartDate] = useState('2026-07-01');
-  const [endDate, setEndDate] = useState('2026-07-31');
+
+  // Default to past 30 days
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  });
+
   const [downloading, setDownloading] = useState(false);
+  const [reportData, setReportData] = useState<ReportExportData | null>(null);
+  const [loadingData, setLoadingData] = useState(false);
 
   useEffect(() => {
     async function checkAuth() {
@@ -33,10 +52,11 @@ export default function CustomReportExportPage() {
     checkAuth();
   }, [router]);
 
-  const handleExport = async () => {
-    setDownloading(true);
+  const loadReportData = async () => {
+    if (!user) return;
+    setLoadingData(true);
     try {
-      const res = await fetch('/api/analytics/export', {
+      const res = await safeFetchJson('/api/analytics/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,11 +64,42 @@ export default function CustomReportExportPage() {
           categories,
           startDate,
           endDate,
-          format
+          format: 'json'
         })
       });
 
+      if (res.ok && res.data) {
+        setReportData(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load report data:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && categories.length > 0) {
+      loadReportData();
+    }
+  }, [user, categories, startDate, endDate, title]);
+
+  const handleExport = async () => {
+    setDownloading(true);
+    try {
       if (format === 'xlsx') {
+        const res = await fetch('/api/analytics/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            categories,
+            startDate,
+            endDate,
+            format: 'xlsx'
+          })
+        });
+
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -58,6 +109,8 @@ export default function CustomReportExportPage() {
         a.click();
         a.remove();
       } else {
+        // PDF mode: Refresh data first if needed then print clean report
+        await loadReportData();
         window.print();
       }
     } catch (err) {
@@ -75,6 +128,10 @@ export default function CustomReportExportPage() {
     );
   }
 
+  const dateRangeLabel = `${formatThaiDate(startDate, 'short')} - ${formatThaiDate(endDate, 'short')}`;
+  const departmentName = user.role === 'administrator' ? 'ทุกฝ่ายงาน (ทั้งวิทยาลัย)' : 'ฝ่ายบริหารทรัพยากร';
+  const generatedBy = `${user.first_name || 'ผู้ดูแลระบบ'} ${user.last_name || ''}`;
+
   return (
     <DashboardLayout
       user={user}
@@ -84,22 +141,26 @@ export default function CustomReportExportPage() {
       ]}
     >
       <div className="space-y-6 pb-12">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Header Section (Hidden during print) */}
+        <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-heading font-black text-xl md:text-2xl text-onSurface flex items-center gap-2">
               <FileSpreadsheet className="w-6 h-6 text-primary" />
               <span>ส่งออกรายงานกำหนดเอง (Custom Report Export)</span>
             </h1>
             <p className="text-xs md:text-sm text-onSurface-muted mt-0.5">
-              สร้างและส่งออกรายงานสรุปข้อมูลหลายหมวดพร้อมหัวกระดาษทางการของวิทยาลัย
+              ดึงข้อมูลจริงจากระบบพร้อมจัดพิมพ์หัวกระดาษทางการของวิทยาลัยการอาชีพฝาง
             </p>
           </div>
         </div>
 
-        <AnalyticsTabNav isAdmin={user.role === 'administrator'} />
+        {/* Tab Navigation (Hidden during print) */}
+        <div className="no-print">
+          <AnalyticsTabNav isAdmin={user.role === 'administrator'} />
+        </div>
 
-        {/* Builder Panel */}
-        <div className="p-5 md:p-6 bg-surface-card rounded-2xl border border-outline/30 shadow-level1 space-y-6">
+        {/* Builder Panel (Hidden during print) */}
+        <div className="no-print p-5 md:p-6 bg-surface-card rounded-2xl border border-outline/30 shadow-level1 space-y-6">
           {/* Step 1: Select Categories */}
           <div>
             <label className="text-xs md:text-sm font-bold text-onSurface block mb-2">
@@ -151,33 +212,65 @@ export default function CustomReportExportPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-outline/15 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-outline/15 flex items-center justify-between gap-3">
             <button
               type="button"
-              onClick={handleExport}
-              disabled={downloading || categories.length === 0}
-              className="px-5 py-2.5 bg-primary text-white rounded-xl text-xs md:text-sm font-bold hover:bg-primary-dark shadow-sm flex items-center gap-2 disabled:opacity-50 transition-all"
+              onClick={loadReportData}
+              disabled={loadingData}
+              className="px-4 py-2 bg-surface hover:bg-surface-variant text-onSurface text-xs font-semibold rounded-xl border border-outline/25 flex items-center gap-2 transition-all disabled:opacity-50"
+              title="ดึงข้อมูลล่าสุดจากฐานข้อมูล"
             >
-              {format === 'pdf' ? <Printer className="w-4 h-4" /> : <Download className="w-4 h-4" />}
-              <span>{downloading ? 'กำลังสร้างไฟล์...' : format === 'pdf' ? 'พิมพ์ / บันทึกเป็น PDF' : 'ดาวน์โหลดไฟล์ Excel (CSV)'}</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin text-primary' : ''}`} />
+              <span>รีเฟรชข้อมูลจริง</span>
             </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={downloading || categories.length === 0}
+                className="px-5 py-2.5 bg-primary text-white rounded-xl text-xs md:text-sm font-bold hover:bg-primary-dark shadow-sm flex items-center gap-2 disabled:opacity-50 transition-all"
+              >
+                {format === 'pdf' ? <Printer className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                <span>
+                  {downloading
+                    ? 'กำลังสร้างไฟล์...'
+                    : format === 'pdf'
+                    ? 'พิมพ์ / บันทึกเป็น PDF (Print)'
+                    : 'ดาวน์โหลดไฟล์ Excel (CSV)'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Live A4 Preview Pane */}
-        <div className="space-y-3">
+        {/* Live A4 Preview Pane Header (Hidden during print) */}
+        <div className="no-print flex items-center justify-between pt-2">
           <h3 className="text-xs md:text-sm font-bold text-onSurface flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-primary" />
-            <span>ตัวอย่างเอกสารรายงานก่อนส่งออกจริง (Print Preview)</span>
+            <span>ตัวอย่างเอกสารรายงานก่อนส่งออกจริง (Official A4 Print Preview)</span>
           </h3>
-          <ReportPreviewPane
-            title={title}
-            dateRangeLabel={`${formatThaiDate(startDate, 'short')} - ${formatThaiDate(endDate, 'short')}`}
-            departmentName={user.role === 'administrator' ? 'ทุกฝ่ายงาน (ทั้งวิทยาลัย)' : 'ฝ่ายบริหารทรัพยากร'}
-            selectedCategories={categories}
-            generatedBy={`${user.first_name || 'ผู้ดูแลระบบ'} ${user.last_name || ''}`}
-          />
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="px-3.5 py-1.5 bg-[#800000] text-white rounded-lg text-xs font-bold hover:bg-[#520000] flex items-center gap-1.5 shadow-sm transition-all"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>พิมพ์ / เซฟเป็น PDF</span>
+          </button>
         </div>
+
+        {/* Live A4 Preview Component (Will be printed exclusively) */}
+        <ReportPreviewPane
+          title={title}
+          dateRangeLabel={dateRangeLabel}
+          departmentName={departmentName}
+          selectedCategories={categories}
+          generatedBy={generatedBy}
+          reportData={reportData}
+          loading={loadingData}
+        />
       </div>
     </DashboardLayout>
   );

@@ -96,10 +96,10 @@ export function ensureLineBroadcastsSeeded(db: any) {
         return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(hour)}:${pad(min)}:00`;
       };
 
-      insertBc.run('bc-001', 'ประชาสัมพันธ์กำหนดการเปิดภาคเรียนและลงทะเบียนเรียน 2/2569', 'วิทยาลัยการอาชีพฝาง ขอแจ้งกำหนดการลงทะเบียนเรียนและเปิดภาคเรียนที่ 2/2569 ตั้งแต่วันที่ 15 ต.ค. 2569 เป็นต้นไป', 'all_followers', 'dept-04-academic', 245, daysAgo(2, 9, 30), daysAgo(2, 9, 0));
-      insertBc.run('bc-002', 'ประกาศแจ้งกำหนดการตรวจสุขภาพนักเรียน นักศึกษาใหม่', 'ขอให้นักเรียน นักศึกษา เข้ารับการตรวจสุขภาพประจำปี ณ อาคารวิทยบริการ', 'all_followers', 'dept-03-student', 218, daysAgo(8, 14, 15), daysAgo(8, 13, 45));
-      insertBc.run('bc-003', 'แจ้งเตือนการส่งคำร้องขอรับทุนการศึกษาเพื่อการศึกษา', 'เปิดรับคำร้องขอรับทุนการศึกษา ประจำปีการศึกษา 2569 สิ้นสุดวันที่ 30 ต.ค. นี้', 'all_followers', 'dept-03-student', 180, daysAgo(18, 10, 0), daysAgo(18, 9, 30));
-      insertBc.run('bc-004', 'กิจกรรมวันไหว้ครูและพิธีมอบเกียรติบัตรเรียนดีเด่น 2569', 'ขอเชิญคณะครู บุคลากร และนักเรียนร่วมกิจกรรมวันไหว้ครู ณ หอประชุมใหญ่', 'all_followers', 'dept-01-resource', 232, daysAgo(26, 8, 45), daysAgo(26, 8, 0));
+      insertBc.run('bc-001', 'ประชาสัมพันธ์กำหนดการเปิดภาคเรียนและลงทะเบียนเรียน 2/2569', 'วิทยาลัยการอาชีพฝาง ขอแจ้งกำหนดการลงทะเบียนเรียนและเปิดภาคเรียนที่ 2/2569 ตั้งแต่วันที่ 15 ต.ค. 2569 เป็นต้นไป', 'all_followers', 'dept-04-academic', 9, daysAgo(2, 9, 30), daysAgo(2, 9, 0));
+      insertBc.run('bc-002', 'ประกาศแจ้งกำหนดการตรวจสุขภาพนักเรียน นักศึกษาใหม่', 'ขอให้นักเรียน นักศึกษา เข้ารับการตรวจสุขภาพประจำปี ณ อาคารวิทยบริการ', 'all_followers', 'dept-03-student', 9, daysAgo(8, 14, 15), daysAgo(8, 13, 45));
+      insertBc.run('bc-003', 'แจ้งเตือนการส่งคำร้องขอรับทุนการศึกษาเพื่อการศึกษา', 'เปิดรับคำร้องขอรับทุนการศึกษา ประจำปีการศึกษา 2569 สิ้นสุดวันที่ 30 ต.ค. นี้', 'all_followers', 'dept-03-student', 9, daysAgo(18, 10, 0), daysAgo(18, 9, 30));
+      insertBc.run('bc-004', 'กิจกรรมวันไหว้ครูและพิธีมอบเกียรติบัตรเรียนดีเด่น 2569', 'ขอเชิญคณะครู บุคลากร และนักเรียนร่วมกิจกรรมวันไหว้ครู ณ หอประชุมใหญ่', 'all_followers', 'dept-01-resource', 9, daysAgo(26, 8, 45), daysAgo(26, 8, 0));
     }
   } catch (err) {
     console.error("Error seeding broadcasts:", err);
@@ -107,14 +107,12 @@ export function ensureLineBroadcastsSeeded(db: any) {
 }
 
 /**
- * Seed Line Followers if empty or under-populated
+ * Seed Line Followers if empty
  */
 export function ensureLineFollowersSeeded(db: any) {
   try {
     const fCount = (db.prepare("SELECT COUNT(*) as c FROM line_followers").get() as any)?.c || 0;
-    if (fCount <= 4) {
-      db.prepare("UPDATE line_followers SET linked_master_user_id = 'usr-admin-001' WHERE line_user_id = 'U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6'").run();
-
+    if (fCount === 0) {
       const insertFollower = db.prepare(`
         INSERT OR IGNORE INTO line_followers (
           follower_id, line_user_id, display_name, avatar_url, linked_master_user_id, followed_at, blocked, last_interaction_at
@@ -217,21 +215,18 @@ export function ensureReportSnapshotsSeeded(startDate?: string, endDate?: string
           const dayOfWeek = d.getDay();
           const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-          // 1. AI Questions
-          const realQ = (db.prepare("SELECT COUNT(*) as c FROM ai_query_logs WHERE date(created_at) = ?").get(dateStr) as any)?.c || 0;
-          const qCount = realQ > 0 ? realQ : Math.max(10, Math.round((isWeekend ? 14 : 38) + Math.sin(diffDays * 0.4) * 8));
+          // 1. AI Questions (strictly from ai_query_logs)
+          const qCount = (db.prepare("SELECT COUNT(*) as c FROM ai_query_logs WHERE date(created_at) = ?").get(dateStr) as any)?.c || 0;
 
-          // 2. Active Users
-          const realU = (db.prepare("SELECT COUNT(DISTINCT user_id) as c FROM login_audit_logs WHERE result = 'success' AND date(created_at) = ?").get(dateStr) as any)?.c || 0;
-          const uCount = realU > 0 ? Math.max(realU, isWeekend ? 6 : 18) : Math.max(4, Math.round((isWeekend ? 8 : 22) + Math.sin(diffDays * 0.3) * 3));
+          // 2. Active Users (strictly from login_audit_logs)
+          const uCount = (db.prepare("SELECT COUNT(DISTINCT user_id) as c FROM login_audit_logs WHERE result = 'success' AND date(created_at) = ?").get(dateStr) as any)?.c || 0;
 
-          // 3. Avg Confidence
+          // 3. Avg Confidence (strictly from ai_query_logs)
           const realC = (db.prepare("SELECT AVG(confidence_score) as avg_c FROM ai_query_logs WHERE date(created_at) = ?").get(dateStr) as any)?.avg_c;
-          const cVal = realC ? Math.round(realC * 100) / 100 : Math.round((0.84 + Math.sin(diffDays * 0.5) * 0.06) * 100) / 100;
+          const cVal = realC ? Math.round(realC * 100) / 100 : 0.85;
 
-          // 4. Follower Count (Growth towards ~248 followers)
-          const baseFollowers = 248;
-          const fCount = Math.max(135, Math.round(baseFollowers - (diffDays * 1.5) + Math.sin(diffDays * 0.2) * 2));
+          // 4. Follower Count (strictly from line_followers cumulative)
+          const fCount = (db.prepare("SELECT COUNT(*) as c FROM line_followers WHERE date(followed_at) <= ?").get(dateStr) as any)?.c || 0;
 
           insertStmt.run("snap-q-" + dateStr, "ai_question_count", dateStr, qCount);
           insertStmt.run("snap-u-" + dateStr, "active_users", dateStr, uCount);
@@ -262,14 +257,15 @@ export function getAnalyticsOverview(filter: DateRangeFilter, deptId?: string, i
   const successRate = totalQuestions > 0 ? Math.round(((totalQuestions - fallbackCount) / totalQuestions) * 100) : 92;
 
   // Active Users count
-  const activeUsersCount = (db.prepare("SELECT COUNT(DISTINCT user_id) as c FROM login_audit_logs WHERE result = 'success' AND date(created_at) BETWEEN ? AND ?").get(filter.startDate, filter.endDate) as any)?.c || 18;
+  const activeUsersCount = (db.prepare("SELECT COUNT(DISTINCT user_id) as c FROM login_audit_logs WHERE result = 'success' AND date(created_at) BETWEEN ? AND ?").get(filter.startDate, filter.endDate) as any)?.c || 0;
 
   // New Knowledge Published
   const knowledgeCountCond = !isAdmin && deptId ? "WHERE status = 'published' AND department_id = ? AND date(created_at) BETWEEN ? AND ?" : "WHERE status = 'published' AND date(created_at) BETWEEN ? AND ?";
   const newKnowledgeCount = (db.prepare("SELECT COUNT(*) as c FROM knowledge_items " + knowledgeCountCond).get(...(!isAdmin && deptId ? [deptId, filter.startDate, filter.endDate] : [filter.startDate, filter.endDate])) as any)?.c || 0;
 
   // New LINE Followers
-  const newFollowersCount = (db.prepare("SELECT COUNT(*) as c FROM line_followers WHERE blocked = 0 AND date(followed_at) BETWEEN ? AND ?").get(filter.startDate, filter.endDate) as any)?.c || 12;
+  const newFollowersRow = db.prepare("SELECT COUNT(*) as c FROM line_followers WHERE blocked = 0 AND date(followed_at) BETWEEN ? AND ?").get(filter.startDate, filter.endDate) as any;
+  const newFollowersCount = newFollowersRow ? newFollowersRow.c : 0;
 
   // Change comparisons
   const activeChange = calcChange(activeUsersCount, Math.max(1, activeUsersCount - 2));
@@ -320,26 +316,26 @@ export function getAnalyticsOverview(filter: DateRangeFilter, deptId?: string, i
     }
   ];
 
-  // Daily AI Question Trend Series: merge snapshots with real query logs
-  const snapRows = db.prepare("SELECT period_date, metric_value FROM report_snapshots WHERE metric_key = 'ai_question_count' AND scope = 'global' AND period_date BETWEEN ? AND ? ORDER BY period_date ASC").all(filter.startDate, filter.endDate) as any[];
+  // Daily AI Question Trend Series: query strictly from real ai_query_logs
   const trendRows = db.prepare("SELECT date(created_at) as log_date, COUNT(*) as q_count FROM ai_query_logs " + queryLogsCondition + " GROUP BY date(created_at) ORDER BY date(created_at) ASC").all(...queryParams) as any[];
 
-  const trendMap = new Map<string, number>();
-  for (const s of snapRows) {
-    trendMap.set(s.period_date, Math.round(s.metric_value));
-  }
+  const startD = new Date(filter.startDate);
+  const endD = new Date(filter.endDate);
+  const aiQuestionTrend: TrendDataPoint[] = [];
+  const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
+  const toDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const logMap = new Map<string, number>();
   for (const r of trendRows) {
-    if (r.q_count > 0) {
-      trendMap.set(r.log_date, r.q_count);
-    }
+    logMap.set(r.log_date, r.q_count);
   }
-
-  const sortedDates = Array.from(trendMap.keys()).sort();
-  const aiQuestionTrend: TrendDataPoint[] = sortedDates.map(d => ({
-    date: d,
-    label: formatThaiDate(d, "short"),
-    value: trendMap.get(d) || 0
-  }));
+  for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+    const dStr = toDateStr(d);
+    aiQuestionTrend.push({
+      date: dStr,
+      label: formatThaiDate(dStr, "short"),
+      value: logMap.get(dStr) || 0
+    });
+  }
 
   // Top Knowledge Items referenced by AI
   const topKnowledgeRows = db.prepare("SELECT k.knowledge_id as id, k.title, COUNT(s.source_id) as ref_count, d.name as department_name FROM knowledge_items k JOIN ai_retrieved_sources s ON k.knowledge_id = s.knowledge_id LEFT JOIN departments d ON k.department_id = d.department_id WHERE k.status = 'published' GROUP BY k.knowledge_id ORDER BY ref_count DESC LIMIT 5").all() as any[];
@@ -399,7 +395,7 @@ export function getUsageAnalytics(filter: DateRangeFilter, deptId?: string, isAd
     {
       key: "unique_users",
       label: "ผู้ใช้งานที่ไม่ซ้ำ (Active)",
-      value: Math.max(uniqueUsers, 18),
+      value: uniqueUsers,
       unit: "คน",
       status: "positive",
       tooltip: "จำนวนผู้ใช้งานรายบุคคลที่ล็อกอินสำเร็จ"
@@ -407,7 +403,7 @@ export function getUsageAnalytics(filter: DateRangeFilter, deptId?: string, isAd
     {
       key: "total_logins",
       label: "จำนวนครั้งที่เข้าสู่ระบบ",
-      value: Math.max(totalLogins, 32),
+      value: totalLogins,
       unit: "ครั้ง",
       status: "neutral",
       tooltip: "การเข้าสู่ระบบทั้งหมดรวมทุกบัญชี"
@@ -431,25 +427,26 @@ export function getUsageAnalytics(filter: DateRangeFilter, deptId?: string, isAd
   ];
 
   // Daily Active Users Trend
-  const snapRows = db.prepare("SELECT period_date, metric_value FROM report_snapshots WHERE metric_key = 'active_users' AND scope = 'global' AND period_date BETWEEN ? AND ? ORDER BY period_date ASC").all(filter.startDate, filter.endDate) as any[];
+  // Daily Active Users Trend directly from real login_audit_logs
   const loginAuditRows = db.prepare("SELECT date(created_at) as log_date, COUNT(DISTINCT user_id) as u_count FROM login_audit_logs WHERE result = 'success' AND date(created_at) BETWEEN ? AND ? GROUP BY date(created_at)").all(filter.startDate, filter.endDate) as any[];
 
+  const startD = new Date(filter.startDate);
+  const endD = new Date(filter.endDate);
+  const dailyActiveUsersTrend: TrendDataPoint[] = [];
+  const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
+  const toDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const activeMap = new Map<string, number>();
-  for (const s of snapRows) {
-    activeMap.set(s.period_date, Math.round(s.metric_value));
-  }
   for (const l of loginAuditRows) {
-    if (l.u_count > 0) {
-      activeMap.set(l.log_date, Math.max(l.u_count, activeMap.get(l.log_date) || l.u_count));
-    }
+    activeMap.set(l.log_date, l.u_count);
   }
-
-  const sortedDates = Array.from(activeMap.keys()).sort();
-  const dailyActiveUsersTrend: TrendDataPoint[] = sortedDates.map(d => ({
-    date: d,
-    label: formatThaiDate(d, "short"),
-    value: activeMap.get(d) || 0
-  }));
+  for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+    const dStr = toDateStr(d);
+    dailyActiveUsersTrend.push({
+      date: dStr,
+      label: formatThaiDate(dStr, "short"),
+      value: activeMap.get(dStr) || 0
+    });
+  }
 
   // Login Audit Trend
   const loginTrendRows = db.prepare("SELECT date(created_at) as log_date, COUNT(*) as c FROM login_audit_logs WHERE date(created_at) BETWEEN ? AND ? GROUP BY date(created_at) ORDER BY date(created_at) ASC").all(filter.startDate, filter.endDate) as any[];
@@ -622,7 +619,7 @@ export function getAiPerformanceAnalytics(filter: DateRangeFilter, deptId?: stri
     {
       key: "total_queries",
       label: "จำนวนคำถามทั้งหมด",
-      value: Math.max(totalQueries, 64),
+      value: totalQueries,
       unit: "ครั้ง",
       status: "neutral",
       tooltip: "จำนวนคำถามที่ส่งเข้ามายังระบบ AI ผ่าน LINE Official Account"
@@ -667,23 +664,22 @@ export function getAiPerformanceAnalytics(filter: DateRangeFilter, deptId?: stri
   }));
 
   if (confidenceStackedTrend.length === 0) {
-    const snapRows = db.prepare("SELECT period_date, metric_value FROM report_snapshots WHERE metric_key = 'ai_question_count' AND scope = 'global' AND period_date BETWEEN ? AND ? ORDER BY period_date ASC").all(filter.startDate, filter.endDate) as any[];
-    confidenceStackedTrend = snapRows.map(r => {
-      const tot = Math.round(r.metric_value);
-      const high = Math.round(tot * 0.75);
-      const med = Math.round(tot * 0.15);
-      const low = Math.round(tot * 0.05);
-      const fb = Math.max(0, tot - high - med - low);
-      return {
-        date: r.period_date,
-        label: formatThaiDate(r.period_date, "short"),
-        high,
-        medium: med,
-        low,
-        fallback: fb,
-        total: tot
-      };
-    });
+    const startD = new Date(filter.startDate);
+    const endD = new Date(filter.endDate);
+    const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
+    const toDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+      const dStr = toDateStr(d);
+      confidenceStackedTrend.push({
+        date: dStr,
+        label: formatThaiDate(dStr, "short"),
+        high: 0,
+        medium: 0,
+        low: 0,
+        fallback: 0,
+        total: 0
+      });
+    }
   }
 
   // Feedback Breakdown Donut
@@ -768,24 +764,27 @@ export function getLineAnalytics(filter: DateRangeFilter, deptId?: string, isAdm
   ensureReportSnapshotsSeeded(filter.startDate, filter.endDate);
   const db = getDb();
 
-  const totalFollowersInDb = (db.prepare("SELECT COUNT(*) as c FROM line_followers WHERE blocked = 0").get() as any)?.c || 0;
+  const allFollowersInDb = (db.prepare("SELECT COUNT(*) as c FROM line_followers").get() as any)?.c || 0;
+  const activeFollowersInDb = (db.prepare("SELECT COUNT(*) as c FROM line_followers WHERE blocked = 0").get() as any)?.c || 0;
+  const blockedFollowersInDb = (db.prepare("SELECT COUNT(*) as c FROM line_followers WHERE blocked = 1").get() as any)?.c || 0;
   const linkedUsersInDb = (db.prepare("SELECT COUNT(*) as c FROM line_followers WHERE linked_master_user_id IS NOT NULL AND blocked = 0").get() as any)?.c || 0;
   const totalBroadcastsInDb = (db.prepare("SELECT COUNT(*) as c FROM line_broadcasts WHERE status = 'sent'").get() as any)?.c || 0;
-  const totalDeliveredInDb = (db.prepare("SELECT SUM(delivered_count) as s FROM line_broadcasts WHERE status = 'sent'").get() as any)?.s || 0;
+  const totalDeliveredInDb = (db.prepare("SELECT COALESCE(SUM(delivered_count), 0) as s FROM line_broadcasts WHERE status = 'sent'").get() as any)?.s || 0;
 
-  const totalFollowers = Math.max(totalFollowersInDb, 248);
-  const linkedUsers = Math.max(linkedUsersInDb, 42);
-  const totalBroadcasts = Math.max(totalBroadcastsInDb, 4);
-  const totalDelivered = Math.max(totalDeliveredInDb, 875);
+  const totalFollowers = allFollowersInDb;
+  const activeFollowers = activeFollowersInDb;
+  const linkedUsers = linkedUsersInDb;
+  const totalBroadcasts = totalBroadcastsInDb;
+  const totalDelivered = totalDeliveredInDb;
 
   const kpis: AnalyticsKpi[] = [
     {
       key: "total_followers",
-      label: "ผู้ติดตามที่ใช้งานอยู่ (Active)",
+      label: "เพื่อนทั้งหมดใน LINE (Total Followers)",
       value: totalFollowers,
       unit: "คน",
       status: "positive",
-      tooltip: "จำนวนผู้ติดตามที่ไม่บล็อก LINE Official Account"
+      tooltip: `จำนวนเพื่อนทั้งหมดใน LINE OA (${activeFollowers} คนใช้งานปกติ, ${blockedFollowersInDb} คนบล็อก)`
     },
     {
       key: "linked_accounts",
@@ -813,71 +812,49 @@ export function getLineAnalytics(filter: DateRangeFilter, deptId?: string, isAdm
     }
   ];
 
-  // Follower Growth Trend from snapshots
-  const snapRows = db.prepare("SELECT period_date, metric_value FROM report_snapshots WHERE metric_key = 'follower_count' AND scope = 'global' AND period_date BETWEEN ? AND ? ORDER BY period_date ASC").all(filter.startDate, filter.endDate) as any[];
+  // Follower Growth Trend: compute daily cumulative follower count from DB
+  const startD = new Date(filter.startDate);
+  const endD = new Date(filter.endDate);
+  const followerGrowthTrend: TrendDataPoint[] = [];
 
-  const followerGrowthTrend: TrendDataPoint[] = snapRows.map(r => ({
-    date: r.period_date,
-    label: formatThaiDate(r.period_date, "short"),
-    value: Math.round(r.metric_value)
-  }));
+  const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
+  const toDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+    const dStr = toDateStr(d);
+    const countOnDate = (db.prepare("SELECT COUNT(*) as c FROM line_followers WHERE date(followed_at) <= ?").get(dStr) as any)?.c || 0;
+    followerGrowthTrend.push({
+      date: dStr,
+      label: formatThaiDate(dStr, "short"),
+      value: countOnDate
+    });
+  }
 
   // Account Linking Breakdown
-  const unlinked = Math.max(0, totalFollowers - linkedUsers);
+  const unlinkedActive = Math.max(0, activeFollowers - linkedUsers);
   const accountLinkingBreakdown: DonutDataPoint[] = [
     {
       label: "ผูกบัญชีสำเร็จ",
       value: linkedUsers,
-      percentage: totalFollowers > 0 ? Math.round((linkedUsers / totalFollowers) * 100) : 17,
+      percentage: totalFollowers > 0 ? Math.round((linkedUsers / totalFollowers) * 100) : 0,
       color: "#059669"
     },
     {
-      label: "บุคคลทั่วไป / ยังไม่ผูกบัญชี",
-      value: unlinked,
-      percentage: totalFollowers > 0 ? Math.round((unlinked / totalFollowers) * 100) : 83,
+      label: "บุคคลทั่วไป (ยังไม่ผูกบัญชี)",
+      value: unlinkedActive,
+      percentage: totalFollowers > 0 ? Math.round((unlinkedActive / totalFollowers) * 100) : 0,
+      color: "#3b82f6"
+    },
+    {
+      label: "บล็อกบัญชี (Blocked)",
+      value: blockedFollowersInDb,
+      percentage: totalFollowers > 0 ? Math.round((blockedFollowersInDb / totalFollowers) * 100) : 0,
       color: "#800000"
     }
   ];
 
-  // Recent Broadcasts
-  let recentBroadcasts = db.prepare("SELECT broadcast_id, title, target_type, delivered_count, COALESCE(sent_at, created_at) as sent_at, status FROM line_broadcasts WHERE status = 'sent' ORDER BY COALESCE(sent_at, created_at) DESC LIMIT 6").all() as any[];
-
-  if (!recentBroadcasts || recentBroadcasts.length === 0) {
-    recentBroadcasts = [
-      {
-        broadcast_id: "bc-001",
-        title: "ประชาสัมพันธ์กำหนดการเปิดภาคเรียนและลงทะเบียนเรียน 2/2569",
-        target_type: "all_followers",
-        delivered_count: 245,
-        sent_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-        status: "sent"
-      },
-      {
-        broadcast_id: "bc-002",
-        title: "ประกาศแจ้งกำหนดการตรวจสุขภาพนักเรียน นักศึกษาใหม่",
-        target_type: "all_followers",
-        delivered_count: 218,
-        sent_at: new Date(Date.now() - 8 * 86400000).toISOString(),
-        status: "sent"
-      },
-      {
-        broadcast_id: "bc-003",
-        title: "แจ้งเตือนการส่งคำร้องขอรับทุนการศึกษาเพื่อการศึกษา",
-        target_type: "all_followers",
-        delivered_count: 180,
-        sent_at: new Date(Date.now() - 18 * 86400000).toISOString(),
-        status: "sent"
-      },
-      {
-        broadcast_id: "bc-004",
-        title: "กิจกรรมวันไหว้ครูและพิธีมอบเกียรติบัตรเรียนดีเด่น 2569",
-        target_type: "all_followers",
-        delivered_count: 232,
-        sent_at: new Date(Date.now() - 26 * 86400000).toISOString(),
-        status: "sent"
-      }
-    ];
-  }
+  // Recent Broadcasts from DB
+  const recentBroadcasts = db.prepare("SELECT broadcast_id, title, target_type, delivered_count, COALESCE(sent_at, created_at) as sent_at, status FROM line_broadcasts WHERE status = 'sent' ORDER BY COALESCE(sent_at, created_at) DESC LIMIT 6").all() as any[];
 
   return {
     dateRange: filter,

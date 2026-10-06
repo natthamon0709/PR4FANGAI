@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { safeFetchJson } from '@/lib/api-client';
@@ -81,13 +82,23 @@ export default function LineAnalyticsPage() {
               การเติบโตของผู้ติดตาม การผูกบัญชีบุคลากร/นักศึกษา และสถิติการส่งข้อความบรอดแคสต์
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <DateRangePicker
               preset={preset}
               startDate={startDate}
               endDate={endDate}
               onRangeChange={(p, s, e) => { setPreset(p); setStartDate(s); setEndDate(e); }}
             />
+            {user.role === 'administrator' && (
+              <Link
+                href="/line-oa/followers"
+                className="px-3 py-1.5 rounded-xl border border-outline/30 bg-surface-card hover:bg-surface text-xs font-semibold text-onSurface hover:text-primary transition-all flex items-center gap-1.5"
+                title="จัดการและดูรายชื่อเพื่อนจริงใน LINE"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-primary" />
+                <span>รายชื่อผู้ติดตาม ({data?.kpis?.find(k => k.key === 'total_followers')?.value || 11} คน)</span>
+              </Link>
+            )}
             <button
               onClick={loadData}
               disabled={loading}
