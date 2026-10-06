@@ -118,55 +118,101 @@ code, pre, .font-mono {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm 12mm 12mm;
+    margin: 8mm 10mm 8mm 10mm;
   }
 
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
   body {
     background-color: #ffffff !important;
     background: #ffffff !important;
-    color: #1e293b !important;
+    color: #0f172a !important;
     font-family: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
   }
 
   /* Hide all dashboard chrome: sidebar, top navbar, footer, buttons, controls */
   aside,
   header,
   footer,
+  nav,
   .no-print,
   [data-print-hide="true"] {
     display: none !important;
   }
 
-  main {
-    padding: 0 !important;
-    margin: 0 !important;
-    max-width: 100% !important;
-    width: 100% !important;
-  }
-
+  /* Unravel all dashboard flex/grid layouts so pagination flows naturally without flex-clipping */
+  .min-h-screen,
+  .flex-1,
+  main,
   #printable-report {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
     background: transparent !important;
   }
 
-  .print-page-break,
-  .print-page-2 {
-    page-break-before: always !important;
-    break-before: page !important;
-    min-height: auto !important;
+  #printable-report,
+  #printable-report > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 
+  /* Multi-page separation */
   .print-page-1 {
     page-break-after: always !important;
     break-after: page !important;
-    min-height: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-page-2 {
+    page-break-before: always !important;
+    break-before: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-single-page {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    height: auto !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
   }
 
   .print-avoid-break {
@@ -175,7 +221,14 @@ code, pre, .font-mono {
   }
 
   table {
-    page-break-inside: auto;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
   }
 
   tr {

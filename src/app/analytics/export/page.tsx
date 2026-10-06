@@ -140,7 +140,7 @@ export default function CustomReportExportPage() {
         { label: 'ส่งออกรายงานกำหนดเอง' },
       ]}
     >
-      <div className="space-y-6 pb-12">
+      <div className="space-y-6 pb-12 print:space-y-0 print:pb-0 print:m-0">
         {/* Header Section (Hidden during print) */}
         <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
