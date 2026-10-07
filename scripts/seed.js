@@ -199,7 +199,7 @@ if (fs.existsSync(csvKmPath)) {
   const insertAtt = db.prepare(`
     INSERT OR REPLACE INTO knowledge_attachments (
       attachment_id, knowledge_id, file_name, file_url, file_type, file_size_kb, uploaded_at
-    ) VALUES (?, ?, ?, ?, 'pdf', 256, datetime('now'))
+    ) VALUES (?, ?, ?, ?, ?, 256, datetime('now'))
   `);
 
   rows.forEach(r => {
@@ -219,7 +219,13 @@ if (fs.existsSync(csvKmPath)) {
     insertKm.run(kid, contentType, title, summary, content, deptId, subDeptId, tags, status, effDate, expDate);
     insertVer.run('ver-' + kid + '-1', kid, title, summary, content, tags);
     if (driveUrl && driveUrl !== '-') {
-      insertAtt.run('att-' + kid + '-1', kid, title + '.pdf', driveUrl);
+      const isFolder = /drive\/folders\/|\/folders\//i.test(driveUrl);
+      if (!isFolder) {
+        const isDoc = /document\/d\//i.test(driveUrl);
+        const isSheet = /spreadsheets\/d\//i.test(driveUrl);
+        const fileExt = isDoc ? 'docx' : isSheet ? 'xlsx' : 'pdf';
+        insertAtt.run('att-' + kid + '-1', kid, `${title}.${fileExt}`, driveUrl, fileExt);
+      }
     }
   });
 

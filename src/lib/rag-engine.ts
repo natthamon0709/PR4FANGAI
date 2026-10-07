@@ -1918,9 +1918,11 @@ export async function resolveDriveImageForQuery(
       }
     }
 
-    // Second pass: match branch or department name in title_or_person_name (Exclude student uniform media!)
+    // Second pass: match branch or department name in title_or_person_name (Exclude student uniform media and individual persons!)
     for (const m of cachedMedia) {
       if (isUniformAttachment(m.title_or_person_name)) continue;
+      // Do not return individual teacher photos as a generic branch illustration
+      if (/นาย|นางสาว|นาง|ว่าที่|ครู|อาจารย์|ดร\./.test(m.title_or_person_name || '')) continue;
       const fullTitle = (m.title_or_person_name || '').toLowerCase();
       if (primarySource?.title && fullTitle.includes(primarySource.title.replace(/^รายชื่อครูและบุคลากรสาขาวิชา/i, '').trim().toLowerCase())) {
         return {
@@ -2031,6 +2033,13 @@ export async function resolveDocumentAttachmentForQuery(
   const db = getDb();
   const primarySource = sources[0];
 
+  // Personnel / Teacher inquiries do NOT expect document download cards unless the user explicitly asks for files/documents
+  const isDocQuery = /เอกสาร|ไฟล์|แบบฟอร์ม|ฟอร์ม|ดาวน์โหลด|คู่มือ|คำร้อง|ระเบียบ|หลักสูตร|ประกาศ|หนังสือ|ค\.ร\.|pdf|doc|ใบสมัคร|ข้อบังคับ/i.test(question);
+  const isPersonnelSource = /รายชื่อครู|บุคลากร|คณะผู้บริหาร|ทำเนียบ|ประวัติบุคลากร/i.test(primarySource?.title || '');
+  if (isPersonnelSource && !isDocQuery) {
+    return null;
+  }
+
   try {
     const knowledgeIds = sources.map(s => s.knowledge_id).filter(Boolean);
     if (knowledgeIds.length > 0) {
@@ -2043,12 +2052,23 @@ export async function resolveDocumentAttachmentForQuery(
       `).all(...knowledgeIds) as any[];
 
       const validDocFilter = (att: any) => {
-        if (!att.file_url) return false;
-        if (att.file_url.includes('sample_')) return false;
-        const isDocType = ['pdf', 'docx', 'xlsx', 'other'].includes(att.file_type);
-        const isDocExt = /\.(pdf|docx|doc|xlsx|xls)(\?.*)?$/i.test(att.file_name || '') ||
-                         /\.(pdf|docx|doc|xlsx|xls)(\?.*)?$/i.test(att.file_url);
-        return isDocType || isDocExt;
+        if (!att || !att.file_url) return false;
+        const url = String(att.file_url).trim();
+        if (url.includes('sample_') || url.includes('dummy')) return false;
+
+        // Reject folders! Google Drive folders are NOT downloadable document files!
+        if (url.includes('/drive/folders/') || url.includes('/folders/')) return false;
+
+        // Reject pure image files
+        if (att.file_type === 'image') return false;
+        if (/\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(url)) return false;
+        if (/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(att.file_name || '')) return false;
+
+        const isDocType = ['pdf', 'docx', 'xlsx', 'document', 'form'].includes(att.file_type);
+        const isDocExt = /\.(pdf|docx|doc|xlsx|xls|pptx|ppt)(\?.*)?$/i.test(att.file_name || '') ||
+                         /\.(pdf|docx|doc|xlsx|xls|pptx|ppt)(\?.*)?$/i.test(url);
+        const isDriveFile = /https:\/\/(?:drive|docs)\.google\.com\/(?:file\/d\/|document\/d\/|spreadsheets\/d\/)/i.test(url);
+        return (isDocType && isDocExt) || isDocExt || isDriveFile;
       };
 
       let validDocs = rows.filter(validDocFilter);
@@ -2088,8 +2108,8 @@ export async function resolveDocumentAttachmentForQuery(
 
     // 2. Fallback: Check if primarySource content or summary contains a direct Google Drive document link
     const fullText = `${primarySource.content || ''} ${primarySource.summary || ''}`;
-    const driveDocMatch = fullText.match(/https:\/\/(?:drive|docs)\.google\.com\/(?:file\/d\/|document\/d\/|drive\/folders\/)[a-zA-Z0-9_\-]+[^\s\)\"\']*/);
-    if (driveDocMatch && !driveDocMatch[0].includes('sample_')) {
+    const driveDocMatch = fullText.match(/https:\/\/(?:drive|docs)\.google\.com\/(?:file\/d\/|document\/d\/|spreadsheets\/d\/)[a-zA-Z0-9_\-]+[^\s\)\"\']*/);
+    if (driveDocMatch && !driveDocMatch[0].includes('sample_') && !driveDocMatch[0].includes('/folders/')) {
       return {
         knowledge_id: primarySource.knowledge_id,
         file_name: `${primarySource.title} (เอกสารแนบ)`,

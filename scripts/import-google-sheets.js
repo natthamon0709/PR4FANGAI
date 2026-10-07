@@ -273,16 +273,22 @@ dataRows.forEach((row, index) => {
     createdAt
   );
 
-  if (driveLink) {
-    insertAttachment.run(
-      'att-' + crypto.randomUUID(),
-      kid,
-      `${title.substring(0, 30)}.pdf`,
-      driveLink,
-      'pdf',
-      Math.floor(Math.random() * 1800 + 200),
-      createdAt
-    );
+  if (driveLink && driveLink !== '-') {
+    const isFolder = /drive\/folders\/|\/folders\//i.test(driveLink);
+    if (!isFolder) {
+      const isDoc = /document\/d\//i.test(driveLink);
+      const isSheet = /spreadsheets\/d\//i.test(driveLink);
+      const fileExt = isDoc ? 'docx' : isSheet ? 'xlsx' : 'pdf';
+      insertAttachment.run(
+        'att-' + crypto.randomUUID(),
+        kid,
+        `${title.substring(0, 30)}.${fileExt}`,
+        driveLink,
+        fileExt,
+        Math.floor(Math.random() * 1800 + 200),
+        createdAt
+      );
+    }
   }
 
   count++;

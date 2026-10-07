@@ -375,7 +375,7 @@ export default function PlaygroundChatWindow() {
                 )}
 
                 {/* Document / PDF Attachment Preview if available */}
-                {msg.result?.documentAttachment && (
+                {msg.result?.documentAttachment && msg.result.documentAttachment.file_url && !msg.result.documentAttachment.file_url.includes('/folders/') && (
                   <div className="p-3 rounded-2xl bg-surface-card border border-outline/30 shadow-sm space-y-2 animate-fadeIn max-w-sm">
                     <div className="flex items-center justify-between text-xs font-semibold text-onSurface">
                       <span className="flex items-center gap-1.5 text-primary">

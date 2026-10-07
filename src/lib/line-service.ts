@@ -404,6 +404,17 @@ export function buildDocumentFlexMessage(
     return null;
   }
 
+  // Strictly reject folders, sample dummy links, and pure image files
+  if (openUrl.includes('/drive/folders/') || openUrl.includes('/folders/')) {
+    return null;
+  }
+  if (openUrl.includes('sample_') || openUrl.includes('dummy')) {
+    return null;
+  }
+  if (/\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(openUrl) || (doc.file_type || '').toLowerCase() === 'image') {
+    return null;
+  }
+
   const isPdf = (doc.file_type || '').toLowerCase() === 'pdf' || doc.file_name.toLowerCase().endsWith('.pdf');
   const typeBadge = isPdf ? 'PDF' : (doc.file_type || 'DOC').toUpperCase();
   const sizeText = doc.file_size_kb ? `${doc.file_size_kb} KB` : '';
