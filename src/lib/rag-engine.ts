@@ -3,7 +3,7 @@ import { supabaseAdmin } from './supabase';
 import crypto from 'crypto';
 import { decryptApiKey } from './ai-crypto';
 import { generateAudioReply } from './tts-service';
-import { AiEngineConfig, AiRetrievedSource, RAGPlaygroundResult } from '@/types/ai';
+import { AiEngineConfig, AiRetrievedSource, RAGPlaygroundResult, DocumentAttachmentInfo } from '@/types/ai';
 
 export interface RAGExecutionResult {
   log_id?: string;
@@ -15,6 +15,7 @@ export interface RAGExecutionResult {
   imageUrl?: string;
   imageCaption?: string;
   isWebAttachment?: boolean;
+  documentAttachment?: DocumentAttachmentInfo;
   audioUrl?: string;
   audioDurationMs?: number;
   detectedDialect?: 'kham_mueang' | 'central';
@@ -1621,8 +1622,9 @@ export async function executeRAGPipeline(params: {
 
   responseTimeMs = Date.now() - startTime;
 
-  // Resolve Drive Media / Teacher Photo if applicable
+  // Resolve Drive Media / Teacher Photo & Document / PDF Attachment if applicable
   const mediaInfo = !isFallback ? await resolveDriveImageForQuery(question, answerText, retrievedSources) : null;
+  const docAttachment = !isFallback ? await resolveDocumentAttachmentForQuery(question, retrievedSources) : null;
 
   // If live query (not playground), persist to ai_query_logs & ai_retrieved_sources
   let logId: string | undefined;
@@ -1720,6 +1722,7 @@ export async function executeRAGPipeline(params: {
     imageUrl: mediaInfo?.imageUrl,
     imageCaption: mediaInfo?.caption,
     isWebAttachment: mediaInfo?.isWebAttachment,
+    documentAttachment: docAttachment || undefined,
     audioUrl,
     audioDurationMs,
     detectedDialect: isDialect ? 'kham_mueang' : 'central',
@@ -1748,6 +1751,13 @@ export async function resolveDriveImageForQuery(
   const db = getDb();
   const primarySource = sources[0];
   const combinedText = `${question} ${answerText} ${primarySource?.title || ''}`.toLowerCase();
+  const qLower = question.toLowerCase();
+
+  // Strict check: Is the user actually asking about student uniforms, dress code, or attire?
+  const isUniformQuery = /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|เนคไท|ชุดฝึกงาน|ชุดปฏิบัติงาน|ชุดพิธีการ|ชุดอวท|ชุด อวท|ยูนิฟอร์ม|uniform|ทรงผม/i.test(question);
+  const isUniformAttachment = (nameOrTitle: string) => {
+    return /ชุดนร|ชุดนักเรียน|ชุดนักศึกษา|ชุดอวท|ชุด อวท/i.test(nameOrTitle || '');
+  };
 
   // 1. PRIORITY 1: Check Web-uploaded Attachments (knowledge_attachments) for retrieved knowledge sources
   if (sources && sources.length > 0) {
@@ -1777,59 +1787,68 @@ export async function resolveDriveImageForQuery(
           const valid = atts.filter(validFilter);
           if (valid.length === 0) return null;
 
-          const qLower = question.toLowerCase();
-          const ansLower = answerText.toLowerCase();
+          // If the attachment is a student uniform picture,
+          // ONLY allow it if the user is genuinely asking about dress code / attire / uniforms!
+          const candidates = isUniformQuery 
+            ? valid 
+            : valid.filter(att => !isUniformAttachment(att.file_name));
 
-          // 1. Direct question intent (Highest priority)
-          const qHasPws = qLower.includes('ปวส') || qLower.includes('ประกาศนียบัตรวิชาชีพชั้นสูง');
-          const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
-          const qHasAvt = qLower.includes('อวท');
+          if (candidates.length === 0) return null;
 
-          if (qHasPwc) {
-            const pwcMatch = valid.find(att => {
-              const fn = (att.file_name || '').toLowerCase();
-              return fn.includes('ปวช') && !fn.includes('ปวส');
-            });
-            if (pwcMatch) return pwcMatch;
+          if (isUniformQuery) {
+            const qHasPws = qLower.includes('ปวส') || qLower.includes('ประกาศนียบัตรวิชาชีพชั้นสูง');
+            const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
+            const qHasAvt = qLower.includes('อวท');
+
+            if (qHasPwc) {
+              const pwcMatch = candidates.find(att => {
+                const fn = (att.file_name || '').toLowerCase();
+                return fn.includes('ปวช') && !fn.includes('ปวส');
+              });
+              if (pwcMatch) return pwcMatch;
+            }
+
+            if (qHasPws) {
+              const pwsMatch = candidates.find(att => {
+                const fn = (att.file_name || '').toLowerCase();
+                return fn.includes('ปวส');
+              });
+              if (pwsMatch) return pwsMatch;
+            }
+
+            if (qHasAvt) {
+              const avtMatch = candidates.find(att => {
+                const fn = (att.file_name || '').toLowerCase();
+                return fn.includes('อวท');
+              });
+              if (avtMatch) return avtMatch;
+            }
+
+            // Answer intent if question didn't specify level
+            const ansLower = answerText.toLowerCase();
+            const ansHasPws = ansLower.includes('ปวส');
+            const ansHasPwc = ansLower.includes('ปวช') && !ansHasPws;
+
+            if (ansHasPwc) {
+              const pwcMatch = candidates.find(att => {
+                const fn = (att.file_name || '').toLowerCase();
+                return fn.includes('ปวช') && !fn.includes('ปวส');
+              });
+              if (pwcMatch) return pwcMatch;
+            }
+
+            if (ansHasPws) {
+              const pwsMatch = candidates.find(att => {
+                const fn = (att.file_name || '').toLowerCase();
+                return fn.includes('ปวส');
+              });
+              if (pwsMatch) return pwsMatch;
+            }
           }
 
-          if (qHasPws) {
-            const pwsMatch = valid.find(att => {
-              const fn = (att.file_name || '').toLowerCase();
-              return fn.includes('ปวส');
-            });
-            if (pwsMatch) return pwsMatch;
-          }
-
-          if (qHasAvt) {
-            const avtMatch = valid.find(att => {
-              const fn = (att.file_name || '').toLowerCase();
-              return fn.includes('อวท');
-            });
-            if (avtMatch) return avtMatch;
-          }
-
-          // 2. Answer intent if question didn't specify
-          const ansHasPws = ansLower.includes('ปวส');
-          const ansHasPwc = ansLower.includes('ปวช') && !ansHasPws;
-
-          if (ansHasPwc) {
-            const pwcMatch = valid.find(att => {
-              const fn = (att.file_name || '').toLowerCase();
-              return fn.includes('ปวช') && !fn.includes('ปวส');
-            });
-            if (pwcMatch) return pwcMatch;
-          }
-
-          if (ansHasPws) {
-            const pwsMatch = valid.find(att => {
-              const fn = (att.file_name || '').toLowerCase();
-              return fn.includes('ปวส');
-            });
-            if (pwsMatch) return pwsMatch;
-          }
-
-          return valid[0];
+          // Return candidate matching primary source if available, or first valid non-uniform candidate
+          const primaryMatch = candidates.find(att => att.knowledge_id === primarySource?.knowledge_id);
+          return primaryMatch || candidates[0];
         };
 
         let foundWebImg = pickBestImg(webAttachments);
@@ -1899,8 +1918,9 @@ export async function resolveDriveImageForQuery(
       }
     }
 
-    // Second pass: match branch or department name in title_or_person_name
+    // Second pass: match branch or department name in title_or_person_name (Exclude student uniform media!)
     for (const m of cachedMedia) {
+      if (isUniformAttachment(m.title_or_person_name)) continue;
       const fullTitle = (m.title_or_person_name || '').toLowerCase();
       if (primarySource?.title && fullTitle.includes(primarySource.title.replace(/^รายชื่อครูและบุคลากรสาขาวิชา/i, '').trim().toLowerCase())) {
         return {
@@ -1911,10 +1931,8 @@ export async function resolveDriveImageForQuery(
       }
     }
 
-    // Third pass: match student uniform / dress code topic using question intent
-    const isUniformTopic = /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|ระเบียบวินัย/i.test(combinedText);
-    if (isUniformTopic) {
-      const qLower = question.toLowerCase();
+    // Third pass: match student uniform / dress code topic ONLY when question is genuinely asking about dress code
+    if (isUniformQuery) {
       const qHasPws = qLower.includes('ปวส') || qLower.includes('ประกาศนียบัตรวิชาชีพชั้นสูง');
       const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
       const qHasAvt = qLower.includes('อวท');
@@ -1934,14 +1952,15 @@ export async function resolveDriveImageForQuery(
     }
   } catch (e) {}
 
-  // 3. Extract Drive URL from top sources
+  // 3. Extract Drive URL from top sources (ONLY if it's explicitly an image file, NOT a PDF/Doc)
   if (!primarySource) return null;
 
   const fullContent = `${primarySource.title || ''} ${primarySource.content || ''} ${primarySource.summary || ''}`;
+  const isDocContent = /pdf|แบบฟอร์ม|ดาวน์โหลดแบบฟอร์ม|ค\.ร\./i.test(fullContent);
   const folderMatch = fullContent.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
   const fileMatch = fullContent.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
 
-  if (fileMatch && fileMatch[1]) {
+  if (fileMatch && fileMatch[1] && !isDocContent) {
     const fileId = fileMatch[1];
     return {
       imageUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
@@ -1950,7 +1969,7 @@ export async function resolveDriveImageForQuery(
     };
   }
 
-  if (folderMatch && folderMatch[1]) {
+  if (folderMatch && folderMatch[1] && !isDocContent) {
     const folderId = folderMatch[1];
     
     // Dynamic Query to Google Apps Script Webhook
@@ -1995,6 +2014,91 @@ export async function resolveDriveImageForQuery(
     } catch (err) {
       // Graceful fallback
     }
+  }
+
+  return null;
+}
+
+/**
+ * Resolve Document / PDF attachment matching retrieved knowledge sources
+ * Checks knowledge_attachments for PDF, DOCX, XLSX documents or Drive document links
+ */
+export async function resolveDocumentAttachmentForQuery(
+  question: string,
+  sources: any[]
+): Promise<DocumentAttachmentInfo | null> {
+  if (!sources || sources.length === 0) return null;
+  const db = getDb();
+  const primarySource = sources[0];
+
+  try {
+    const knowledgeIds = sources.map(s => s.knowledge_id).filter(Boolean);
+    if (knowledgeIds.length > 0) {
+      // 1. Check SQLite knowledge_attachments
+      const placeholders = knowledgeIds.map(() => '?').join(',');
+      const rows = db.prepare(`
+        SELECT * FROM knowledge_attachments 
+        WHERE knowledge_id IN (${placeholders})
+        ORDER BY uploaded_at DESC
+      `).all(...knowledgeIds) as any[];
+
+      const validDocFilter = (att: any) => {
+        if (!att.file_url) return false;
+        if (att.file_url.includes('sample_')) return false;
+        const isDocType = ['pdf', 'docx', 'xlsx', 'other'].includes(att.file_type);
+        const isDocExt = /\.(pdf|docx|doc|xlsx|xls)(\?.*)?$/i.test(att.file_name || '') ||
+                         /\.(pdf|docx|doc|xlsx|xls)(\?.*)?$/i.test(att.file_url);
+        return isDocType || isDocExt;
+      };
+
+      let validDocs = rows.filter(validDocFilter);
+      let matchedDoc = validDocs.find(d => d.knowledge_id === primarySource.knowledge_id);
+
+      // If not on primarySource, check Supabase
+      if (!matchedDoc) {
+        try {
+          const { data: sbAtts } = await supabaseAdmin
+            .from('knowledge_attachments')
+            .select('*')
+            .in('knowledge_id', knowledgeIds)
+            .order('uploaded_at', { ascending: false });
+
+          if (sbAtts && sbAtts.length > 0) {
+            const validSbDocs = sbAtts.filter(validDocFilter);
+            matchedDoc = validSbDocs.find(d => d.knowledge_id === primarySource.knowledge_id) || validSbDocs[0];
+          }
+        } catch {}
+      }
+
+      if (!matchedDoc && validDocs.length > 0) {
+        matchedDoc = validDocs[0];
+      }
+
+      if (matchedDoc) {
+        return {
+          attachment_id: matchedDoc.attachment_id,
+          knowledge_id: matchedDoc.knowledge_id,
+          file_name: matchedDoc.file_name || `${primarySource.title}.pdf`,
+          file_url: matchedDoc.file_url,
+          file_type: matchedDoc.file_type || 'pdf',
+          file_size_kb: matchedDoc.file_size_kb
+        };
+      }
+    }
+
+    // 2. Fallback: Check if primarySource content or summary contains a direct Google Drive document link
+    const fullText = `${primarySource.content || ''} ${primarySource.summary || ''}`;
+    const driveDocMatch = fullText.match(/https:\/\/(?:drive|docs)\.google\.com\/(?:file\/d\/|document\/d\/|drive\/folders\/)[a-zA-Z0-9_\-]+[^\s\)\"\']*/);
+    if (driveDocMatch && !driveDocMatch[0].includes('sample_')) {
+      return {
+        knowledge_id: primarySource.knowledge_id,
+        file_name: `${primarySource.title} (เอกสารแนบ)`,
+        file_url: driveDocMatch[0],
+        file_type: 'pdf'
+      };
+    }
+  } catch (err) {
+    console.warn('Error resolving document attachment:', err);
   }
 
   return null;

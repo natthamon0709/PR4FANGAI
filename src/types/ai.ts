@@ -53,6 +53,15 @@ export interface AiQueryLog {
   is_marked_gap?: boolean;
 }
 
+export interface DocumentAttachmentInfo {
+  attachment_id?: string;
+  knowledge_id?: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size_kb?: number;
+}
+
 export interface RAGPlaygroundResult {
   question: string;
   answer: string;
@@ -62,6 +71,7 @@ export interface RAGPlaygroundResult {
   imageUrl?: string;
   imageCaption?: string;
   isWebAttachment?: boolean;
+  documentAttachment?: DocumentAttachmentInfo;
   audioUrl?: string;
   audioDurationMs?: number;
   detectedDialect?: 'kham_mueang' | 'central' | 'unknown';

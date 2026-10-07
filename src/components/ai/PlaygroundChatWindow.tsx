@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, User, Send, Loader2, Sparkles, Clock, RefreshCw, AlertTriangle, Volume2, Mic, MicOff, Square } from 'lucide-react';
+import { Bot, User, Send, Loader2, Sparkles, Clock, RefreshCw, AlertTriangle, Volume2, Mic, MicOff, Square, FileText, ExternalLink } from 'lucide-react';
 import ConfidenceScoreBar from './ConfidenceScoreBar';
 import RetrievedSourceCard from './RetrievedSourceCard';
 import { RAGPlaygroundResult } from '@/types/ai';
@@ -371,6 +371,31 @@ export default function PlaygroundChatWindow() {
                       alt={msg.result.imageCaption || 'ภาพประกอบ'}
                       className="w-full max-h-60 object-contain rounded-xl bg-black/5 border border-outline/10"
                     />
+                  </div>
+                )}
+
+                {/* Document / PDF Attachment Preview if available */}
+                {msg.result?.documentAttachment && (
+                  <div className="p-3 rounded-2xl bg-surface-card border border-outline/30 shadow-sm space-y-2 animate-fadeIn max-w-sm">
+                    <div className="flex items-center justify-between text-xs font-semibold text-onSurface">
+                      <span className="flex items-center gap-1.5 text-primary">
+                        <FileText className="w-4 h-4 text-primary" /> เอกสารแนบ ({msg.result.documentAttachment.file_type?.toUpperCase() || 'PDF'})
+                      </span>
+                      {msg.result.documentAttachment.file_size_kb && (
+                        <span className="text-[11px] text-onSurface-muted">
+                          {msg.result.documentAttachment.file_size_kb} KB
+                        </span>
+                      )}
+                    </div>
+                    <a
+                      href={msg.result.documentAttachment.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/20 transition-colors text-xs text-primary font-medium group"
+                    >
+                      <span className="truncate max-w-[200px]">{msg.result.documentAttachment.file_name}</span>
+                      <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 ml-1.5 group-hover:scale-110 transition-transform" />
+                    </a>
                   </div>
                 )}
 

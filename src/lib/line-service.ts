@@ -146,7 +146,9 @@ export async function sendLineReplyMessage(
   replyToken: string,
   text: string,
   media?: { imageUrl?: string; caption?: string } | null,
-  lineUserId?: string
+  lineUserId?: string,
+  documentAttachment?: { file_name: string; file_url: string; file_type?: string; file_size_kb?: number } | null,
+  publicBaseUrl?: string
 ): Promise<boolean> {
   const rawToken = getRawLineChannelAccessToken();
   if (!rawToken) {
@@ -173,6 +175,10 @@ export async function sendLineReplyMessage(
     if (isValidReplyToken(replyToken)) {
       const replyMessages: any[] = [textMessage];
       if (imageMessage) replyMessages.push(imageMessage);
+      if (documentAttachment && documentAttachment.file_url) {
+        const docFlex = buildDocumentFlexMessage(documentAttachment, undefined, publicBaseUrl);
+        if (docFlex && replyMessages.length < 5) replyMessages.push(docFlex);
+      }
 
       try {
         const res = await fetch('https://api.line.me/v2/bot/message/reply', {
@@ -375,6 +381,123 @@ export function buildTeacherFlexCarousel(teachers: TeacherMediaInfo[]) {
     contents: {
       type: 'carousel',
       contents: bubbles
+    }
+  };
+}
+
+/**
+ * Build LINE Flex Message Card for Document / PDF Attachment
+ * Provides interactive "Open / Download Document" button linking to PDF / Drive
+ */
+export function buildDocumentFlexMessage(
+  doc: { file_name: string; file_url: string; file_type?: string; file_size_kb?: number },
+  sourceTitle?: string,
+  publicBaseUrl?: string
+) {
+  let openUrl = doc.file_url;
+  if (openUrl.startsWith('/') && publicBaseUrl) {
+    openUrl = `${publicBaseUrl}${openUrl}`;
+  }
+
+  // Ensure valid URL scheme for LINE URI action
+  if (!openUrl.startsWith('http://') && !openUrl.startsWith('https://')) {
+    return null;
+  }
+
+  const isPdf = (doc.file_type || '').toLowerCase() === 'pdf' || doc.file_name.toLowerCase().endsWith('.pdf');
+  const typeBadge = isPdf ? 'PDF' : (doc.file_type || 'DOC').toUpperCase();
+  const sizeText = doc.file_size_kb ? `${doc.file_size_kb} KB` : '';
+
+  return {
+    type: 'flex',
+    altText: `📄 เอกสารแนบ: ${doc.file_name}`,
+    contents: {
+      type: 'bubble',
+      size: 'kilo',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'box',
+            layout: 'horizontal',
+            alignItems: 'center',
+            contents: [
+              {
+                type: 'text',
+                text: '📄 เอกสารแนบทางการ',
+                weight: 'bold',
+                size: 'xs',
+                color: '#0284c7',
+                flex: 4
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                backgroundColor: isPdf ? '#ef4444' : '#0284c7',
+                cornerRadius: 'md',
+                paddingStart: 'sm',
+                paddingEnd: 'sm',
+                paddingTop: 'xs',
+                paddingBottom: 'xs',
+                contents: [
+                  {
+                    type: 'text',
+                    text: typeBadge,
+                    weight: 'bold',
+                    size: 'xxs',
+                    color: '#ffffff',
+                    align: 'center'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            type: 'text',
+            text: doc.file_name,
+            weight: 'bold',
+            size: 'sm',
+            color: '#1e293b',
+            wrap: true,
+            margin: 'md'
+          },
+          ...(sourceTitle ? [{
+            type: 'text',
+            text: sourceTitle,
+            size: 'xxs',
+            color: '#64748b',
+            wrap: true,
+            margin: 'xs'
+          }] : []),
+          ...(sizeText ? [{
+            type: 'text',
+            text: `ขนาดไฟล์: ${sizeText}`,
+            size: 'xxs',
+            color: '#94a3b8',
+            margin: 'xs'
+          }] : [])
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#0284c7',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: 'เปิดดู / ดาวน์โหลดเอกสาร',
+              uri: openUrl
+            }
+          }
+        ]
+      }
     }
   };
 }
@@ -662,8 +785,9 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
         }
       }
 
-      // Fallback matching for student uniform / dress code topic
-      if (!generalFullImageUrl && /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|ระเบียบวินัย/i.test(combinedText)) {
+      // Fallback matching for student uniform / dress code topic (Strictly only when question asks about dress code)
+      const isUniformQuery = /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|เนคไท|ชุดฝึกงาน|ชุดปฏิบัติงาน|ชุดพิธีการ|ชุดอวท|ชุด อวท|ยูนิฟอร์ม|uniform|ทรงผม/i.test(effectiveQueryText);
+      if (!generalFullImageUrl && isUniformQuery) {
         const qLower = effectiveQueryText.toLowerCase();
         const qHasPws = qLower.includes('ปวส') || qLower.includes('ประกาศนียบัตรวิชาชีพชั้นสูง');
         const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
@@ -688,6 +812,12 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
       for (const m of cachedMedia) {
         // If it's a non-person media (e.g. Map / Building / Plan)
         if (!isPersonMedia(m.title_or_person_name)) {
+          // Skip student uniform images here as they are strictly guarded by isUniformQuery above
+          const lowerTitle = (m.title_or_person_name || '').toLowerCase();
+          if (/ชุดนร|ชุดนักเรียน|ชุดนักศึกษา|ชุดอวท/i.test(lowerTitle)) {
+            continue;
+          }
+
           const rawDocName = (m.title_or_person_name.split('(')[0] || '').replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').trim().toLowerCase();
           if (rawDocName && combinedText.includes(rawDocName) && !generalFullImageUrl) {
             const candidateUrl = m.image_url || `https://lh3.googleusercontent.com/d/${m.file_id}`;
@@ -782,6 +912,18 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
     } else if (matchedTeachers.length > 0) {
       const flexCarousel = buildTeacherFlexCarousel(matchedTeachers);
       replyMessages.push(flexCarousel);
+    }
+
+    // Bubble 4+: Official Document / PDF Attachment Flex Message (if available)
+    if (ragResult.documentAttachment && ragResult.documentAttachment.file_url) {
+      const docFlex = buildDocumentFlexMessage(
+        ragResult.documentAttachment,
+        ragResult.sources?.[0]?.title,
+        publicBaseUrl
+      );
+      if (docFlex && replyMessages.length < 5) {
+        replyMessages.push(docFlex);
+      }
     }
 
     let replySuccess = false;
