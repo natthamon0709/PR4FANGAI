@@ -26,13 +26,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Execute in playground mode (does not persist to actual ai_query_logs)
+    const isAudioInput = Boolean(audioBuffer && audioBuffer.length > 0);
+
+    // Execute in playground mode (ตรงตามการทำงานฝั่ง LINE OA: ถามเสียงตอบเสียง ถามพิมพ์ตอบพิมพ์)
     const result = await executeRAGPipeline({
       question: question?.trim() || '',
       audioBuffer,
       audioMimeType: audioMimeType || 'audio/webm',
       isPlayground: true,
       includeDrafts: Boolean(includeDrafts),
+      generateVoiceReply: isAudioInput, // ถ้าถามเสียงตอบเสียง ถ้าพิมพ์ตอบเฉพาะข้อความ
       publicBaseUrl: req.nextUrl.origin
     });
 

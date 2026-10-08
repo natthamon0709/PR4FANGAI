@@ -62,7 +62,17 @@ export default function AiPlaygroundPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/robot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-10 px-3.5 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-xs font-bold text-primary flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span>เปิดหน้าหุ่นยนต์ (Robot Kiosk)</span>
+            </Link>
+
             {isAdmin && (
               <Link
                 href="/ai-engine/settings"

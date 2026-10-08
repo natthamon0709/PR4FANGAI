@@ -28,7 +28,7 @@ export default function PlaygroundChatWindow() {
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'สวัสดีครับ/ค่ะ ยินดีต้อนรับสู่โหมดทดสอบ AI Playground (จำลองการทำงานบน LINE Official Account) รองรับทั้งการพิมพ์และส่งเสียงพูดภาษาถิ่นเหนือ (คำเมือง) พร้อมตอบกลับด้วยข้อความและไฟล์เสียงพูดครับ',
+      text: 'สวัสดีครับ/ค่ะ ยินดีต้อนรับสู่โหมดทดสอบ AI Playground (จำลองการทำงานบน LINE Official Account) รองรับทั้งการพิมพ์และส่งเสียงพูดภาษาถิ่นเหนือ (คำเมือง) ระบบทำงานเหมือน LINE OA จริง: หากถามด้วยเสียงจะตอบกลับด้วยไฟล์เสียงพูด และหากถามด้วยข้อความจะตอบเป็นข้อความครับ/ค่ะ',
       timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -352,8 +352,57 @@ export default function PlaygroundChatWindow() {
                   </div>
                 )}
 
-                {/* Visual Media Delivery Preview if available */}
-                {msg.result?.imageUrl && (
+                {/* Multi-Teacher Carousel / Gallery Preview */}
+                {msg.result?.matchedTeachers && msg.result.matchedTeachers.length > 1 ? (
+                  <div className="p-3.5 rounded-2xl bg-surface-card border border-outline/30 shadow-sm space-y-2.5 animate-fadeIn max-w-xl">
+                    <div className="flex items-center justify-between text-xs font-semibold text-onSurface">
+                      <span className="flex items-center gap-1.5 text-primary font-bold">
+                        คณาจารย์และบุคลากร ({msg.result.matchedTeachers.length} ท่าน)
+                      </span>
+                      <span className="text-[11px] text-onSurface-muted">
+                        เลื่อนดูภาพ ➔
+                      </span>
+                    </div>
+
+                    <div className="flex gap-3 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
+                      {msg.result.matchedTeachers.map((teacher, tIdx) => {
+                        const proxiedUrl = teacher.imageUrl.includes('googleusercontent.com') || teacher.imageUrl.includes('drive.google.com')
+                          ? `/api/media-proxy?url=${encodeURIComponent(teacher.imageUrl)}`
+                          : teacher.imageUrl;
+                        return (
+                          <div
+                            key={teacher.file_id || tIdx}
+                            className="flex-shrink-0 w-36 rounded-2xl bg-surface/60 border border-outline/20 p-2.5 flex flex-col items-center text-center group hover:border-primary/50 transition-all cursor-pointer shadow-2xs"
+                            onClick={() => window.open(proxiedUrl, '_blank')}
+                            title="คลิกเพื่อดูภาพขนาดเต็ม"
+                          >
+                            <div className="w-24 h-28 rounded-xl overflow-hidden bg-black/5 mb-2 relative">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={proxiedUrl}
+                                referrerPolicy="no-referrer"
+                                alt={teacher.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  const currentSrc = e.currentTarget.getAttribute('src') || '';
+                                  if (!currentSrc.includes('/api/media-proxy') && (currentSrc.includes('googleusercontent.com') || currentSrc.includes('drive.google.com'))) {
+                                    e.currentTarget.src = `/api/media-proxy?url=${encodeURIComponent(currentSrc)}`;
+                                  }
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs font-bold text-onSurface line-clamp-1 w-full" title={teacher.name}>
+                              {teacher.name}
+                            </p>
+                            <p className="text-[10px] text-onSurface-muted line-clamp-1 w-full mt-0.5" title={teacher.department}>
+                              {teacher.department.replace(/^รายชื่อครูและบุคลากรสาขาวิชา/i, '').replace(/^สาขาวิชา/i, '').trim()}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : msg.result?.imageUrl ? (
                   <div className="p-3 rounded-2xl bg-surface-card border border-outline/30 shadow-sm space-y-2 animate-fadeIn max-w-sm">
                     <div className="flex items-center justify-between text-xs font-semibold text-onSurface">
                       <span className="flex items-center gap-1.5 text-primary">
@@ -367,12 +416,33 @@ export default function PlaygroundChatWindow() {
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={msg.result.imageUrl}
+                      src={
+                        msg.result.imageUrl.includes('googleusercontent.com') || msg.result.imageUrl.includes('drive.google.com')
+                          ? `/api/media-proxy?url=${encodeURIComponent(msg.result.imageUrl)}`
+                          : msg.result.imageUrl
+                      }
+                      referrerPolicy="no-referrer"
                       alt={msg.result.imageCaption || 'ภาพประกอบ'}
-                      className="w-full max-h-60 object-contain rounded-xl bg-black/5 border border-outline/10"
+                      className="w-full max-h-60 object-contain rounded-xl bg-black/5 border border-outline/10 cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => {
+                        const viewUrl = msg.result?.imageUrl?.includes('googleusercontent.com')
+                          ? `/api/media-proxy?url=${encodeURIComponent(msg.result.imageUrl)}`
+                          : msg.result?.imageUrl;
+                        if (viewUrl) window.open(viewUrl, '_blank');
+                      }}
+                      title="คลิกเพื่อดูภาพขนาดเต็ม"
+                      onError={(e) => {
+                        const currentSrc = e.currentTarget.getAttribute('src') || '';
+                        if (!currentSrc.includes('/api/media-proxy') && (currentSrc.includes('googleusercontent.com') || currentSrc.includes('drive.google.com'))) {
+                          e.currentTarget.src = `/api/media-proxy?url=${encodeURIComponent(currentSrc)}`;
+                        } else {
+                          const parent = e.currentTarget.parentElement;
+                          if (parent) parent.style.display = 'none';
+                        }
+                      }}
                     />
                   </div>
-                )}
+                ) : null}
 
                 {/* Document / PDF Attachment Preview if available */}
                 {msg.result?.documentAttachment && msg.result.documentAttachment.file_url && !msg.result.documentAttachment.file_url.includes('/folders/') && (

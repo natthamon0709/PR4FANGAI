@@ -247,7 +247,7 @@ export interface TeacherMediaInfo {
   name: string;
   department: string;
   imageUrl: string;
-  file_id: string;
+  file_id?: string;
 }
 
 let cachedPersonnelNames: Set<string> | null = null;
@@ -771,7 +771,7 @@ export async function handleLineWebhookEvent(event: any): Promise<{ handled: boo
     // 1. Look up Matching Teachers vs General Images (Map, Plan, Diagram, etc.)
     const combinedText = `${effectiveQueryText} ${ragResult.answer}`.toLowerCase().replace(/ศุทธิชัย/g, 'ศุทิชัย');
     const textWithoutCollege = combinedText.replace(/วิทยาลัย/g, '');
-    const matchedTeachers: TeacherMediaInfo[] = [];
+    const matchedTeachers: TeacherMediaInfo[] = ragResult.matchedTeachers && ragResult.matchedTeachers.length > 0 ? [...ragResult.matchedTeachers] : [];
     let generalFullImageUrl: string | null = null;
 
     try {

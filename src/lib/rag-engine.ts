@@ -3,7 +3,7 @@ import { supabaseAdmin } from './supabase';
 import crypto from 'crypto';
 import { decryptApiKey } from './ai-crypto';
 import { generateAudioReply } from './tts-service';
-import { AiEngineConfig, AiRetrievedSource, RAGPlaygroundResult, DocumentAttachmentInfo } from '@/types/ai';
+import { AiEngineConfig, AiRetrievedSource, RAGPlaygroundResult, DocumentAttachmentInfo, TeacherMediaInfo } from '@/types/ai';
 
 export interface RAGExecutionResult {
   log_id?: string;
@@ -15,11 +15,13 @@ export interface RAGExecutionResult {
   imageUrl?: string;
   imageCaption?: string;
   isWebAttachment?: boolean;
+  matchedTeachers?: TeacherMediaInfo[];
   documentAttachment?: DocumentAttachmentInfo;
   audioUrl?: string;
   audioDurationMs?: number;
   detectedDialect?: 'kham_mueang' | 'central';
   transcribedQuestion?: string;
+  voiceGender?: 'female' | 'male';
   sources: {
     knowledge_id: string;
     title: string;
@@ -846,46 +848,74 @@ export function enforceGenderPersonaInText(
   if (!text) return '';
   let cleaned = text;
 
-  // Always eliminate ambiguous combined slashes
-  cleaned = cleaned.replace(/ครับ\/ค่ะ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
-  cleaned = cleaned.replace(/ค่ะ\/ครับ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
+  // 1. กำจัดคำผสม เช่น ครับ/ค่ะ หรือ ค่ะ/ครับ
   cleaned = cleaned.replace(/ครับ\s*\/\s*ค่ะ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
   cleaned = cleaned.replace(/ค่ะ\s*\/\s*ครับ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
+  cleaned = cleaned.replace(/ครับ\/ค่ะ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
+  cleaned = cleaned.replace(/ค่ะ\/ครับ/g, gender === 'male' ? 'ครับ' : 'ค่ะ');
 
-  if (isDialect) {
-    if (gender === 'male') {
-      // Male Northern: Must use ครับ, เน้อครับ. Never use เจ้า, เน้อเจ้า, ค่ะ, คะ
+  if (gender === 'female') {
+    // 2. ปรับสรรพนามผู้ช่วย AI จากเพศชายเป็นเพศหญิง
+    cleaned = cleaned.replace(/\bผมคือหุ่นยนต์\b/g, 'หนูคือหุ่นยนต์');
+    cleaned = cleaned.replace(/ผมคือผู้ช่วย/g, 'หนูคือผู้ช่วย');
+    cleaned = cleaned.replace(/ผมขอแนะนำ/g, 'หนูขอแนะนำ');
+    cleaned = cleaned.replace(/ผมขอ/g, 'หนูขอ');
+    cleaned = cleaned.replace(/ผมช่วย/g, 'หนูช่วย');
+    cleaned = cleaned.replace(/ผมยินดี/g, 'ยินดี');
+    cleaned = cleaned.replace(/กับผมได้/g, 'กับหนูได้');
+    cleaned = cleaned.replace(/ถามผมได้/g, 'ถามหนูได้');
+    cleaned = cleaned.replace(/ถามผม/g, 'ถามหนู');
+
+    if (isDialect) {
+      // คำเมืองเพศหญิง: ใช้ เจ้า, เน้อเจ้า, ยินดีเจ้า, กะเจ้า ห้ามใช้ ครับ, เน้อครับ, นะครับ
+      cleaned = cleaned.replace(/เน้อครับ/g, 'เน้อเจ้า');
+      cleaned = cleaned.replace(/กะครับ/g, 'กะเจ้า');
+      cleaned = cleaned.replace(/ยินดีครับ/g, 'ยินดีเจ้า');
+      cleaned = cleaned.replace(/ขอบคุณครับ/g, 'ขอบคุณเจ้า');
+      cleaned = cleaned.replace(/สุมาเต๊อะครับ/g, 'สุมาเต๊อะเจ้า');
+      cleaned = cleaned.replace(/นะครับ/g, 'เน้อเจ้า');
+      cleaned = cleaned.replace(/นะคับ/g, 'เน้อเจ้า');
+      cleaned = cleaned.replace(/ครับผม/g, 'เจ้า');
+      cleaned = cleaned.replace(/ครับ/g, 'เจ้า');
+      cleaned = cleaned.replace(/คับ(?=[ \n.,!?•]|$)/g, 'เจ้า');
+    } else {
+      // ภาษากลางเพศหญิง: ใช้ ค่ะ, คะ, นะคะ ห้ามใช้ ครับ, นะครับ, คับ
+      // ประโยคคำถามที่ลงท้ายด้วย ครับ -> คะ (เช่น มีอะไรให้ช่วยไหมครับ -> มีอะไรให้ช่วยไหมคะ)
+      cleaned = cleaned.replace(/(ไหม|มั้ย|หรือยัง|รึยัง|ได้ไหม|ได้มั้ย|อย่างไร|ยังไง|หรือเปล่า|รึเปล่า)\s*ครับ/g, '$1คะ');
+      cleaned = cleaned.replace(/(ไหม|มั้ย|หรือยัง|รึยัง|ได้ไหม|ได้มั้ย|อย่างไร|ยังไง|หรือเปล่า|รึเปล่า)\s*นะครับ/g, '$1นะคะ');
+      cleaned = cleaned.replace(/นะครับ/g, 'นะคะ');
+      cleaned = cleaned.replace(/นะคับ/g, 'นะคะ');
+      cleaned = cleaned.replace(/ครับผม/g, 'ค่ะ');
+      cleaned = cleaned.replace(/ยินดีครับ/g, 'ยินดีค่ะ');
+      cleaned = cleaned.replace(/ขอบคุณครับ/g, 'ขอบคุณค่ะ');
+      cleaned = cleaned.replace(/สวัสดีครับ/g, 'สวัสดีค่ะ');
+      cleaned = cleaned.replace(/เน้อครับ/g, 'นะคะ');
+      cleaned = cleaned.replace(/เน้อเจ้า/g, 'นะคะ');
+      cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ค่ะ');
+      cleaned = cleaned.replace(/ครับ/g, 'ค่ะ');
+      cleaned = cleaned.replace(/คับ(?=[ \n.,!?•]|$)/g, 'ค่ะ');
+    }
+  } else {
+    // เพศชาย: ใช้ ครับ, นะครับ, เน้อครับ ห้ามใช้ ค่ะ, คะ, นะคะ, เจ้า
+    if (isDialect) {
       cleaned = cleaned.replace(/เน้อเจ้า/g, 'เน้อครับ');
       cleaned = cleaned.replace(/กะเจ้า/g, 'กะครับ');
       cleaned = cleaned.replace(/ยินดีเจ้า/g, 'ยินดีครับ');
+      cleaned = cleaned.replace(/ขอบคุณเจ้า/g, 'ขอบคุณครับ');
       cleaned = cleaned.replace(/สุมาเต๊อะเจ้า/g, 'สุมาเต๊อะครับ');
       cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ครับ');
       cleaned = cleaned.replace(/นะคะ/g, 'นะครับ');
       cleaned = cleaned.replace(/ค่ะ/g, 'ครับ');
       cleaned = cleaned.replace(/คะ(?=[ \n.,!?•]|$)/g, 'ครับ');
     } else {
-      // Female Northern: Must use เจ้า, เน้อเจ้า. Never use ครับ, นะครับ, เน้อครับ
-      cleaned = cleaned.replace(/เน้อครับ/g, 'เน้อเจ้า');
-      cleaned = cleaned.replace(/กะครับ/g, 'กะเจ้า');
-      cleaned = cleaned.replace(/ยินดีครับ/g, 'ยินดีเจ้า');
-      cleaned = cleaned.replace(/สุมาเต๊อะครับ/g, 'สุมาเต๊อะเจ้า');
-      cleaned = cleaned.replace(/นะครับ/g, 'เน้อเจ้า');
-      cleaned = cleaned.replace(/ครับ(?=[ \n.,!?•]|$)/g, 'เจ้า');
-    }
-  } else {
-    // Central Thai
-    if (gender === 'male') {
-      // Male Central: Must use ครับ, นะครับ. Never use ค่ะ, คะ, นะคะ, เจ้า
       cleaned = cleaned.replace(/นะคะ/g, 'นะครับ');
       cleaned = cleaned.replace(/ค่ะ/g, 'ครับ');
       cleaned = cleaned.replace(/คะ(?=[ \n.,!?•]|$)/g, 'ครับ');
       cleaned = cleaned.replace(/เน้อเจ้า/g, 'นะครับ');
+      cleaned = cleaned.replace(/เน้อครับ/g, 'นะครับ');
+      cleaned = cleaned.replace(/ยินดีเจ้า/g, 'ยินดีครับ');
+      cleaned = cleaned.replace(/ขอบคุณเจ้า/g, 'ขอบคุณครับ');
       cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ครับ');
-    } else {
-      // Female Central: Must use ค่ะ, คะ, นะคะ. Never use ครับ, นะครับ
-      cleaned = cleaned.replace(/นะครับ/g, 'นะคะ');
-      cleaned = cleaned.replace(/ครับ(?=[ \n.,!?•]|$)/g, 'ค่ะ');
-      cleaned = cleaned.replace(/เน้อครับ/g, 'นะคะ');
     }
   }
 
@@ -1447,10 +1477,15 @@ export async function executeRAGPipeline(params: {
   includeDrafts?: boolean;
   publicBaseUrl?: string;
   generateVoiceReply?: boolean;
+  overrideVoiceGender?: 'male' | 'female';
 }): Promise<RAGExecutionResult> {
   const startTime = Date.now();
   const db = getDb();
-  const config = getActiveAiConfig();
+  const baseConfig = getActiveAiConfig();
+  const config = {
+    ...baseConfig,
+    voice_gender: params.overrideVoiceGender || baseConfig.voice_gender || 'female'
+  };
   const { lineUserId = 'LINE_ANONYMOUS_USER', isPlayground = false, includeDrafts = false, publicBaseUrl = '', generateVoiceReply } = params;
   const isAudioInput = Boolean(params.audioBuffer && params.audioBuffer.length > 0);
   const shouldProduceVoice = generateVoiceReply !== undefined ? generateVoiceReply : (isPlayground ? Boolean(config.voice_reply_enabled) : isAudioInput);
@@ -1480,6 +1515,7 @@ export async function executeRAGPipeline(params: {
       confidence_score: 0.0,
       is_fallback: true,
       response_time_ms: Date.now() - startTime,
+      voiceGender: config.voice_gender,
       sources: []
     };
   }
@@ -1551,6 +1587,7 @@ export async function executeRAGPipeline(params: {
       audioDurationMs: greetingDurationMs,
       detectedDialect: isDialect ? 'kham_mueang' : 'central',
       transcribedQuestion,
+      voiceGender: config.voice_gender,
       sources: []
     };
   }
@@ -1722,11 +1759,13 @@ export async function executeRAGPipeline(params: {
     imageUrl: mediaInfo?.imageUrl,
     imageCaption: mediaInfo?.caption,
     isWebAttachment: mediaInfo?.isWebAttachment,
+    matchedTeachers: mediaInfo?.matchedTeachers,
     documentAttachment: docAttachment || undefined,
     audioUrl,
     audioDurationMs,
     detectedDialect: isDialect ? 'kham_mueang' : 'central',
     transcribedQuestion,
+    voiceGender: config.voice_gender,
     sources: retrievedSources.map(s => ({
       knowledge_id: s.knowledge_id,
       title: s.title,
@@ -1747,16 +1786,17 @@ export async function resolveDriveImageForQuery(
   question: string,
   answerText: string,
   sources: any[]
-): Promise<{ imageUrl?: string; caption?: string; isWebAttachment?: boolean } | null> {
+): Promise<{ imageUrl?: string; caption?: string; isWebAttachment?: boolean; matchedTeachers?: TeacherMediaInfo[] } | null> {
   const db = getDb();
   const primarySource = sources[0];
   const combinedText = `${question} ${answerText} ${primarySource?.title || ''}`.toLowerCase();
   const qLower = question.toLowerCase();
 
-  // Strict check: Is the user actually asking about student uniforms, dress code, or attire?
-  const isUniformQuery = /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|เนคไท|ชุดฝึกงาน|ชุดปฏิบัติงาน|ชุดพิธีการ|ชุดอวท|ชุด อวท|ยูนิฟอร์ม|uniform|ทรงผม/i.test(question);
+  // Check if user is asking about student uniforms, dress code, or attire
+  const isUniformQuery = /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|เนคไท|ชุดฝึกงาน|ชุดปฏิบัติงาน|ชุดพิธีการ|ชุดอวท|ชุด อวท|อวท|ยูนิฟอร์ม|uniform|ทรงผม/i.test(question) ||
+                         /แต่งกาย|ชุดนักเรียน|ชุดนักศึกษา|เครื่องแบบ|ชุดอวท/i.test(primarySource?.title || '');
   const isUniformAttachment = (nameOrTitle: string) => {
-    return /ชุดนร|ชุดนักเรียน|ชุดนักศึกษา|ชุดอวท|ชุด อวท/i.test(nameOrTitle || '');
+    return /ชุดนร|ชุดนักเรียน|ชุดนักศึกษา|ชุดอวท/i.test(nameOrTitle || '');
   };
 
   // 1. PRIORITY 1: Check Web-uploaded Attachments (knowledge_attachments) for retrieved knowledge sources
@@ -1800,6 +1840,18 @@ export async function resolveDriveImageForQuery(
             const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
             const qHasAvt = qLower.includes('อวท');
 
+            if (qHasAvt) {
+              if (qHasPws) {
+                const avtPws = candidates.find(att => (att.file_name || '').toLowerCase().includes('ชุดอวท.ปวส'));
+                if (avtPws) return avtPws;
+              }
+              const avtGen = candidates.find(att => {
+                const fn = (att.file_name || '').toLowerCase();
+                return fn.includes('ชุดอวท') && !fn.includes('ปวส');
+              }) || candidates.find(att => (att.file_name || '').toLowerCase().includes('ชุดอวท'));
+              if (avtGen) return avtGen;
+            }
+
             if (qHasPwc) {
               const pwcMatch = candidates.find(att => {
                 const fn = (att.file_name || '').toLowerCase();
@@ -1814,14 +1866,6 @@ export async function resolveDriveImageForQuery(
                 return fn.includes('ปวส');
               });
               if (pwsMatch) return pwsMatch;
-            }
-
-            if (qHasAvt) {
-              const avtMatch = candidates.find(att => {
-                const fn = (att.file_name || '').toLowerCase();
-                return fn.includes('อวท');
-              });
-              if (avtMatch) return avtMatch;
             }
 
             // Answer intent if question didn't specify level
@@ -1844,6 +1888,11 @@ export async function resolveDriveImageForQuery(
               });
               if (pwsMatch) return pwsMatch;
             }
+
+            // Fallback for uniform query: return best matching uniform candidate
+            const anyUniform = candidates.find(att => (att.file_name || '').includes('ชุดนร.ปวส')) ||
+                               candidates.find(att => isUniformAttachment(att.file_name));
+            if (anyUniform) return anyUniform;
           }
 
           // Return candidate matching primary source if available, or first valid non-uniform candidate
@@ -1892,30 +1941,75 @@ export async function resolveDriveImageForQuery(
   try {
     const cachedMedia = (db.prepare('SELECT * FROM drive_media_cache ORDER BY updated_at DESC').all() as any[])
       .filter(m => m.file_id && m.file_id.length <= 35 && !m.title_or_person_name?.startsWith('KB-'));
-    const normalizedCombined = combinedText.replace(/ศุทธิชัย/g, 'ศุทิชัย');
+    const normalizedCombined = combinedText.replace(/ศุทธิชัย/g, 'ศุทิชัย').replace(/ปิงใจ/g, 'ปิ่นใจ');
     
-    // First pass: match exact person name
+    // First pass: match teachers / personnel (collect all matches if multiple teachers exist)
+    const matchedTeachers: TeacherMediaInfo[] = [];
+    const textWithoutCollege = normalizedCombined.replace(/วิทยาลัย/g, '');
+
     for (const m of cachedMedia) {
+      if (isUniformAttachment(m.title_or_person_name)) continue;
+
       const rawPersonName = (m.title_or_person_name.split('(')[0] || '')
         .replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '')
         .trim()
         .toLowerCase();
-      const normPersonName = rawPersonName.replace(/ศุทธิชัย/g, 'ศุทิชัย');
+      const normPersonName = rawPersonName.replace(/ศุทธิชัย/g, 'ศุทิชัย').replace(/ปิงใจ/g, 'ปิ่นใจ');
       const cleanPersonName = normPersonName
-        .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i, '')
+        .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์|ดร\.|ผศ\.)\s*/i, '')
         .trim();
-      
-      if (rawPersonName && (
-        normalizedCombined.includes(rawPersonName) || 
-        normalizedCombined.includes(normPersonName) || 
-        (cleanPersonName.length >= 3 && normalizedCombined.includes(cleanPersonName))
-      )) {
-        return {
-          imageUrl: m.image_url,
-          caption: m.title_or_person_name,
-          isWebAttachment: false
-        };
+
+      // Skip mock/dummy seeded file IDs ending in _01, _02 if it's a dummy ID
+      if (m.file_id && m.file_id.match(/_[0-9]{2,}$/)) continue;
+
+      const tokens = cleanPersonName.split(/[\s,]+/).filter((tok: string) => tok.length >= 3);
+      if (tokens.length === 0) continue;
+
+      const firstName = tokens[0];
+      const lastName = tokens.length > 1 && tokens[1] !== tokens[0] ? tokens[1] : null;
+
+      let isMatch = false;
+      if (normalizedCombined.includes(rawPersonName) || normalizedCombined.includes(normPersonName) || (cleanPersonName.length >= 4 && normalizedCombined.includes(cleanPersonName))) {
+        isMatch = true;
+      } else if (lastName && textWithoutCollege.includes(firstName) && textWithoutCollege.includes(lastName)) {
+        isMatch = true;
+      } else if (textWithoutCollege.includes(firstName) && firstName.length >= 4) {
+        isMatch = true;
       }
+
+      if (isMatch) {
+        let displayName = m.title_or_person_name.split('(')[0].replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+        const dParts = displayName.split(' ');
+        if (dParts.length === 2 && dParts[0] === dParts[1]) {
+          displayName = dParts[0];
+        }
+
+        const alreadyAdded = matchedTeachers.some(t => {
+          if (t.file_id === m.file_id) return true;
+          const tFirst = t.name.replace(/^(ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นาย|นางสาว|นาง|ครู|อาจารย์)\s*/i, '').split(/\s+/)[0];
+          return tFirst && firstName && tFirst === firstName;
+        });
+
+        if (!alreadyAdded) {
+          matchedTeachers.push({
+            name: displayName,
+            department: m.title_or_person_name.includes('(') ? m.title_or_person_name.split('(')[1].replace(')', '').trim() : 'วิทยาลัยการอาชีพฝาง',
+            imageUrl: m.image_url || `https://lh3.googleusercontent.com/d/${m.file_id}`,
+            file_id: m.file_id
+          });
+        }
+      }
+    }
+
+    if (matchedTeachers.length > 0) {
+      return {
+        imageUrl: matchedTeachers[0].imageUrl,
+        caption: matchedTeachers.length === 1
+          ? matchedTeachers[0].name
+          : `${matchedTeachers[0].name} (และอีก ${matchedTeachers.length - 1} ท่าน)`,
+        isWebAttachment: false,
+        matchedTeachers
+      };
     }
 
     // Second pass: match branch or department name in title_or_person_name (Exclude student uniform media and individual persons!)
@@ -1939,17 +2033,50 @@ export async function resolveDriveImageForQuery(
       const qHasPwc = (qLower.includes('ปวช') || qLower.includes('ประกาศนียบัตรวิชาชีพ')) && !qHasPws;
       const qHasAvt = qLower.includes('อวท');
 
-      for (const m of cachedMedia) {
-        const title = (m.title_or_person_name || '').toLowerCase();
-        if (qHasPwc && title.includes('ชุดนร.ปวช') && !title.includes('ปวส')) {
-          return { imageUrl: m.image_url, caption: 'ชุดนักเรียน ปวช.', isWebAttachment: false };
+      if (qHasAvt) {
+        if (qHasPws) {
+          const avtPws = cachedMedia.find(m => (m.title_or_person_name || '').toLowerCase().includes('ชุดอวท.ปวส'));
+          if (avtPws) return { imageUrl: avtPws.image_url || `https://lh3.googleusercontent.com/d/${avtPws.file_id}`, caption: 'ชุด อวท. ปวส.', isWebAttachment: false };
         }
-        if (qHasPws && title.includes('ชุดนร.ปวส')) {
-          return { imageUrl: m.image_url, caption: 'ชุดนักศึกษา ปวส.', isWebAttachment: false };
-        }
-        if (qHasAvt && (title.includes('ชุดอวท.ปวส') || title.includes('ชุดอวท'))) {
-          return { imageUrl: m.image_url, caption: 'ชุด อวท.', isWebAttachment: false };
-        }
+        const avtGen = cachedMedia.find(m => {
+          const t = (m.title_or_person_name || '').toLowerCase();
+          return t.includes('ชุดอวท.') && !t.includes('ปวส');
+        }) || cachedMedia.find(m => (m.title_or_person_name || '').toLowerCase().includes('ชุดอวท'));
+        if (avtGen) return { imageUrl: avtGen.image_url || `https://lh3.googleusercontent.com/d/${avtGen.file_id}`, caption: 'ชุด อวท.', isWebAttachment: false };
+      }
+
+      if (qHasPwc) {
+        const pwc = cachedMedia.find(m => {
+          const t = (m.title_or_person_name || '').toLowerCase();
+          return t.includes('ชุดนร.ปวช') && !t.includes('ปวส');
+        });
+        if (pwc) return { imageUrl: pwc.image_url || `https://lh3.googleusercontent.com/d/${pwc.file_id}`, caption: 'ชุดนักเรียน ปวช.', isWebAttachment: false };
+      }
+
+      if (qHasPws) {
+        const pws = cachedMedia.find(m => (m.title_or_person_name || '').toLowerCase().includes('ชุดนร.ปวส'));
+        if (pws) return { imageUrl: pws.image_url || `https://lh3.googleusercontent.com/d/${pws.file_id}`, caption: 'ชุดนักศึกษา ปวส.', isWebAttachment: false };
+      }
+
+      // Default uniform if generic
+      const defaultUniform = cachedMedia.find(m => (m.title_or_person_name || '').toLowerCase().includes('ชุดนร.ปวส')) ||
+                             cachedMedia.find(m => (m.title_or_person_name || '').toLowerCase().includes('ชุดนร.ปวช'));
+      if (defaultUniform) {
+        return { imageUrl: defaultUniform.image_url || `https://lh3.googleusercontent.com/d/${defaultUniform.file_id}`, caption: defaultUniform.title_or_person_name, isWebAttachment: false };
+      }
+    }
+
+    // Fourth pass: match general document/diagram/map media in title_or_person_name (e.g. Map / Building / Plan)
+    for (const m of cachedMedia) {
+      if (/^(นาย|นางสาว|นาง|ว่าที่|ครู|อาจารย์|ดร\.)/i.test((m.title_or_person_name || '').trim())) continue;
+      if (isUniformAttachment(m.title_or_person_name)) continue;
+      const rawDocName = (m.title_or_person_name.split('(')[0] || '').replace(/\.(jpg|jpeg|png|webp|gif|bmp)$/i, '').trim().toLowerCase();
+      if (rawDocName && rawDocName.length >= 3 && combinedText.includes(rawDocName)) {
+        return {
+          imageUrl: m.image_url || `https://lh3.googleusercontent.com/d/${m.file_id}`,
+          caption: m.title_or_person_name,
+          isWebAttachment: false
+        };
       }
     }
   } catch (e) {}

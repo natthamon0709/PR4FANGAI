@@ -62,6 +62,13 @@ export interface DocumentAttachmentInfo {
   file_size_kb?: number;
 }
 
+export interface TeacherMediaInfo {
+  name: string;
+  department: string;
+  imageUrl: string;
+  file_id?: string;
+}
+
 export interface RAGPlaygroundResult {
   question: string;
   answer: string;
@@ -71,11 +78,13 @@ export interface RAGPlaygroundResult {
   imageUrl?: string;
   imageCaption?: string;
   isWebAttachment?: boolean;
+  matchedTeachers?: TeacherMediaInfo[];
   documentAttachment?: DocumentAttachmentInfo;
   audioUrl?: string;
   audioDurationMs?: number;
   detectedDialect?: 'kham_mueang' | 'central' | 'unknown';
   transcribedQuestion?: string;
+  voiceGender?: 'female' | 'male';
   sources: {
     knowledge_id: string;
     title: string;
