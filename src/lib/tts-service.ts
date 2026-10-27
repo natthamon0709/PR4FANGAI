@@ -139,46 +139,61 @@ export function normalizeThaiForSpeech(text: string): string {
   });
 
   // 3. Time formats:
-  // e.g. 08:30 - 16:30 น. or 08.30-16.30 น.
-  t = t.replace(/(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})\s*น\.?/g, (m, h1, m1, h2, m2) => {
+  // e.g. 08:30 - 16:30 น. or 08.15 – 12.15 น.
+  t = t.replace(/(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})\s*(?:น\.?|นาฬิกา)/g, (m, h1, m1, h2, m2) => {
     const min1Str = m1 === '00' ? '' : ` ${numberToThaiWords(m1)} นาที`;
     const min2Str = m2 === '00' ? 'ตรง' : ` ${numberToThaiWords(m2)} นาที`;
     return `${numberToThaiWords(h1)} นาฬิกา${min1Str} ถึง ${numberToThaiWords(h2)} นาฬิกา${min2Str}`;
   });
   // e.g. 08:30 น. or 08.30 น.
-  t = t.replace(/(\d{1,2})[:.](\d{2})\s*น\.?/g, (m, h, min) => {
+  t = t.replace(/(\d{1,2})[:.](\d{2})\s*(?:น\.?|นาฬิกา)/g, (m, h, min) => {
     const minStr = min === '00' ? 'ตรง' : ` ${numberToThaiWords(min)} นาที`;
     return `${numberToThaiWords(h)} นาฬิกา${minStr}`;
   });
+  t = t.replace(/เวลา\s*(\d{1,2})[:.](\d{2})\b/g, (m, h, min) => {
+    const minStr = min === '00' ? 'ตรง' : ` ${numberToThaiWords(min)} นาที`;
+    return `เวลา ${numberToThaiWords(h)} นาฬิกา${minStr}`;
+  });
 
-  // 4. Currency: 2,500 บาท -> สองพันห้าร้อย บาท
-  t = t.replace(/(\d[\d,]*)\s*(บาท|สตางค์)/g, (m, val, unit) => `${numberToThaiWords(val)} ${unit}`);
+  // 4. Currency (ค่าเงิน): 2,500 บาท -> สองพันห้าร้อย บาท
+  t = t.replace(/(\d[\d,]*)(?:\.(\d{1,2}))?\s*(บาท|สตางค์|ดอลลาร์|เยน|หยวน)/g, (m, val, dec, unit) => {
+    const intStr = numberToThaiWords(val);
+    const decStr = dec ? ` ${numberToThaiWords(dec)} สตางค์` : '';
+    return `${intStr}${decStr} ${unit}`;
+  });
 
-  // 5. Academic years and calendar:
+  // 5. Academic years, calendar and dates (เนื้อหา):
   t = t.replace(/พ\.ศ\.\s*(\d{4})/g, (m, y) => `พุทธศักราช ${numberToThaiWords(y)}`);
   t = t.replace(/ปีการศึกษา\s*(\d{4})/g, (m, y) => `ปีการศึกษา ${numberToThaiWords(y)}`);
   t = t.replace(/ค\.ศ\.\s*(\d{4})/g, (m, y) => `คริสต์ศักราช ${numberToThaiWords(y)}`);
-
-  // 6. Dates: วันที่ 15 -> วันที่ สิบห้า
+  t = t.replace(/พุทธศักราช\s*(\d{4})/g, (m, y) => `พุทธศักราช ${numberToThaiWords(y)}`);
+  t = t.replace(/ประจำปี\s*(25\d{2}|20\d{2})\b/g, (m, y) => `ประจำปี ${numberToThaiWords(y)}`);
+  t = t.replace(/(?:ภาคเรียนที่|ภาคเรียน|เทอมที่|เทอม)\s*(\d+)\b/g, (m, tNum) => `ภาคเรียนที่ ${numberToThaiWords(tNum)}`);
   t = t.replace(/วันที่\s*(\d{1,2})\b/g, (m, d) => `วันที่ ${numberToThaiWords(d)}`);
-
-  // 7. Decimals & Percentages:
-  t = t.replace(/(\d+)\.(\d+)\s*%/g, (m, intPart, decPart) => `${numberToThaiWords(intPart)}จุด${digitsToSpokenThai(decPart)} เปอร์เซ็นต์`);
-  t = t.replace(/(\d+)\s*%/g, (m, val) => `${numberToThaiWords(val)} เปอร์เซ็นต์`);
-  t = t.replace(/(\d+)\.(\d+)\b/g, (m, intPart, decPart) => `${numberToThaiWords(intPart)}จุด${digitsToSpokenThai(decPart)}`);
-
-  // 8. Number ranges with units: 1-3 วัน -> หนึ่ง ถึง สาม วัน
-  t = t.replace(/(\d+)\s*[-–—]\s*(\d+)\s*(วัน|เดือน|ปี|คน|ชั่วโมง|นาที|เทอม|ภาคเรียน)/g, (m, n1, n2, u) => {
-    return `${numberToThaiWords(n1)} ถึง ${numberToThaiWords(n2)} ${u}`;
-  });
-  t = t.replace(/(\d+)\s*[-–—]\s*(\d+)\b/g, (m, n1, n2) => `${numberToThaiWords(n1)} ถึง ${numberToThaiWords(n2)}`);
-
-  // 9. Buildings, Floors, and Rooms:
+  t = t.replace(/(?:อันดับที่|ลำดับที่|ข้อที่|ข้อ)\s*(\d+)\b/g, (m, n) => `ที่ ${numberToThaiWords(n)}`);
   t = t.replace(/อาคาร\s*(\d+)\b/g, (m, b) => `อาคาร ${numberToThaiWords(b)}`);
   t = t.replace(/ชั้น\s*(\d+)\b/g, (m, fl) => `ชั้น ${numberToThaiWords(fl)}`);
-  t = t.replace(/ห้อง\s*(\d{2,4})\b/g, (m, rm) => `ห้อง ${digitsToSpokenThai(rm)}`);
 
-  // 10. Educational titles & levels:
+  // 6. Decimals & Percentages:
+  t = t.replace(/(\d+)\.(\d+)\s*%/g, (m, intPart, decPart) => `${numberToThaiWords(intPart)}จุด${digitsToSpokenThai(decPart)} เปอร์เซ็นต์`);
+  t = t.replace(/(\d+)\s*%/g, (m, val) => `${numberToThaiWords(val)} เปอร์เซ็นต์`);
+  t = t.replace(/ร้อยละ\s*(\d+)/g, (m, val) => `ร้อยละ ${numberToThaiWords(val)}`);
+
+  // 7. Counts with classifiers / units (เนื้อหา): 1-3 วัน -> หนึ่ง ถึง สาม วัน, 8 คน -> แปด คน
+  const classifiers = 'วันทำการ|วัน|เดือน|ปี|คน|ท่าน|ชั่วโมง|นาที|วินาที|เทอม|ภาคเรียน|วิชา|หน่วยกิต|รอบ|ครั้ง|ข้อ|แห่ง|รายการ|สาขา|สิทธิ์|คะแนน|แบบ|ฉบับ|ราย|ชุด|ใบ';
+  const rangeRegex = new RegExp(`(\\d+)\\s*[-–—]\\s*(\\d+)\\s*(${classifiers})(?=[^ก-๙]|$)`, 'g');
+  t = t.replace(rangeRegex, (m, n1, n2, u) => `${numberToThaiWords(n1)} ถึง ${numberToThaiWords(n2)} ${u}`);
+  const countRegex = new RegExp(`(\\d+)\\s*(${classifiers})(?=[^ก-๙]|$)`, 'g');
+  t = t.replace(countRegex, (m, n, u) => {
+    const num = parseInt(n, 10);
+    // If unit is small (e.g. วิชา, หน่วยกิต, เทอม) and number >= 100, it's a code/ID, not a count
+    if (/^(?:วิชา|เทอม|ภาคเรียน|หน่วยกิต|สาขา|รอบ|ข้อ)$/.test(u) && num >= 100) {
+      return m;
+    }
+    return `${numberToThaiWords(n)} ${u}`;
+  });
+
+  // 8. Educational titles & levels:
   t = t.replace(/รอง\s*ผอ\./g, 'รองผู้อำนวยการ');
   t = t.replace(/ผอ\./g, 'ผู้อำนวยการ');
   t = t.replace(/ว่าที่\s*ร\.ต\.\s*หญิง/g, 'ว่าที่ร้อยตรีหญิง ');
@@ -195,6 +210,25 @@ export function normalizeThaiForSpeech(text: string): string {
   t = t.replace(/(?:ระดับ\s*){2,}/g, 'ระดับ ');
   t = t.replace(/กศน\./g, 'กอ ศอ นอ');
   t = t.replace(/อวท\./g, 'ออ วอ ทอ');
+
+  // 9. Course codes & multi-digit hyphenated codes (รหัสวิชา / รหัสหลักสูตร - อ่านตรงตัว เช่น 21910-2013 -> สอง หนึ่ง เก้า หนึ่ง ศูนย์ ขีด สอง ศูนย์ หนึ่ง สาม):
+  t = t.replace(/(\d{2,6})\s*[-–—]\s*(\d{2,6})/g, (m, c1, c2) => {
+    return `${digitsToSpokenThai(c1)} ขีด ${digitsToSpokenThai(c2)}`;
+  });
+
+  // 10. Slash-separated group / class codes (รหัสกลุ่มเรียน / ชั้นเรียน - อ่านตรงตัว เช่น ทธ.2/1 -> สอง ทับ หนึ่ง):
+  t = t.replace(/(\d+)\/(\d+)/g, (m, n1, n2) => {
+    return `${digitsToSpokenThai(n1)} ทับ ${digitsToSpokenThai(n2)}`;
+  });
+
+  // 11. Room codes & specific tech room labels:
+  t = t.replace(/\bCOM\s*(\d+)\b/gi, (m, n) => `คอม ${digitsToSpokenThai(n)}`);
+  t = t.replace(/\bCOM\b/gi, 'คอม');
+  t = t.replace(/\bPLC\b/gi, 'พีแอลซี');
+  t = t.replace(/ห้อง\s*(\d{2,4})\b/g, (m, rm) => `ห้อง ${digitsToSpokenThai(rm)}`);
+
+  // 12. Non-currency, non-time, non-content remaining numbers (อ่านตรงตัว เช่น 23210 -> สอง สาม สอง หนึ่ง ศูนย์):
+  t = t.replace(/(\d+)/g, (m, num) => digitsToSpokenThai(num));
 
   // 11. Symbols and punctuation:
   t = t.replace(/และ\/หรือ/g, 'และหรือ');
@@ -304,8 +338,9 @@ export function cleanTextForSpeech(
   // Apply Thai phonetic and prosody normalizer
   cleaned = normalizeThaiForSpeech(cleaned);
 
-  // Clean up duplicate commas, periods, spaces
+  // Clean up duplicate commas, periods, colons, spaces
   cleaned = cleaned
+    .replace(/[:：]/g, ', ')
     .replace(/([,.])\s*[,.]+/g, '$1 ')
     .replace(/^[,\s.]+/, '')
     .replace(/\s+/g, ' ')

@@ -84,6 +84,12 @@ async function runTests() {
   assert(norm3.includes('ยินดีเจ้า,') && norm3.includes('เน้อเจ้า,'), 'normalizeThaiForSpeech inserted natural pauses after Northern polite particles');
   assert(norm3.includes('วิทยาลัยการอาชีพฝาง'), 'normalizeThaiForSpeech expanded วท.ฝาง to วิทยาลัยการอาชีพฝาง');
 
+  const normDigits = normalizeThaiForSpeech('รหัส 23210 วิชา 21910-2013 กลุ่ม 2/1 ค่าเทอม 2500 บาท');
+  assert(normDigits.includes('สอง สาม สอง หนึ่ง ศูนย์'), 'normalizeThaiForSpeech reads non-currency codes digit-by-digit (23210)');
+  assert(normDigits.includes('สอง หนึ่ง เก้า หนึ่ง ศูนย์ ขีด สอง ศูนย์ หนึ่ง สาม'), 'normalizeThaiForSpeech reads course codes digit-by-digit (21910-2013)');
+  assert(normDigits.includes('สอง ทับ หนึ่ง'), 'normalizeThaiForSpeech reads section slashes (2/1 -> สอง ทับ หนึ่ง)');
+  assert(normDigits.includes('สองพันห้าร้อย บาท'), 'normalizeThaiForSpeech keeps currency as natural cardinal words (2500 บาท)');
+
   // 4.2 Test SSML Generation & Warm Prosody
   console.log('  🔍 Testing buildSsmlForSpeech:');
   const ssmlOutput = buildSsmlForSpeech('ยินดีเจ้า, สำหรับข้อมูลเพิ่มเติม ติดต่อได้เลยเน้อเจ้า', 'th-TH-PremwadeeNeural', 1.0);
