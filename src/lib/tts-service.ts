@@ -617,16 +617,17 @@ async function synthesizeViaEdgeTts(
         ws.send(ssmlMsg);
       };
 
-      const handleData = (rawPayload: any) => {
-        // Handle Blob
+      const handleData = (rawPayload: any, isBinary?: boolean) => {
+        // Handle Blob in browser environments
         if (typeof Blob !== 'undefined' && rawPayload instanceof Blob) {
-          rawPayload.arrayBuffer().then((ab: ArrayBuffer) => handleData(ab)).catch(() => {});
+          rawPayload.arrayBuffer().then((ab: ArrayBuffer) => handleData(ab, true)).catch(() => {});
           return;
         }
 
-        // Handle text message
-        if (typeof rawPayload === 'string') {
-          if (rawPayload.includes('Path:turn.end')) {
+        // 1. Explicit text or string
+        if (isBinary === false || typeof rawPayload === 'string') {
+          const str = typeof rawPayload === 'string' ? rawPayload : rawPayload.toString('utf8');
+          if (str.includes('Path:turn.end')) {
             clearTimeout(timeoutId);
             try { ws.close(); } catch {}
             if (audioChunks.length > 0) {
@@ -638,7 +639,7 @@ async function synthesizeViaEdgeTts(
           return;
         }
 
-        // Handle binary message (Buffer, Uint8Array, or ArrayBuffer)
+        // 2. Binary message (Buffer, Uint8Array, or ArrayBuffer)
         let buf: Buffer | null = null;
         if (Buffer.isBuffer(rawPayload)) {
           buf = rawPayload;
@@ -648,7 +649,28 @@ async function synthesizeViaEdgeTts(
           buf = Buffer.from(rawPayload.buffer, rawPayload.byteOffset, rawPayload.byteLength);
         }
 
-        if (buf && buf.length > 2) {
+        if (!buf || buf.length === 0) return;
+
+        // Check if buffer is actually an Edge TTS text header (when ws doesn't flag isBinary)
+        if (isBinary !== true && buf.length > 4) {
+          const preview = buf.subarray(0, Math.min(buf.length, 30)).toString('latin1');
+          if (preview.startsWith('X-RequestId') || preview.startsWith('Content-Type') || preview.startsWith('Path:')) {
+            const str = buf.toString('utf8');
+            if (str.includes('Path:turn.end')) {
+              clearTimeout(timeoutId);
+              try { ws.close(); } catch {}
+              if (audioChunks.length > 0) {
+                resolve(Buffer.concat(audioChunks));
+              } else {
+                resolve(null);
+              }
+            }
+            return;
+          }
+        }
+
+        // Edge TTS Binary Audio Framing: [2-byte header length][header][audio data]
+        if (buf.length > 2) {
           const headerLen = buf.readUInt16BE(0);
           if (buf.length > 2 + headerLen) {
             const audioBytes = buf.subarray(2 + headerLen);
@@ -659,13 +681,13 @@ async function synthesizeViaEdgeTts(
 
       if (typeof (ws as any).on === 'function') {
         (ws as any).on('open', onConnectOpen);
-        (ws as any).on('message', (msgData: any) => handleData(msgData));
+        (ws as any).on('message', (msgData: any, isBin: boolean) => handleData(msgData, isBin));
         (ws as any).on('error', (err: any) => {
           clearTimeout(timeoutId);
           console.warn('Edge TTS WS Error:', err?.message || err);
           resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
         });
-        (ws as any).on('close', () => {
+        (ws as any).on('close', (code: any, reason: any) => {
           clearTimeout(timeoutId);
           resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
         });
