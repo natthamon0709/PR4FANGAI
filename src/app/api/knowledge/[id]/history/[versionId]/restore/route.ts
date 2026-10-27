@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
+import { KnowledgeModel } from '@/models/knowledge.model';
+import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
 import getDb from '@/lib/db';
-import crypto from 'crypto';
 
 interface RouteParams {
   params: { id: string; versionId: string };
@@ -14,11 +15,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
     }
 
-    const db = getDb();
     const knowledgeId = params.id;
     const versionId = params.versionId;
 
-    const currentItem = db.prepare('SELECT * FROM knowledge_items WHERE knowledge_id = ?').get(knowledgeId) as any;
+    const currentItem = await KnowledgeModel.findKnowledgeById(knowledgeId, session);
     if (!currentItem) {
       return NextResponse.json({ error: 'ไม่พบองค์ความรู้นี้' }, { status: 404 });
     }
@@ -28,65 +28,61 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'ไม่มีสิทธิ์กู้คืนข้อมูลของฝ่ายอื่น' }, { status: 403 });
     }
 
-    const targetVersion = db.prepare('SELECT * FROM knowledge_version_history WHERE version_id = ? AND knowledge_id = ?').get(versionId, knowledgeId) as any;
+    let targetVersion: any = null;
+
+    // 1. Try Supabase
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: sbVer, error: sbErr } = await supabaseAdmin
+          .from('knowledge_version_history')
+          .select('*')
+          .eq('version_id', versionId)
+          .eq('knowledge_id', knowledgeId)
+          .maybeSingle();
+
+        if (!sbErr && sbVer) {
+          targetVersion = sbVer;
+        }
+      } catch (sbErr) {
+        console.warn('Supabase find version error:', sbErr);
+      }
+    }
+
+    // 2. Fallback to SQLite
+    if (!targetVersion) {
+      const db = getDb();
+      targetVersion = db.prepare('SELECT * FROM knowledge_version_history WHERE version_id = ? AND knowledge_id = ?').get(versionId, knowledgeId) as any;
+    }
+
     if (!targetVersion) {
       return NextResponse.json({ error: 'ไม่พบประวัติเวอร์ชันที่ต้องการกู้คืน' }, { status: 404 });
     }
 
-    const now = new Date().toISOString();
-    const maxVersionRow = db.prepare('SELECT MAX(version_no) as max_v FROM knowledge_version_history WHERE knowledge_id = ?').get(knowledgeId) as { max_v: number };
-    const nextVersionNo = (maxVersionRow?.max_v || 1) + 1;
+    let parsedTags: string[] = [];
+    try {
+      parsedTags = JSON.parse(targetVersion.tags_snapshot || '[]');
+    } catch {
+      parsedTags = targetVersion.tags_snapshot ? [targetVersion.tags_snapshot] : [];
+    }
 
-    const transaction = db.transaction(() => {
-      // 1. Create a new version snapshot recording the rollback action
-      db.prepare(`
-        INSERT INTO knowledge_version_history (
-          version_id, knowledge_id, version_no, title_snapshot, summary_snapshot,
-          content_snapshot, tags_snapshot, edited_by, edited_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        'ver-' + crypto.randomUUID(),
-        knowledgeId,
-        nextVersionNo,
-        `[กู้คืนจาก v${targetVersion.version_no}] ` + targetVersion.title_snapshot,
-        targetVersion.summary_snapshot,
-        targetVersion.content_snapshot,
-        targetVersion.tags_snapshot,
-        session.user_id,
-        now
-      );
-
-      // 2. Overwrite knowledge_items with the restored version
-      db.prepare(`
-        UPDATE knowledge_items SET
-          title = ?,
-          summary = ?,
-          content = ?,
-          tags = ?,
-          sync_status = 'pending',
-          updated_by = ?,
-          updated_at = ?
-        WHERE knowledge_id = ?
-      `).run(
-        targetVersion.title_snapshot,
-        targetVersion.summary_snapshot,
-        targetVersion.content_snapshot,
-        targetVersion.tags_snapshot,
-        session.user_id,
-        now,
-        knowledgeId
-      );
-
-      db.prepare('DELETE FROM dashboard_summary_cache').run();
-    });
-
-    transaction();
+    await KnowledgeModel.updateKnowledgeItem(knowledgeId, {
+      title: targetVersion.title_snapshot,
+      summary: targetVersion.summary_snapshot || '',
+      content: targetVersion.content_snapshot,
+      tags: parsedTags
+    }, session);
 
     return NextResponse.json({
       success: true,
-      message: `กู้คืนข้อมูลกลับสู่เนื้อหาเวอร์ชัน v${targetVersion.version_no} เรียบร้อยแล้ว (บันทึกเป็น v${nextVersionNo})`
+      message: `กู้คืนข้อมูลกลับสู่เนื้อหาเวอร์ชัน v${targetVersion.version_no} เรียบร้อยแล้ว`
     });
   } catch (error: any) {
+    if (error.message === 'NOT_FOUND') {
+      return NextResponse.json({ error: 'ไม่พบองค์ความรู้นี้' }, { status: 404 });
+    }
+    if (error.message === 'FORBIDDEN_DEPARTMENT') {
+      return NextResponse.json({ error: 'ไม่มีสิทธิ์กู้คืนข้อมูลของฝ่ายอื่น' }, { status: 403 });
+    }
     return NextResponse.json({ error: 'กู้คืนไม่สำเร็จ: ' + error.message }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import getDb from './db';
 import crypto from 'crypto';
+import { supabaseAdmin, isSupabaseConfigured } from './supabase';
 import { SessionUser } from '@/types';
 import { 
   DashboardSummaryResponse, 
@@ -45,31 +46,113 @@ export async function getDashboardSummary(
   // 2. Compute Real KPIs from Database & Google Sheet Sync Store
   let kpis: KpiMetric[] = [];
 
+  // Metrics holders
+  let totalKnowledgeCount = 0;
+  let totalUsersCount = 0;
+  let activeUsersCount = 0;
+  let pendingSyncCount = 0;
+  let recentWeekKnowledgeCount = 0;
+  let totalAiQueriesCount = 0;
+  let resolvedAiQueriesCount = 0;
+  let deptKnowledgeCount = 0;
+  let myAddedMonthCount = 0;
+  let myUpdatedMonthCount = 0;
+  let deptPendingSyncCount = 0;
+  let supabaseKpiSuccess = false;
+
+  // Try Supabase first
+  if (isSupabaseConfigured()) {
+    try {
+      if (isAdmin) {
+        const [
+          sbKnowledge,
+          sbUsers,
+          sbActiveUsers,
+          sbPendingSync,
+          sbRecentWeek,
+          sbAiTotal,
+          sbAiResolved
+        ] = await Promise.all([
+          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }),
+          supabaseAdmin.from('master_users').select('*', { count: 'exact', head: true }),
+          supabaseAdmin.from('master_users').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('sync_status', 'pending'),
+          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
+          supabaseAdmin.from('ai_query_logs').select('*', { count: 'exact', head: true }),
+          supabaseAdmin.from('ai_query_logs').select('*', { count: 'exact', head: true }).eq('is_fallback', 0).gte('confidence_score', 0.70)
+        ]);
+
+        if (sbKnowledge.count !== null && sbUsers.count !== null) {
+          totalKnowledgeCount = sbKnowledge.count || 0;
+          totalUsersCount = sbUsers.count || 0;
+          activeUsersCount = sbActiveUsers.count || 0;
+          pendingSyncCount = sbPendingSync.count || 0;
+          recentWeekKnowledgeCount = sbRecentWeek.count || 0;
+          totalAiQueriesCount = sbAiTotal.count || 0;
+          resolvedAiQueriesCount = sbAiResolved.count || 0;
+          supabaseKpiSuccess = true;
+        }
+      } else {
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+        const [
+          sbDeptKnowledge,
+          sbMyAdded,
+          sbMyUpdated,
+          sbDeptPending
+        ] = await Promise.all([
+          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('department_id', user.department_id),
+          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('created_by', user.user_id).gte('created_at', startOfMonth),
+          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('updated_by', user.user_id).gte('updated_at', startOfMonth),
+          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('department_id', user.department_id).eq('sync_status', 'pending')
+        ]);
+
+        if (sbDeptKnowledge.count !== null) {
+          deptKnowledgeCount = sbDeptKnowledge.count || 0;
+          myAddedMonthCount = sbMyAdded.count || 0;
+          myUpdatedMonthCount = sbMyUpdated.count || 0;
+          deptPendingSyncCount = sbDeptPending.count || 0;
+          supabaseKpiSuccess = true;
+        }
+      }
+    } catch (sbErr) {
+      console.warn('Dashboard Supabase KPI count warning:', sbErr);
+    }
+  }
+
   if (isAdmin) {
-    // Admin KPIs
-    const totalKnowledge = db.prepare('SELECT COUNT(*) as c FROM knowledge_items').get() as { c: number };
-    const totalUsers = db.prepare('SELECT COUNT(*) as c FROM master_users').get() as { c: number };
-    const activeUsers = db.prepare("SELECT COUNT(*) as c FROM master_users WHERE status = 'active'").get() as { c: number };
-    const pendingSync = db.prepare("SELECT COUNT(*) as c FROM knowledge_items WHERE sync_status = 'pending'").get() as { c: number };
+    if (!supabaseKpiSuccess) {
+      const totalKnowledge = db.prepare('SELECT COUNT(*) as c FROM knowledge_items').get() as { c: number };
+      const totalUsers = db.prepare('SELECT COUNT(*) as c FROM master_users').get() as { c: number };
+      const activeUsers = db.prepare("SELECT COUNT(*) as c FROM master_users WHERE status = 'active'").get() as { c: number };
+      const pendingSync = db.prepare("SELECT COUNT(*) as c FROM knowledge_items WHERE sync_status = 'pending'").get() as { c: number };
 
-    // Recent items this week
-    const recentWeekKnowledge = db.prepare(`
-      SELECT COUNT(*) as c FROM knowledge_items
-      WHERE created_at >= datetime('now', '-7 days', 'localtime')
-    `).get() as { c: number };
+      const recentWeekKnowledge = db.prepare(`
+        SELECT COUNT(*) as c FROM knowledge_items
+        WHERE created_at >= datetime('now', '-7 days', 'localtime')
+      `).get() as { c: number };
 
-    const totalAiQueries = db.prepare('SELECT COUNT(*) as c FROM ai_query_logs').get() as { c: number };
-    const resolvedAiQueries = db.prepare("SELECT COUNT(*) as c FROM ai_query_logs WHERE is_fallback = 0 AND confidence_score >= 0.70").get() as { c: number };
-    const resolvedPct = totalAiQueries.c > 0 ? Math.round((resolvedAiQueries.c / totalAiQueries.c) * 100) : 100;
+      const totalAiQueries = db.prepare('SELECT COUNT(*) as c FROM ai_query_logs').get() as { c: number };
+      const resolvedAiQueries = db.prepare("SELECT COUNT(*) as c FROM ai_query_logs WHERE is_fallback = 0 AND confidence_score >= 0.70").get() as { c: number };
+
+      totalKnowledgeCount = totalKnowledge.c;
+      totalUsersCount = totalUsers.c;
+      activeUsersCount = activeUsers.c;
+      pendingSyncCount = pendingSync.c;
+      recentWeekKnowledgeCount = recentWeekKnowledge.c;
+      totalAiQueriesCount = totalAiQueries.c;
+      resolvedAiQueriesCount = resolvedAiQueries.c;
+    }
+
+    const resolvedPct = totalAiQueriesCount > 0 ? Math.round((resolvedAiQueriesCount / totalAiQueriesCount) * 100) : 100;
 
     kpis = [
       {
         key: 'total_knowledge',
         label: 'องค์ความรู้ทั้งหมด',
-        value: totalKnowledge.c,
+        value: totalKnowledgeCount,
         unit: 'รายการ',
-        trendText: `+${recentWeekKnowledge.c} สัปดาห์นี้`,
-        trendPercent: recentWeekKnowledge.c > 0 ? 100 : 0,
+        trendText: `+${recentWeekKnowledgeCount} สัปดาห์นี้`,
+        trendPercent: recentWeekKnowledgeCount > 0 ? 100 : 0,
         trendDirection: 'up',
         color: 'primary',
         href: '/knowledge'
@@ -77,9 +160,9 @@ export async function getDashboardSummary(
       {
         key: 'total_users',
         label: 'ผู้ใช้งานในระบบ',
-        value: totalUsers.c,
+        value: totalUsersCount,
         unit: 'บัญชี',
-        trendText: `${activeUsers.c} บัญชี Active`,
+        trendText: `${activeUsersCount} บัญชี Active`,
         trendPercent: 0,
         trendDirection: 'neutral',
         color: 'secondary',
@@ -88,7 +171,7 @@ export async function getDashboardSummary(
       {
         key: 'ai_queries',
         label: 'คำถามผ่าน LINE OA',
-        value: totalAiQueries.c,
+        value: totalAiQueriesCount,
         unit: 'ครั้ง',
         trendText: `AI ตอบได้ ${resolvedPct}%`,
         trendPercent: resolvedPct,
@@ -99,35 +182,41 @@ export async function getDashboardSummary(
       {
         key: 'pending_sync',
         label: 'รอ Sync Google Sheets',
-        value: pendingSync.c,
+        value: pendingSyncCount,
         unit: 'รายการ',
-        trendText: pendingSync.c > 0 ? 'รอการส่งข้อมูล' : 'ซิงค์สมบูรณ์',
-        trendPercent: pendingSync.c > 0 ? -pendingSync.c : 0,
-        trendDirection: pendingSync.c > 0 ? 'down' : 'neutral',
-        color: pendingSync.c > 0 ? 'error' : 'success',
+        trendText: pendingSyncCount > 0 ? 'รอการส่งข้อมูล' : 'ซิงค์สมบูรณ์',
+        trendPercent: pendingSyncCount > 0 ? -pendingSyncCount : 0,
+        trendDirection: pendingSyncCount > 0 ? 'down' : 'neutral',
+        color: pendingSyncCount > 0 ? 'error' : 'success',
         href: '/sheets-cms'
       }
     ];
   } else {
-    // Staff KPIs (Department-scoped)
-    const deptKnowledge = db.prepare('SELECT COUNT(*) as c FROM knowledge_items WHERE department_id = ?').get(user.department_id) as { c: number };
-    const myAddedMonth = db.prepare(`
-      SELECT COUNT(*) as c FROM knowledge_items 
-      WHERE created_by = ? AND created_at >= datetime('now', 'start of month', 'localtime')
-    `).get(user.user_id) as { c: number };
+    if (!supabaseKpiSuccess) {
+      const deptKnowledge = db.prepare('SELECT COUNT(*) as c FROM knowledge_items WHERE department_id = ?').get(user.department_id) as { c: number };
+      const myAddedMonth = db.prepare(`
+        SELECT COUNT(*) as c FROM knowledge_items 
+        WHERE created_by = ? AND created_at >= datetime('now', 'start of month', 'localtime')
+      `).get(user.user_id) as { c: number };
 
-    const myUpdatedMonth = db.prepare(`
-      SELECT COUNT(*) as c FROM knowledge_items 
-      WHERE updated_by = ? AND updated_at >= datetime('now', 'start of month', 'localtime')
-    `).get(user.user_id) as { c: number };
+      const myUpdatedMonth = db.prepare(`
+        SELECT COUNT(*) as c FROM knowledge_items 
+        WHERE updated_by = ? AND updated_at >= datetime('now', 'start of month', 'localtime')
+      `).get(user.user_id) as { c: number };
 
-    const deptPendingSync = db.prepare("SELECT COUNT(*) as c FROM knowledge_items WHERE department_id = ? AND sync_status = 'pending'").get(user.department_id) as { c: number };
+      const deptPendingSync = db.prepare("SELECT COUNT(*) as c FROM knowledge_items WHERE department_id = ? AND sync_status = 'pending'").get(user.department_id) as { c: number };
+
+      deptKnowledgeCount = deptKnowledge.c;
+      myAddedMonthCount = myAddedMonth.c;
+      myUpdatedMonthCount = myUpdatedMonth.c;
+      deptPendingSyncCount = deptPendingSync.c;
+    }
 
     kpis = [
       {
         key: 'my_department_knowledge',
         label: 'องค์ความรู้ฝ่ายฉัน',
-        value: deptKnowledge.c,
+        value: deptKnowledgeCount,
         unit: 'รายการ',
         trendText: 'ครอบคลุมงานในฝ่าย',
         trendPercent: 10.0,
@@ -138,9 +227,9 @@ export async function getDashboardSummary(
       {
         key: 'my_monthly_work',
         label: 'งานของฉันเดือนนี้',
-        value: myAddedMonth.c + myUpdatedMonth.c,
+        value: myAddedMonthCount + myUpdatedMonthCount,
         unit: 'ครั้ง',
-        trendText: `เพิ่ม ${myAddedMonth.c} · แก้ไข ${myUpdatedMonth.c}`,
+        trendText: `เพิ่ม ${myAddedMonthCount} · แก้ไข ${myUpdatedMonthCount}`,
         trendPercent: 15.0,
         trendDirection: 'up',
         color: 'secondary',
@@ -149,12 +238,12 @@ export async function getDashboardSummary(
       {
         key: 'my_dept_pending_sync',
         label: 'Sheet รอ Sync',
-        value: deptPendingSync.c,
+        value: deptPendingSyncCount,
         unit: 'รายการ',
-        trendText: deptPendingSync.c > 0 ? 'รอการส่งข้อมูล' : 'ซิงค์สมบูรณ์',
+        trendText: deptPendingSyncCount > 0 ? 'รอการส่งข้อมูล' : 'ซิงค์สมบูรณ์',
         trendPercent: 0,
         trendDirection: 'neutral',
-        color: deptPendingSync.c > 0 ? 'error' : 'success',
+        color: deptPendingSyncCount > 0 ? 'error' : 'success',
         href: '/sheets-cms'
       }
     ];
@@ -227,58 +316,103 @@ export async function getDashboardSummary(
       };
     });
 
-    const totalNow = db.prepare('SELECT COUNT(*) as c FROM knowledge_items').get() as { c: number };
+    const totalNowCount = totalKnowledgeCount || (db.prepare('SELECT COUNT(*) as c FROM knowledge_items').get() as { c: number }).c;
     knowledge_growth = [
       { month: 'พ.ค.', total_count: 6, new_items: 6 },
       { month: 'มิ.ย.', total_count: 12, new_items: 6 },
       { month: 'ก.ค.', total_count: 18, new_items: 6 },
-      { month: 'ส.ค.', total_count: totalNow.c, new_items: Math.max(1, totalNow.c - 18) }
+      { month: 'ส.ค.', total_count: totalNowCount, new_items: Math.max(1, totalNowCount - 18) }
     ];
   }
 
-  // 5. Recent Knowledge Feed (Query STRICTLY from real knowledge_items from Google Sheet!)
-  const recentKnowledgeQuery = isAdmin
-    ? `
-      SELECT 
-        k.knowledge_id as activity_id,
-        k.created_by as actor_user_id,
-        COALESCE(u.first_name || ' ' || u.last_name, 'เจ้าหน้าที่') as actor_name,
-        'update' as action_type,
-        k.content_type as target_type,
-        k.knowledge_id as target_id,
-        k.department_id,
-        d.name as department_name,
-        k.title as title_snapshot,
-        k.updated_at as created_at
-      FROM knowledge_items k
-      LEFT JOIN master_users u ON k.created_by = u.user_id
-      LEFT JOIN departments d ON k.department_id = d.department_id
-      ORDER BY k.updated_at DESC
-      LIMIT 8
-    `
-    : `
-      SELECT 
-        k.knowledge_id as activity_id,
-        k.created_by as actor_user_id,
-        COALESCE(u.first_name || ' ' || u.last_name, 'เจ้าหน้าที่') as actor_name,
-        'update' as action_type,
-        k.content_type as target_type,
-        k.knowledge_id as target_id,
-        k.department_id,
-        d.name as department_name,
-        k.title as title_snapshot,
-        k.updated_at as created_at
-      FROM knowledge_items k
-      LEFT JOIN master_users u ON k.created_by = u.user_id
-      LEFT JOIN departments d ON k.department_id = d.department_id
-      WHERE k.department_id = ? OR k.created_by = ?
-      ORDER BY k.updated_at DESC
-      LIMIT 8
-    `;
+  // 5. Recent Knowledge Feed (Query from Supabase first, fallback to SQLite)
+  let recent_activities: RecentActivityItem[] = [];
 
-  const recent_activities = (isAdmin
-    ? db.prepare(recentKnowledgeQuery).all()
-    : db.prepare(recentKnowledgeQuery).all(user.department_id, user.user_id)) as RecentActivityItem[];
+  if (isSupabaseConfigured()) {
+    try {
+      let sbQuery = supabaseAdmin
+        .from('knowledge_items')
+        .select(`
+          knowledge_id,
+          created_by,
+          content_type,
+          department_id,
+          title,
+          updated_at,
+          departments (name),
+          master_users (first_name, last_name)
+        `)
+        .order('updated_at', { ascending: false })
+        .limit(8);
+
+      if (!isAdmin) {
+        sbQuery = sbQuery.or(`department_id.eq.${user.department_id},created_by.eq.${user.user_id}`);
+      }
+
+      const { data: sbActivities, error: sbActErr } = await sbQuery;
+      if (!sbActErr && sbActivities && sbActivities.length > 0) {
+        recent_activities = sbActivities.map((k: any) => ({
+          activity_id: k.knowledge_id,
+          actor_user_id: k.created_by,
+          actor_name: k.master_users ? `${k.master_users.first_name} ${k.master_users.last_name}`.trim() : 'เจ้าหน้าที่',
+          action_type: 'update',
+          target_type: k.content_type,
+          target_id: k.knowledge_id,
+          department_id: k.department_id,
+          department_name: k.departments?.name || '',
+          title_snapshot: k.title,
+          created_at: k.updated_at
+        }));
+      }
+    } catch (sbErr) {
+      console.warn('Dashboard recent activities Supabase error:', sbErr);
+    }
+  }
+
+  if (recent_activities.length === 0) {
+    const recentKnowledgeQuery = isAdmin
+      ? `
+        SELECT 
+          k.knowledge_id as activity_id,
+          k.created_by as actor_user_id,
+          COALESCE(u.first_name || ' ' || u.last_name, 'เจ้าหน้าที่') as actor_name,
+          'update' as action_type,
+          k.content_type as target_type,
+          k.knowledge_id as target_id,
+          k.department_id,
+          d.name as department_name,
+          k.title as title_snapshot,
+          k.updated_at as created_at
+        FROM knowledge_items k
+        LEFT JOIN master_users u ON k.created_by = u.user_id
+        LEFT JOIN departments d ON k.department_id = d.department_id
+        ORDER BY k.updated_at DESC
+        LIMIT 8
+      `
+      : `
+        SELECT 
+          k.knowledge_id as activity_id,
+          k.created_by as actor_user_id,
+          COALESCE(u.first_name || ' ' || u.last_name, 'เจ้าหน้าที่') as actor_name,
+          'update' as action_type,
+          k.content_type as target_type,
+          k.knowledge_id as target_id,
+          k.department_id,
+          d.name as department_name,
+          k.title as title_snapshot,
+          k.updated_at as created_at
+        FROM knowledge_items k
+        LEFT JOIN master_users u ON k.created_by = u.user_id
+        LEFT JOIN departments d ON k.department_id = d.department_id
+        WHERE k.department_id = ? OR k.created_by = ?
+        ORDER BY k.updated_at DESC
+        LIMIT 8
+      `;
+
+    recent_activities = (isAdmin
+      ? db.prepare(recentKnowledgeQuery).all()
+      : db.prepare(recentKnowledgeQuery).all(user.department_id, user.user_id)) as RecentActivityItem[];
+  }
 
   // 6. Auto-resolve any Knowledge Gaps that already have a published knowledge item
   try {

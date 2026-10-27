@@ -371,7 +371,8 @@ export class KnowledgeModel {
     const targetDeptId = session.role === 'administrator' 
       ? (data.department_id || session.department_id) 
       : session.department_id;
-    const targetSubDeptId = data.sub_department_id || session.sub_department_id;
+    const rawSubDept = data.sub_department_id || session.sub_department_id;
+    const targetSubDeptId = (rawSubDept && rawSubDept.trim() !== '') ? rawSubDept.trim() : null;
 
     const todayNum = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randNum = Math.floor(100 + Math.random() * 900);
@@ -383,7 +384,7 @@ export class KnowledgeModel {
     // 1. Supabase
     if (isSupabaseConfigured()) {
       try {
-        await supabaseAdmin.from('knowledge_items').insert({
+        const { error: sbInsertErr } = await supabaseAdmin.from('knowledge_items').insert({
           knowledge_id: knowledgeId,
           content_type: data.content_type,
           title: data.title.trim(),
@@ -405,6 +406,10 @@ export class KnowledgeModel {
           updated_at: now,
           published_at: status === 'published' ? now : null
         });
+
+        if (sbInsertErr) {
+          console.warn('Supabase knowledge insert error:', sbInsertErr);
+        }
 
         await supabaseAdmin.from('knowledge_version_history').insert({
           version_id: 'ver-' + crypto.randomUUID(),
@@ -535,9 +540,8 @@ export class KnowledgeModel {
     data: Partial<CreateKnowledgeData>,
     session: SessionUser
   ): Promise<boolean> {
-    const db = getDb();
-    const existing = db.prepare('SELECT * FROM knowledge_items WHERE knowledge_id = ?').get(knowledgeId) as any;
-
+    // 1. Fetch existing item across Supabase and SQLite
+    const existing = await this.findKnowledgeById(knowledgeId, session);
     if (!existing) {
       throw new Error('NOT_FOUND');
     }
@@ -549,20 +553,25 @@ export class KnowledgeModel {
     }
 
     const now = new Date().toISOString();
-    const tagArray = Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : JSON.parse(existing.tags || '[]'));
+    const tagArray = Array.isArray(data.tags) 
+      ? data.tags 
+      : (data.tags ? [data.tags] : (Array.isArray(existing.tags) ? existing.tags : []));
     const targetDeptId = isAdmin && data.department_id ? data.department_id : existing.department_id;
-    const targetSubDeptId = data.sub_department_id || existing.sub_department_id;
+    const rawSubDept = data.sub_department_id !== undefined ? data.sub_department_id : existing.sub_department_id;
+    const targetSubDeptId = (rawSubDept && rawSubDept.trim() !== '') ? rawSubDept.trim() : null;
     const updatedTitle = data.title ? data.title.trim() : existing.title;
     const updatedSummary = data.summary ? data.summary.trim() : existing.summary;
     const updatedContent = data.content ? data.content.trim() : existing.content;
     const updatedType = data.content_type || existing.content_type;
     const updatedStatus = data.status || existing.status;
-    const updatedAi = data.ai_retrieval_enabled !== undefined ? (data.ai_retrieval_enabled ? 1 : 0) : existing.ai_retrieval_enabled;
+    const updatedAi = data.ai_retrieval_enabled !== undefined 
+      ? (data.ai_retrieval_enabled ? 1 : 0) 
+      : (existing.ai_retrieval_enabled ? 1 : 0);
 
     // 1. Supabase
     if (isSupabaseConfigured()) {
       try {
-        await supabaseAdmin.from('knowledge_items').update({
+        const { error: sbUpdateErr } = await supabaseAdmin.from('knowledge_items').update({
           content_type: updatedType,
           title: updatedTitle,
           summary: updatedSummary,
@@ -577,6 +586,10 @@ export class KnowledgeModel {
           updated_by: session.user_id,
           updated_at: now
         }).eq('knowledge_id', knowledgeId);
+
+        if (sbUpdateErr) {
+          console.warn('Supabase knowledge update error:', sbUpdateErr);
+        }
 
         await supabaseAdmin.from('knowledge_version_history').insert({
           version_id: 'ver-' + crypto.randomUUID(),
@@ -609,79 +622,114 @@ export class KnowledgeModel {
       }
     }
 
-    // 2. SQLite
-    db.prepare(`
-      UPDATE knowledge_items SET
-        content_type = ?,
-        title = ?,
-        summary = ?,
-        content = ?,
-        department_id = ?,
-        sub_department_id = ?,
-        tags = ?,
-        status = ?,
-        effective_date = ?,
-        expiry_date = ?,
-        ai_retrieval_enabled = ?,
-        updated_by = ?,
-        updated_at = ?
-      WHERE knowledge_id = ?
-    `).run(
-      updatedType,
-      updatedTitle,
-      updatedSummary,
-      updatedContent,
-      targetDeptId,
-      targetSubDeptId,
-      JSON.stringify(tagArray),
-      updatedStatus,
-      data.effective_date !== undefined ? data.effective_date : existing.effective_date,
-      data.expiry_date !== undefined ? data.expiry_date : existing.expiry_date,
-      updatedAi,
-      session.user_id,
-      now,
-      knowledgeId
-    );
+    // 2. SQLite (Sync / Update)
+    try {
+      const db = getDb();
+      const sqliteExists = db.prepare('SELECT knowledge_id FROM knowledge_items WHERE knowledge_id = ?').get(knowledgeId);
 
-    // Record version history snapshot
-    const currentVersionCount = (db.prepare('SELECT COUNT(*) as c FROM knowledge_version_history WHERE knowledge_id = ?').get(knowledgeId) as any)?.c || 1;
-    db.prepare(`
-      INSERT INTO knowledge_version_history (
-        version_id, knowledge_id, version_no, title_snapshot, summary_snapshot,
-        content_snapshot, tags_snapshot, edited_by, edited_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      'ver-' + crypto.randomUUID(),
-      knowledgeId,
-      currentVersionCount + 1,
-      updatedTitle,
-      updatedSummary,
-      updatedContent,
-      JSON.stringify(tagArray),
-      session.user_id,
-      now
-    );
-
-    if (Array.isArray(data.attachments) && data.attachments.length > 0) {
-      db.prepare('DELETE FROM knowledge_attachments WHERE knowledge_id = ?').run(knowledgeId);
-      for (const att of data.attachments) {
+      if (sqliteExists) {
         db.prepare(`
-          INSERT INTO knowledge_attachments (
-            attachment_id, knowledge_id, file_name, file_url, file_type, file_size_kb, uploaded_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          UPDATE knowledge_items SET
+            content_type = ?,
+            title = ?,
+            summary = ?,
+            content = ?,
+            department_id = ?,
+            sub_department_id = ?,
+            tags = ?,
+            status = ?,
+            effective_date = ?,
+            expiry_date = ?,
+            ai_retrieval_enabled = ?,
+            updated_by = ?,
+            updated_at = ?
+          WHERE knowledge_id = ?
         `).run(
-          'att-' + crypto.randomUUID(),
+          updatedType,
+          updatedTitle,
+          updatedSummary,
+          updatedContent,
+          targetDeptId,
+          targetSubDeptId,
+          JSON.stringify(tagArray),
+          updatedStatus,
+          data.effective_date !== undefined ? data.effective_date : existing.effective_date,
+          data.expiry_date !== undefined ? data.expiry_date : existing.expiry_date,
+          updatedAi,
+          session.user_id,
+          now,
+          knowledgeId
+        );
+      } else {
+        db.prepare(`
+          INSERT INTO knowledge_items (
+            knowledge_id, content_type, title, summary, content, department_id, sub_department_id,
+            tags, status, effective_date, expiry_date, ai_retrieval_enabled, view_count, ai_reference_count,
+            sync_status, created_by, updated_by, created_at, updated_at, published_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'synced', ?, ?, ?, ?, ?)
+        `).run(
           knowledgeId,
-          att.file_name || 'attachment.pdf',
-          att.file_url || '',
-          att.file_type || 'pdf',
-          att.file_size_kb || 100,
-          now
+          updatedType,
+          updatedTitle,
+          updatedSummary,
+          updatedContent,
+          targetDeptId,
+          targetSubDeptId,
+          JSON.stringify(tagArray),
+          updatedStatus,
+          data.effective_date !== undefined ? data.effective_date : existing.effective_date,
+          data.expiry_date !== undefined ? data.expiry_date : existing.expiry_date,
+          updatedAi,
+          session.user_id,
+          session.user_id,
+          existing.created_at || now,
+          now,
+          updatedStatus === 'published' ? now : null
         );
       }
-    }
 
-    db.prepare('DELETE FROM dashboard_summary_cache').run();
+      // Record version history snapshot
+      const currentVersionCount = (db.prepare('SELECT COUNT(*) as c FROM knowledge_version_history WHERE knowledge_id = ?').get(knowledgeId) as any)?.c || 1;
+      db.prepare(`
+        INSERT INTO knowledge_version_history (
+          version_id, knowledge_id, version_no, title_snapshot, summary_snapshot,
+          content_snapshot, tags_snapshot, edited_by, edited_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        'ver-' + crypto.randomUUID(),
+        knowledgeId,
+        currentVersionCount + 1,
+        updatedTitle,
+        updatedSummary,
+        updatedContent,
+        JSON.stringify(tagArray),
+        session.user_id,
+        now
+      );
+
+      if (Array.isArray(data.attachments) && data.attachments.length > 0) {
+        db.prepare('DELETE FROM knowledge_attachments WHERE knowledge_id = ?').run(knowledgeId);
+        for (const att of data.attachments) {
+          db.prepare(`
+            INSERT INTO knowledge_attachments (
+              attachment_id, knowledge_id, file_name, file_url, file_type, file_size_kb, uploaded_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            'att-' + crypto.randomUUID(),
+            knowledgeId,
+            att.file_name || 'attachment.pdf',
+            att.file_url || '',
+            att.file_type || 'pdf',
+            att.file_size_kb || 100,
+            now
+          );
+        }
+      }
+
+      db.prepare('DELETE FROM dashboard_summary_cache').run();
+    } catch (dbErr) {
+      console.warn('SQLite updateKnowledgeItem sync warning:', dbErr);
+    }
 
     return true;
   }
@@ -693,9 +741,7 @@ export class KnowledgeModel {
     knowledgeId: string,
     session: SessionUser
   ): Promise<{ action: 'deleted' | 'archived' }> {
-    const db = getDb();
-    const existing = db.prepare('SELECT * FROM knowledge_items WHERE knowledge_id = ?').get(knowledgeId) as any;
-
+    const existing = await this.findKnowledgeById(knowledgeId, session);
     if (!existing) {
       throw new Error('NOT_FOUND');
     }
@@ -714,13 +760,20 @@ export class KnowledgeModel {
           await supabaseAdmin.from('knowledge_attachments').delete().eq('knowledge_id', knowledgeId);
           await supabaseAdmin.from('knowledge_version_history').delete().eq('knowledge_id', knowledgeId);
           await supabaseAdmin.from('knowledge_items').delete().eq('knowledge_id', knowledgeId);
-        } catch {}
+        } catch (sbErr) {
+          console.warn('Supabase knowledge delete warning:', sbErr);
+        }
       }
 
-      db.prepare('DELETE FROM knowledge_attachments WHERE knowledge_id = ?').run(knowledgeId);
-      db.prepare('DELETE FROM knowledge_version_history WHERE knowledge_id = ?').run(knowledgeId);
-      db.prepare('DELETE FROM knowledge_items WHERE knowledge_id = ?').run(knowledgeId);
-      db.prepare('DELETE FROM dashboard_summary_cache').run();
+      try {
+        const db = getDb();
+        db.prepare('DELETE FROM knowledge_attachments WHERE knowledge_id = ?').run(knowledgeId);
+        db.prepare('DELETE FROM knowledge_version_history WHERE knowledge_id = ?').run(knowledgeId);
+        db.prepare('DELETE FROM knowledge_items WHERE knowledge_id = ?').run(knowledgeId);
+        db.prepare('DELETE FROM dashboard_summary_cache').run();
+      } catch (dbErr) {
+        console.warn('SQLite knowledge delete warning:', dbErr);
+      }
 
       return { action: 'deleted' };
     } else {
@@ -732,11 +785,18 @@ export class KnowledgeModel {
             status: 'archived',
             updated_at: now
           }).eq('knowledge_id', knowledgeId);
-        } catch {}
+        } catch (sbErr) {
+          console.warn('Supabase knowledge archive warning:', sbErr);
+        }
       }
 
-      db.prepare("UPDATE knowledge_items SET status = 'archived', updated_at = datetime('now', 'localtime') WHERE knowledge_id = ?").run(knowledgeId);
-      db.prepare('DELETE FROM dashboard_summary_cache').run();
+      try {
+        const db = getDb();
+        db.prepare("UPDATE knowledge_items SET status = 'archived', updated_at = datetime('now', 'localtime') WHERE knowledge_id = ?").run(knowledgeId);
+        db.prepare('DELETE FROM dashboard_summary_cache').run();
+      } catch (dbErr) {
+        console.warn('SQLite knowledge archive warning:', dbErr);
+      }
 
       return { action: 'archived' };
     }

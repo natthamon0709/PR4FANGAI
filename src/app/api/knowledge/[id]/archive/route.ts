@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
+import { KnowledgeModel } from '@/models/knowledge.model';
+import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
 import getDb from '@/lib/db';
 
 interface RouteParams {
@@ -13,9 +15,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
     }
 
-    const db = getDb();
     const knowledgeId = params.id;
-    const item = db.prepare('SELECT * FROM knowledge_items WHERE knowledge_id = ?').get(knowledgeId) as any;
+    const item = await KnowledgeModel.findKnowledgeById(knowledgeId, session);
 
     if (!item) {
       return NextResponse.json({ error: 'ไม่พบรายการนี้' }, { status: 404 });
@@ -28,14 +29,34 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const body = await req.json().catch(() => ({}));
     const newStatus = body.status === 'published' ? 'published' : 'archived';
+    const now = new Date().toISOString();
 
-    db.prepare(`
-      UPDATE knowledge_items 
-      SET status = ?, sync_status = 'pending', updated_at = datetime('now', 'localtime')
-      WHERE knowledge_id = ?
-    `).run(newStatus, knowledgeId);
+    // 1. Supabase
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseAdmin.from('knowledge_items').update({
+          status: newStatus,
+          sync_status: 'synced',
+          updated_at: now
+        }).eq('knowledge_id', knowledgeId);
+      } catch (err) {
+        console.warn('Supabase archive update warning:', err);
+      }
+    }
 
-    db.prepare('DELETE FROM dashboard_summary_cache').run();
+    // 2. SQLite
+    try {
+      const db = getDb();
+      db.prepare(`
+        UPDATE knowledge_items 
+        SET status = ?, sync_status = 'pending', updated_at = datetime('now', 'localtime')
+        WHERE knowledge_id = ?
+      `).run(newStatus, knowledgeId);
+
+      db.prepare('DELETE FROM dashboard_summary_cache').run();
+    } catch (err) {
+      console.warn('SQLite archive update warning:', err);
+    }
 
     return NextResponse.json({
       success: true,
@@ -45,6 +66,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         : 'เผยแพร่องค์ความรู้นี้อีกครั้งเรียบร้อยแล้ว'
     });
   } catch (error: any) {
+    if (error.message === 'NOT_FOUND') {
+      return NextResponse.json({ error: 'ไม่พบรายการนี้' }, { status: 404 });
+    }
+    if (error.message === 'FORBIDDEN_DEPARTMENT') {
+      return NextResponse.json({ error: 'ไม่มีสิทธิ์จัดการข้อมูลของฝ่ายอื่น' }, { status: 403 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
