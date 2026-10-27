@@ -270,10 +270,15 @@ export function cleanTextForSpeech(
       cleaned = cleaned.replace(/ยินดีครับ/g, 'ยินดีเจ้า');
       cleaned = cleaned.replace(/สุมาเต๊อะครับ/g, 'สุมาเต๊อะเจ้า');
       cleaned = cleaned.replace(/นะครับ/g, 'เน้อเจ้า');
-      cleaned = cleaned.replace(/ครับ(?=[ \n.,!?•]|$)/g, 'เจ้า');
+      cleaned = cleaned.replace(/นะคับ/g, 'เน้อเจ้า');
+      cleaned = cleaned.replace(/ครับผม/g, 'เจ้า');
+      cleaned = cleaned.replace(/(ครับ|คราฟ|ค้าบ|คับ)(?=[ \n.,!?•]|$)/g, 'เจ้า');
     } else {
+      cleaned = cleaned.replace(/(ไหม|มั้ย|หรือยัง|รึยัง|ได้ไหม|ได้มั้ย|อย่างไร|ยังไง|หรือเปล่า|รึเปล่า)\s*(ครับ|นะครับ|คับ|นะคับ)/g, '$1คะ');
       cleaned = cleaned.replace(/นะครับ/g, 'นะคะ');
-      cleaned = cleaned.replace(/ครับ(?=[ \n.,!?•]|$)/g, 'ค่ะ');
+      cleaned = cleaned.replace(/นะคับ/g, 'นะคะ');
+      cleaned = cleaned.replace(/ครับผม/g, 'ค่ะ');
+      cleaned = cleaned.replace(/(ครับ|คราฟ|ค้าบ|คับ)(?=[ \n.,!?•]|$)/g, 'ค่ะ');
       cleaned = cleaned.replace(/เน้อเจ้า/g, 'นะคะ');
       cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ค่ะ');
     }

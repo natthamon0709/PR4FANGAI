@@ -15,7 +15,7 @@ export async function GET() {
     let totalKnowledge = 0;
     try {
       const countRow = db.prepare(
-        "SELECT COUNT(*) as cnt FROM knowledge_items WHERE status = 'published' AND is_ai_retrievable = 1"
+        "SELECT COUNT(*) as cnt FROM knowledge_items WHERE status = 'published' AND ai_retrieval_enabled = 1"
       ).get() as { cnt: number } | undefined;
       totalKnowledge = countRow?.cnt || 0;
     } catch (e) {

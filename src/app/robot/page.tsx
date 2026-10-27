@@ -55,6 +55,9 @@ export default function RobotReceptionPage() {
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [hasSpoken, setHasSpoken] = useState(false);
+  const [micVolume, setMicVolume] = useState(0);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [robotStatus, setRobotStatus] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -75,6 +78,13 @@ export default function RobotReceptionPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const welcomeAudioUrlRef = useRef<string | null>(null);
+
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const hasSpokenRef = useRef<boolean>(false);
+  const silenceStartRef = useRef<number | null>(null);
 
   // สร้างข้อความต้อนรับตามเพศของเสียงหุ่นยนต์
   const getWelcomeText = useCallback((gender: 'female' | 'male') => {
@@ -91,6 +101,75 @@ export default function RobotReceptionPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  // เล่นเสียงตอบกลับอัตโนมัติ (คืนค่าว่าเล่นสำเร็จหรือไม่)
+  const playAudioReply = useCallback((url: string): Promise<boolean> => {
+    if (!url) return Promise.resolve(false);
+    return new Promise((resolve) => {
+      try {
+        if (currentAudioRef.current) {
+          currentAudioRef.current.pause();
+          currentAudioRef.current = null;
+        }
+        const audio = new Audio(url);
+        currentAudioRef.current = audio;
+        setRobotStatus('speaking');
+
+        audio.onended = () => {
+          setRobotStatus('idle');
+          resolve(true);
+        };
+        audio.onerror = () => {
+          setRobotStatus('idle');
+          resolve(false);
+        };
+
+        audio.play()
+          .then(() => {
+            setAutoplayBlocked(false);
+            resolve(true);
+          })
+          .catch((err) => {
+            console.log('Audio autoplay blocked by browser policy:', err);
+            setRobotStatus('idle');
+            resolve(false);
+          });
+      } catch (err) {
+        console.error('Play audio error:', err);
+        setRobotStatus('idle');
+        resolve(false);
+      }
+    });
+  }, []);
+
+  // ดึงและเล่นเสียงต้อนรับอัตโนมัติ (พร้อม fallback แตะหน้าจอเมื่อติด autoplay)
+  const playWelcomeAudio = useCallback(async (gender: 'female' | 'male') => {
+    try {
+      const res = await fetch(`/api/robot/welcome-audio?gender=${gender}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audioUrl) {
+          welcomeAudioUrlRef.current = data.audioUrl;
+          const played = await playAudioReply(data.audioUrl);
+          if (!played) {
+            setAutoplayBlocked(true);
+            const onFirstTouch = () => {
+              if (welcomeAudioUrlRef.current) {
+                playAudioReply(welcomeAudioUrlRef.current);
+              }
+              setAutoplayBlocked(false);
+              window.removeEventListener('pointerdown', onFirstTouch);
+            };
+            window.addEventListener('pointerdown', onFirstTouch, { once: true });
+          } else {
+            setAutoplayBlocked(false);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Welcome audio fetch warning:', e);
+    }
+  }, [playAudioReply]);
 
   // ตรวจสอบสถานะระบบ & โหลดการตั้งค่าเพศและบลูทูธ
   useEffect(() => {
@@ -119,6 +198,7 @@ export default function RobotReceptionPage() {
             publishedKnowledgeCount: data.publishedKnowledgeCount,
             provider: data.provider
           });
+          playWelcomeAudio(initialGender);
         } else {
           const initialGender = savedGender || 'female';
           setBotGender(initialGender);
@@ -130,6 +210,7 @@ export default function RobotReceptionPage() {
               timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
             }
           ]);
+          playWelcomeAudio(initialGender);
         }
       } catch (e) {
         console.error('Cannot check robot status:', e);
@@ -143,10 +224,11 @@ export default function RobotReceptionPage() {
             timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
           }
         ]);
+        playWelcomeAudio(initialGender);
       }
     }
     checkStatus();
-  }, [getWelcomeText]);
+  }, [getWelcomeText, playWelcomeAudio]);
 
   // สลับเพศเสียงของ Bot (หญิง/ชาย)
   const handleToggleGender = (newGender: 'female' | 'male') => {
@@ -164,36 +246,8 @@ export default function RobotReceptionPage() {
           : m
       )
     );
+    playWelcomeAudio(newGender);
   };
-
-  // เล่นเสียงตอบกลับอัตโนมัติ
-  const playAudioReply = useCallback((url: string) => {
-    if (!url) return;
-    try {
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current = null;
-      }
-      const audio = new Audio(url);
-      currentAudioRef.current = audio;
-      setRobotStatus('speaking');
-
-      audio.onended = () => {
-        setRobotStatus('idle');
-      };
-      audio.onerror = () => {
-        setRobotStatus('idle');
-      };
-
-      audio.play().catch((err) => {
-        console.log('Audio autoplay blocked or waiting for user interaction:', err);
-        setRobotStatus('idle');
-      });
-    } catch (err) {
-      console.error('Play audio error:', err);
-      setRobotStatus('idle');
-    }
-  }, []);
 
   // ส่งคำถามข้อความ
   const handleSend = async (questionToSend?: string) => {
@@ -283,7 +337,26 @@ export default function RobotReceptionPage() {
     }
   };
 
-  // เริ่มอัดเสียงพูด (Voice Recording)
+  // ล้าง AudioContext และ Timer ตรวจสอบความเงียบ
+  const cleanupAudioContext = () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch {}
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    hasSpokenRef.current = false;
+    silenceStartRef.current = null;
+    setHasSpoken(false);
+    setMicVolume(0);
+  };
+
+  // เริ่มอัดเสียงพูด (Voice Recording พร้อมตรวจจับความเงียบ 1.2 วินาทีแล้วส่งอัตโนมัติ)
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -291,6 +364,61 @@ export default function RobotReceptionPage() {
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
+
+      // AudioContext + Analyser สำหรับ Silence Detection (VAD)
+      try {
+        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtxClass) {
+          const audioCtx = new AudioCtxClass();
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.3;
+          source.connect(analyser);
+
+          audioContextRef.current = audioCtx;
+          analyserRef.current = analyser;
+          hasSpokenRef.current = false;
+          silenceStartRef.current = null;
+          setHasSpoken(false);
+          setMicVolume(0);
+
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          const checkVolume = () => {
+            if (!analyserRef.current) return;
+            analyserRef.current.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+              sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+            setMicVolume(Math.min(100, Math.round(average * 2)));
+
+            // เกณฑ์ความดัง: > 10 ถือว่ามีผู้ใช้กำลังพูด
+            if (average > 10) {
+              if (!hasSpokenRef.current) {
+                hasSpokenRef.current = true;
+                setHasSpoken(true);
+              }
+              silenceStartRef.current = null;
+            } else if (hasSpokenRef.current) {
+              // พูดไปแล้ว และเริ่มเงียบ
+              if (silenceStartRef.current === null) {
+                silenceStartRef.current = Date.now();
+              } else if (Date.now() - silenceStartRef.current >= 1200) {
+                // เงียบต่อเนื่อง 1.2 วินาที ตัดส่งคำถามอัตโนมัติทันที
+                stopRecording();
+                return;
+              }
+            }
+
+            animFrameRef.current = requestAnimationFrame(checkVolume);
+          };
+          animFrameRef.current = requestAnimationFrame(checkVolume);
+        }
+      } catch (vadErr) {
+        console.warn('VAD init warning:', vadErr);
+      }
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -300,6 +428,7 @@ export default function RobotReceptionPage() {
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach((track) => track.stop());
+        cleanupAudioContext();
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         await handleSendAudio(audioBlob, mimeType);
       };
@@ -309,7 +438,13 @@ export default function RobotReceptionPage() {
       setRobotStatus('listening');
       setRecordingSeconds(0);
       timerRef.current = setInterval(() => {
-        setRecordingSeconds((prev) => prev + 1);
+        setRecordingSeconds((prev) => {
+          if (prev >= 45) { // ป้องกันอัดค้างเกิน 45 วินาที
+            stopRecording();
+            return prev;
+          }
+          return prev + 1;
+        });
       }, 1000);
     } catch (err: any) {
       alert('ไม่สามารถเข้าถึงไมโครโฟนได้: ' + (err.message || 'กรุณาอนุญาตการใช้งานไมโครโฟนในเบราว์เซอร์'));
@@ -317,12 +452,13 @@ export default function RobotReceptionPage() {
     }
   };
 
-  // หยุดอัดเสียงพูด
+  // หยุดอัดเสียงพูด (ส่งคำถาม)
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
+      cleanupAudioContext();
     }
   };
 
@@ -787,6 +923,29 @@ export default function RobotReceptionPage() {
               </div>
             </div>
 
+            {/* Autoplay Alert Pill (Tap to unlock audio) */}
+            {autoplayBlocked && (
+              <div className="my-2.5 p-3 rounded-2xl bg-[#fff0ef] border-2 border-[#9b1008]/40 flex items-center justify-between gap-3 shadow-sm animate-bounce">
+                <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold text-[#9b1008]">
+                  <Volume2 className="w-4 h-4 flex-shrink-0 animate-ping" />
+                  <span>เบราว์เซอร์รอการเปิดเสียง: แตะที่นี่เพื่อฟังเสียงต้อนรับของหุ่นยนต์</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (welcomeAudioUrlRef.current) {
+                      playAudioReply(welcomeAudioUrlRef.current);
+                      setAutoplayBlocked(false);
+                    }
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#9b1008] text-white text-xs font-bold hover:bg-[#790b04] active:scale-95 transition-all shadow-xs flex items-center gap-1.5 flex-shrink-0"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>เปิดเสียงต้อนรับ</span>
+                </button>
+              </div>
+            )}
+
             {/* Quick Suggestions (Touch Friendly) */}
             <div className="my-3">
               <span className="text-[11px] font-semibold text-[#65736b] block mb-2">
@@ -1053,23 +1212,37 @@ export default function RobotReceptionPage() {
             {/* COMPOSE BAR (Touch & Voice Input) */}
             <div className="pt-3 border-t border-[#e6ebe7] mt-auto">
               {isRecording ? (
-                // Recording State Bar
-                <div className="flex items-center justify-between gap-3 p-3 bg-[#fff0ef] border-2 border-[#9b1008]/30 rounded-2xl animate-pulse shadow-sm">
-                  <div className="flex items-center gap-3 text-[#9b1008] font-bold text-xs sm:text-sm">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#9b1008] animate-ping" />
-                    <span>
-                      กำลังฟังเสียงพูดของคุณ... (0:{recordingSeconds < 10 ? '0' : ''}
-                      {recordingSeconds})
-                    </span>
+                // Recording State Bar พร้อม Silence Detection & Dynamic Voice Bar
+                <div className="p-3 bg-[#fff0ef] border-2 border-[#9b1008]/40 rounded-2xl shadow-sm space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 text-[#9b1008] font-bold text-xs sm:text-sm">
+                      <span className="w-3.5 h-3.5 rounded-full bg-[#9b1008] animate-ping flex-shrink-0" />
+                      <span>
+                        {hasSpoken
+                          ? 'กำลังฟัง... (จะส่งอัตโนมัติเมื่อหยุดพูด 1.2 วินาที)'
+                          : 'กำลังรอฟังเสียง... เริ่มพูดได้เลยค่ะ'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="h-9 px-4 rounded-xl bg-[#9b1008] text-white text-xs font-semibold flex items-center gap-1.5 hover:bg-[#790b04] transition-all shadow-sm active:scale-95 flex-shrink-0"
+                    >
+                      <span>ส่งทันที</span>
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={stopRecording}
-                    className="h-10 px-5 rounded-xl bg-[#9b1008] text-white text-xs sm:text-sm font-semibold flex items-center gap-2 hover:bg-[#790b04] transition-all shadow-sm active:scale-95"
-                  >
-                    <span>แตะเพื่อส่งเสียง</span>
-                    <Send className="w-4 h-4" />
-                  </button>
+                  {/* Dynamic Voice Activity Bar */}
+                  <div className="w-full h-1.5 bg-red-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#9b1008] transition-all duration-75 rounded-full"
+                      style={{ width: `${Math.max(6, Math.min(100, micVolume))}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-[#65736b]">
+                    <span>เวลาอัดเสียง: 0:{recordingSeconds < 10 ? '0' : ''}{recordingSeconds}</span>
+                    <span className="italic">ระบบตรวจจับความเงียบและส่งคำถามให้อัตโนมัติ</span>
+                  </div>
                 </div>
               ) : (
                 // Normal Input Form

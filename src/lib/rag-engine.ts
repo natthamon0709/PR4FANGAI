@@ -366,6 +366,7 @@ export interface QueryIntentAnalysis {
   isRuleQuery: boolean;
   isContactQuery: boolean;
   isMapQuery: boolean;
+  isScheduleQuery: boolean;
   matchedBranches: AcademicBranchEntity[];
   personName: string | null;
   rawTokens: string[];
@@ -380,21 +381,26 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
   const isRuleQuery = /แต่งกาย|ทรงผม|เนคไท|ตัดคะแนน|ลงโทษ|ทัณฑ์บน|ระเบียบ|เครื่องแบบ/i.test(cleanLow);
   const isContactQuery = /เบอร์โทร|โทรศัพท์|ติดต่อ|ติดต่อใคร|โทรหา|อู้กับไผ/i.test(cleanLow);
   const isMapQuery = /แผนผัง|ผัง|อาคาร|ห้อง|ตึก|แผนที่|ตี้ไหน|อยู่ตี้ใด/i.test(cleanLow);
+  const isScheduleQuery = /ตารางสอน|ตารางเรียน|ตารางนักเรียน|ตาราง|สอนวิชา|วิชาที่สอน|วิชาอะหยัง|วิชาอะไร|สอนห้อง|คาบสอน|รายวิชา|หลักสูตร/i.test(cleanLow);
 
   // 2. Branch Matching
   const matchedBranches = ACADEMIC_BRANCHES.filter(b => 
     b.aliases.some(alias => cleanLow.includes(alias.toLowerCase()))
   );
 
-  // 3. Person Name Extraction (only if teacher/person related query)
+  // 3. Person Name Extraction (only if teacher/person/schedule related query)
   let personName: string | null = null;
-  if (isTeacherQuery || /^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i.test(clean)) {
-    const strippedPerson = clean
-      .replace(/^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/i, '')
-      .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร|อยู่ตี้ไหน|อยู่ตี้ใด|มีไผพ่อง|มีไผ|คือไผ|สอนอะหยัง)$/i, '')
+  if (isTeacherQuery || isScheduleQuery || /^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์|ตารางสอนของ|ตารางสอน|ตารางเรียนของ|ตารางเรียน|ข้อมูลของ)\s*/i.test(clean)) {
+    let stripped = clean
+      .replace(/^(ตารางสอนของ|ตารางสอน|ตารางเรียนของ|ตารางเรียน|ข้อมูลของ|รายชื่อของ|ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/gi, '')
+      .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร|อยู่ตี้ไหน|อยู่ตี้ใด|มีไผพ่อง|มีไผ|คือไผ|สอนอะหยัง|สอนวิชาอะไรบ้าง|สอนวิชาอะไร|สอนวิชาอะหยังพ่อง|สอนวิชาอะหยัง|วิชาอะไร|วิชาอะหยัง|สอนวิชา|บ้าง|พ่อง|คับ|ครับ|ค่ะ|คะ|เจ้า|เน้อครับ|เน้อเจ้า|เน้อ|นะครับ|นะคะ)$/gi, '')
       .trim();
-    if (strippedPerson.length >= 3 && strippedPerson.length <= 40) {
-      personName = strippedPerson.toLowerCase();
+    // Second pass in case suffixes were chained e.g. "สอนวิชาอะหยังพ่องคับ" -> "สอนวิชาอะหยัง" -> ""
+    stripped = stripped
+      .replace(/(สอนวิชาอะไรบ้าง|สอนวิชาอะไร|สอนวิชาอะหยังพ่อง|สอนวิชาอะหยัง|สอนอะไร|สอนอะหยัง|วิชาอะไร|วิชาอะหยัง|สอนวิชา|บ้าง|พ่อง|คับ|ครับ|ค่ะ|คะ|เจ้า|เน้อครับ|เน้อเจ้า|เน้อ|นะครับ|นะคะ)$/gi, '')
+      .trim();
+    if (stripped.length >= 3 && stripped.length <= 40) {
+      personName = stripped.toLowerCase();
     }
   }
 
@@ -410,6 +416,7 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
     isRuleQuery,
     isContactQuery,
     isMapQuery,
+    isScheduleQuery,
     matchedBranches,
     personName,
     rawTokens
@@ -709,6 +716,16 @@ export async function searchKnowledgeBase(
       }
     }
 
+    // Schedule / Subjects / Department Course Boost
+    if (qAnalysis.isScheduleQuery) {
+      if (/ตาราง|หลักสูตร|วิชา/i.test(titleLow)) {
+        score += 80.0;
+      }
+      if (/ตารางสอน|ตารางเรียน|รายวิชา|วิชา/i.test(contentLow)) {
+        score += 40.0;
+      }
+    }
+
     // Direct tag match for any token or person in query
     let parsedTags: string[] = [];
     try {
@@ -876,13 +893,11 @@ export function enforceGenderPersonaInText(
       cleaned = cleaned.replace(/นะครับ/g, 'เน้อเจ้า');
       cleaned = cleaned.replace(/นะคับ/g, 'เน้อเจ้า');
       cleaned = cleaned.replace(/ครับผม/g, 'เจ้า');
-      cleaned = cleaned.replace(/ครับ/g, 'เจ้า');
-      cleaned = cleaned.replace(/คับ(?=[ \n.,!?•]|$)/g, 'เจ้า');
+      cleaned = cleaned.replace(/(ครับ|คราฟ|ค้าบ|คับ)(?=[ \n.,!?•]|$)/g, 'เจ้า');
     } else {
       // ภาษากลางเพศหญิง: ใช้ ค่ะ, คะ, นะคะ ห้ามใช้ ครับ, นะครับ, คับ
       // ประโยคคำถามที่ลงท้ายด้วย ครับ -> คะ (เช่น มีอะไรให้ช่วยไหมครับ -> มีอะไรให้ช่วยไหมคะ)
-      cleaned = cleaned.replace(/(ไหม|มั้ย|หรือยัง|รึยัง|ได้ไหม|ได้มั้ย|อย่างไร|ยังไง|หรือเปล่า|รึเปล่า)\s*ครับ/g, '$1คะ');
-      cleaned = cleaned.replace(/(ไหม|มั้ย|หรือยัง|รึยัง|ได้ไหม|ได้มั้ย|อย่างไร|ยังไง|หรือเปล่า|รึเปล่า)\s*นะครับ/g, '$1นะคะ');
+      cleaned = cleaned.replace(/(ไหม|มั้ย|หรือยัง|รึยัง|ได้ไหม|ได้มั้ย|อย่างไร|ยังไง|หรือเปล่า|รึเปล่า)\s*(ครับ|นะครับ|คับ|นะคับ)/g, '$1คะ');
       cleaned = cleaned.replace(/นะครับ/g, 'นะคะ');
       cleaned = cleaned.replace(/นะคับ/g, 'นะคะ');
       cleaned = cleaned.replace(/ครับผม/g, 'ค่ะ');
@@ -892,8 +907,7 @@ export function enforceGenderPersonaInText(
       cleaned = cleaned.replace(/เน้อครับ/g, 'นะคะ');
       cleaned = cleaned.replace(/เน้อเจ้า/g, 'นะคะ');
       cleaned = cleaned.replace(/เจ้า(?=[ \n.,!?•]|$)/g, 'ค่ะ');
-      cleaned = cleaned.replace(/ครับ/g, 'ค่ะ');
-      cleaned = cleaned.replace(/คับ(?=[ \n.,!?•]|$)/g, 'ค่ะ');
+      cleaned = cleaned.replace(/(ครับ|คราฟ|ค้าบ|คับ)(?=[ \n.,!?•]|$)/g, 'ค่ะ');
     }
   } else {
     // เพศชาย: ใช้ ครับ, นะครับ, เน้อครับ ห้ามใช้ ค่ะ, คะ, นะคะ, เจ้า
@@ -979,7 +993,8 @@ async function generateGroundedAnswer(
 ): Promise<string> {
   const decryptedKey = decryptApiKey(config.api_key_encrypted || '');
   const primarySource = sources[0];
-  const isWeatherQuery = question.includes('อากาศ') || (primarySource && (primarySource.title?.includes('อากาศ') || primarySource.content?.includes('อากาศ')));
+  const isWeatherQuery = /(สภาพอากาศ|พยากรณ์อากาศ|อากาศวันนี้|อากาศที่ฝาง|ฝนตกไหม|อุณหภูมิ)/i.test(question) ||
+    (question.includes('อากาศ') && !question.includes('เมฆอากาศ') && !/(ครู|อาจารย์|สอน|ตาราง|วิชา|แผนก|สาขา)/i.test(question));
   const isDialect = config.voice_dialect_mode === 'always_kham_mueang' || 
     (config.voice_dialect_mode !== 'always_central' && (isDialectInput || detectNorthernDialect(question)));
 
@@ -1064,15 +1079,16 @@ ${isDialect
       };
 
       // Map official Google Gemini models resiliently (prioritizing active models with available quota)
-      const primaryModel = config.model_name || 'gemini-3.1-flash-lite';
+      const primaryModel = config.model_name || 'gemini-2.5-flash';
       const candidateModels = Array.from(new Set([
         primaryModel,
-        'gemini-3.1-flash-lite',
-        'gemini-3.5-flash-lite',
-        'gemini-flash-lite-latest',
-        'gemini-3.8-flash',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+        'gemini-flash-latest',
         'gemini-3.6-flash',
-        'gemini-flash-latest'
+        'gemini-3.1-flash-lite'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -1193,8 +1209,8 @@ ${isDialect
     }
   }
 
-  // Check if primarySource is a Teacher/Personnel list and user asked about teachers
-  if ((qAnalysis.isTeacherQuery || primarySource.title?.includes('รายชื่อครู')) && primarySource.content) {
+  // Check if primarySource is a Teacher/Personnel/Schedule list and user asked about teachers or schedules
+  if ((qAnalysis.isTeacherQuery || qAnalysis.isScheduleQuery || primarySource.title?.includes('รายชื่อครู')) && primarySource.content) {
     const mainBody = primarySource.content.split(/###\s*คำถามที่พบบ่อย/i)[0] || primarySource.content;
     const lines = mainBody.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const formattedRoster: string[] = [];
@@ -1209,7 +1225,42 @@ ${isDialect
       }
     }
 
-    if (formattedRoster.length > 0) {
+    let teacherSpecificFound = false;
+    if (qAnalysis.personName && qAnalysis.personName.length >= 3) {
+      const pLow = qAnalysis.personName.toLowerCase();
+      const teacherSpecificLines: string[] = [];
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].toLowerCase().includes(pLow)) {
+          let role = 'ครูประจำสาขาวิชา';
+          for (let j = i; j >= Math.max(0, i - 6); j--) {
+            if (/^(หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้าสาขาวิชา|ครูประจำสาขาวิชา|คณะผู้บริหาร|ผู้อำนวยการ|รองผู้อำนวยการ)$/i.test(lines[j])) {
+              role = lines[j];
+              break;
+            }
+          }
+          teacherSpecificLines.push(`• ${lines[i]} (ตำแหน่ง: ${role})`);
+          // Append any following lines before the next teacher or header
+          for (let k = i + 1; k < Math.min(lines.length, i + 8); k++) {
+            if (/^(หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้าสาขาวิชา|ครูประจำสาขาวิชา|###)/i.test(lines[k])) break;
+            if (lines[k].startsWith('นาย') || lines[k].startsWith('นาง') || lines[k].startsWith('ว่าที่')) break;
+            teacherSpecificLines.push(`  ${lines[k]}`);
+          }
+          teacherSpecificFound = true;
+          break;
+        }
+      }
+
+      if (teacherSpecificFound && teacherSpecificLines.length > 0) {
+        const isMale = config.voice_gender === 'male';
+        const introParticle = isDialect
+          ? (isMale ? 'มีข้อมูลดังนี้เน้อครับ:' : 'มีข้อมูลดังนี้เน้อเจ้า:')
+          : (isMale ? 'มีข้อมูลดังนี้ครับ:' : 'มีข้อมูลดังนี้ค่ะ:');
+        const deptClean = primarySource.title.replace(/^รายชื่อครูและบุคลากร/i, '').replace(/^รายชื่อครูบุคลากร/i, '').trim();
+        answerBody = `ข้อมูลสำหรับ ${deptClean} วิทยาลัยการอาชีพฝาง ${introParticle}\n\n` + teacherSpecificLines.join('\n');
+      }
+    }
+
+    if (!teacherSpecificFound && formattedRoster.length > 0) {
       const isMale = config.voice_gender === 'male';
       const introParticle = isDialect
         ? (isMale ? 'มีจิ่มนี้เน้อครับ:' : 'มีจิ่มนี้เน้อเจ้า:')
@@ -1419,13 +1470,14 @@ export async function transcribeAndProcessAudio(
     };
 
     const candidateModels = Array.from(new Set([
-      config.model_name || 'gemini-3.1-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-3.5-flash-lite',
-      'gemini-flash-lite-latest',
-      'gemini-3.8-flash',
+      config.model_name || 'gemini-2.5-flash',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-flash-latest',
       'gemini-3.6-flash',
-      'gemini-flash-latest'
+      'gemini-3.1-flash-lite'
     ])).filter(Boolean);
 
     for (const modelId of candidateModels) {
