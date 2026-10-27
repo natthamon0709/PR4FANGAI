@@ -1246,7 +1246,7 @@ ${isDialect
   if ((qAnalysis.isTeacherQuery || qAnalysis.isScheduleQuery || primarySource.title?.includes('รายชื่อครู') || primarySource.title?.includes('ตารางสอน')) && primarySource.content) {
     const mainBody = primarySource.content.split(/###\s*คำถามที่พบบ่อย/i)[0] || primarySource.content;
     const normalizedBody = mainBody
-      .replace(/(\d+[\.\)]\s*(?:ว่าที่|นาย|นางสาว|นาง|ครู|อาจารย์))/g, '\n$1\n')
+      .replace(/(\d+[\.\)]\s*(?:ว่าที่\s*(?:ร้อยตรีหญิง|ร้อยตรี|ร\.ต\.\s*หญิง|ร\.ต\.)|นาย|นางสาว|นาง|ครู|อาจารย์))/g, '\n$1')
       .replace(/((?:วันจันทร์|วันอังคาร|วันพุธ|วันพฤหัสบดี|วันศุกร์):)/g, '\n  • $1 ');
     const lines = normalizedBody.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const formattedRoster: string[] = [];
@@ -1274,7 +1274,8 @@ ${isDialect
               break;
             }
           }
-          teacherSpecificLines.push(`• ${lines[i]} (ตำแหน่ง: ${role})`);
+          const cleanLine = lines[i].replace(/^\d+[\.\)]\s*/, '');
+          teacherSpecificLines.push(`• ${cleanLine} (ตำแหน่ง: ${role})`);
           // Append any following lines before the next teacher, role header, or FAQ section
           for (let k = i + 1; k < lines.length; k++) {
             const nextLine = lines[k];

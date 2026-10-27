@@ -4,6 +4,11 @@ import crypto from 'crypto';
 import os from 'os';
 import { execFile } from 'child_process';
 import { uploadToStorage, isSupabaseConfigured } from './supabase';
+import {
+  generateSecMsGecV2,
+  EDGE_TTS_TRUSTED_CLIENT_TOKEN,
+  EDGE_TTS_SEC_MS_GEC_VERSION
+} from './edge-drm';
 
 export interface TTSOptions {
   text: string;
@@ -555,10 +560,10 @@ async function synthesizeViaEdgeTts(
     try {
       const connId = crypto.randomUUID().replace(/-/g, '');
       const reqId = crypto.randomUUID().replace(/-/g, '');
-      const gec = getEdgeSecMsGec();
+      const gec = generateSecMsGecV2();
       const muid = crypto.randomBytes(16).toString('hex').toUpperCase();
 
-      const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TRUSTED_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=1-143.0.3650.75&ConnectionId=${connId}`;
+      const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TTS_TRUSTED_CLIENT_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${EDGE_TTS_SEC_MS_GEC_VERSION}&ConnectionId=${connId}`;
 
       const ws = new globalThis.WebSocket(wsUrl, {
         headers: {

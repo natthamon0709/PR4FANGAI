@@ -857,7 +857,7 @@ export default function RobotReceptionPage() {
                 </span>
               </div>
               <h2 className="font-heading font-extrabold text-xl text-[#1c2a25] tracking-tight">
-                สวัสดีเจ้า 👋
+                {botGender === 'female' ? 'สวัสดีเจ้า 👋' : 'สวัสดีครับ 👋'}
               </h2>
               <p className="text-center text-xs text-[#718078] leading-relaxed mt-2 mb-4">
                 ถามข้อมูลวิทยาลัยได้เลย<br />
