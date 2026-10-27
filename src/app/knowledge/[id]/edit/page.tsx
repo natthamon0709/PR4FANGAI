@@ -22,9 +22,9 @@ export default function EditKnowledgePage() {
     async function loadMetaAndItem() {
       try {
         const [authRes, deptRes, itemRes] = await Promise.all([
-          fetch('/api/auth/me'),
-          fetch('/api/departments'),
-          fetch(`/api/knowledge/${knowledgeId}`),
+          fetch('/api/auth/me', { cache: 'no-store' }),
+          fetch('/api/departments', { cache: 'no-store' }),
+          fetch(`/api/knowledge/${knowledgeId}`, { cache: 'no-store' }),
         ]);
 
         if (!authRes.ok) {

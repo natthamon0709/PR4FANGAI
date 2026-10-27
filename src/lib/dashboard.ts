@@ -24,22 +24,24 @@ export async function getDashboardSummary(
   const scope = isAdmin ? 'global' : 'department';
   const deptId = isAdmin ? null : user.department_id;
 
-  // 1. Check Cache Validity
+  // 1. Check Cache Validity (When using Supabase, always query live in real-time)
   let isCached = false;
   let cacheTime = new Date().toISOString();
 
-  const latestCache = db.prepare(`
-    SELECT calculated_at FROM dashboard_summary_cache
-    WHERE scope = ? AND (department_id = ? OR (department_id IS NULL AND ? IS NULL))
-    ORDER BY calculated_at DESC LIMIT 1
-  `).get(scope, deptId, deptId) as { calculated_at: string } | undefined;
+  if (!isSupabaseConfigured() && !forceRefresh) {
+    const latestCache = db.prepare(`
+      SELECT calculated_at FROM dashboard_summary_cache
+      WHERE scope = ? AND (department_id = ? OR (department_id IS NULL AND ? IS NULL))
+      ORDER BY calculated_at DESC LIMIT 1
+    `).get(scope, deptId, deptId) as { calculated_at: string } | undefined;
 
-  if (latestCache && !forceRefresh) {
-    const cachedAt = new Date(latestCache.calculated_at).getTime();
-    const ageMinutes = (Date.now() - cachedAt) / (1000 * 60);
-    if (ageMinutes < CACHE_TTL_MINUTES) {
-      isCached = true;
-      cacheTime = latestCache.calculated_at;
+    if (latestCache) {
+      const cachedAt = new Date(latestCache.calculated_at).getTime();
+      const ageMinutes = (Date.now() - cachedAt) / (1000 * 60);
+      if (ageMinutes < CACHE_TTL_MINUTES) {
+        isCached = true;
+        cacheTime = latestCache.calculated_at;
+      }
     }
   }
 

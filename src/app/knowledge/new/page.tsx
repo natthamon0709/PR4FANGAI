@@ -20,8 +20,8 @@ function NewKnowledgeContent() {
     async function loadMeta() {
       try {
         const [authRes, deptRes] = await Promise.all([
-          fetch('/api/auth/me'),
-          fetch('/api/departments'),
+          fetch('/api/auth/me', { cache: 'no-store' }),
+          fetch('/api/departments', { cache: 'no-store' }),
         ]);
 
         if (!authRes.ok) {
@@ -66,8 +66,10 @@ function NewKnowledgeContent() {
         initialData={{
           title: prefilledTitle,
           content_type: 'regulation',
-          department_id: currentUser.role === 'administrator' ? departments[0]?.department_id : currentUser.department_id,
-          sub_department_id: currentUser.sub_department_id,
+          department_id: currentUser.role === 'administrator' ? (departments[0]?.department_id || currentUser.department_id) : currentUser.department_id,
+          sub_department_id: currentUser.role === 'administrator' 
+            ? (subDepartments.find(s => s.department_id === (departments[0]?.department_id || currentUser.department_id))?.sub_department_id || currentUser.sub_department_id)
+            : currentUser.sub_department_id,
         }}
         departments={departments}
         subDepartments={subDepartments}

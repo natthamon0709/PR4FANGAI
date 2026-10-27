@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
 import { getDashboardSummary } from '@/lib/dashboard';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getSessionFromRequest(req);

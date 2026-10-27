@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ContentType, KnowledgeStatus, KnowledgeAttachment, KnowledgeItem } from '@/types/knowledge';
 import { Department, SubDepartment, SessionUser } from '@/types';
@@ -66,6 +66,18 @@ export default function KnowledgeFormPanel({
 
   // Sub-departments of selected dept
   const filteredSubDepts = subDepartments.filter((s) => s.department_id === departmentId);
+
+  // Auto-sync subDepartmentId whenever departmentId or subDepartments change
+  useEffect(() => {
+    if (filteredSubDepts.length > 0) {
+      const match = filteredSubDepts.some((s) => s.sub_department_id === subDepartmentId);
+      if (!match) {
+        setSubDepartmentId(filteredSubDepts[0].sub_department_id);
+      }
+    } else {
+      setSubDepartmentId('');
+    }
+  }, [departmentId, filteredSubDepts, subDepartmentId]);
 
   const handleSubmit = async (submitStatus: KnowledgeStatus) => {
     if (!title.trim()) {
@@ -304,11 +316,15 @@ export default function KnowledgeFormPanel({
                 onChange={(e) => setSubDepartmentId(e.target.value)}
                 className="w-full h-10 px-3 rounded-xl border border-outline bg-surface text-xs text-onSurface outline-none cursor-pointer"
               >
-                {filteredSubDepts.map((s) => (
-                  <option key={s.sub_department_id} value={s.sub_department_id}>
-                    {s.name}
-                  </option>
-                ))}
+                {filteredSubDepts.length === 0 ? (
+                  <option value="">-- ไม่พบข้อมูลแผนกย่อย / ทั่วไป --</option>
+                ) : (
+                  filteredSubDepts.map((s) => (
+                    <option key={s.sub_department_id} value={s.sub_department_id}>
+                      {s.name} ({s.code || s.sub_department_id})
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>

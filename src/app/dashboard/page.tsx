@@ -41,7 +41,7 @@ export default function DashboardPage() {
     if (isRefresh) setRefreshing(true);
     try {
       // 1. Get Me
-      const authRes = await fetch('/api/auth/me');
+      const authRes = await fetch('/api/auth/me', { cache: 'no-store' });
       if (!authRes.ok) {
         router.push('/login');
         return;
@@ -52,7 +52,7 @@ export default function DashboardPage() {
       // 2. Get Dashboard Summary (or Refresh)
       const url = isRefresh ? '/api/dashboard/refresh' : '/api/dashboard/summary';
       const method = isRefresh ? 'POST' : 'GET';
-      const summaryRes = await fetch(url, { method });
+      const summaryRes = await fetch(url, { method, cache: 'no-store' });
 
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
