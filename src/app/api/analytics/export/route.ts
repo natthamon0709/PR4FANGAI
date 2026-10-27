@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       ];
 
       if (categories.includes('usage')) {
-        const usage = getUsageAnalytics(filter, deptId, isAdmin);
+        const usage = await getUsageAnalytics(filter, deptId, isAdmin);
         lines.push('"=== หมวดที่ 1: รายงานการใช้งานระบบ (System Usage) ==="');
         lines.push('"ตัวชี้วัด (KPI)", "ค่าสถิติ", "หน่วย"');
         usage.kpis.forEach(k => {
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (categories.includes('ai')) {
-        const ai = getAiPerformanceAnalytics(filter, deptId, isAdmin);
+        const ai = await getAiPerformanceAnalytics(filter, deptId, isAdmin);
         lines.push('"=== หมวดที่ 3: รายงานประสิทธิภาพ AI Engine & RAG ==="');
         lines.push('"ตัวชี้วัด (KPI)", "ค่าสถิติ", "หน่วย"');
         ai.kpis.forEach(k => {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (categories.includes('line')) {
-        const line = getLineAnalytics(filter, deptId, isAdmin);
+        const line = await getLineAnalytics(filter, deptId, isAdmin);
         lines.push('"=== หมวดที่ 4: รายงาน LINE Official Account ==="');
         lines.push('"ตัวชี้วัด (KPI)", "ค่าสถิติ", "หน่วย"');
         line.kpis.forEach(k => {
@@ -109,11 +109,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const overview = getAnalyticsOverview(filter, deptId, isAdmin);
-    const usage = categories.includes('usage') ? getUsageAnalytics(filter, deptId, isAdmin) : null;
+    const overview = await getAnalyticsOverview(filter, deptId, isAdmin);
+    const usage = categories.includes('usage') ? await getUsageAnalytics(filter, deptId, isAdmin) : null;
     const knowledge = categories.includes('knowledge') ? await getKnowledgeAnalytics(filter, deptId, isAdmin) : null;
-    const ai = categories.includes('ai') ? getAiPerformanceAnalytics(filter, deptId, isAdmin) : null;
-    const line = categories.includes('line') ? getLineAnalytics(filter, deptId, isAdmin) : null;
+    const ai = categories.includes('ai') ? await getAiPerformanceAnalytics(filter, deptId, isAdmin) : null;
+    const line = categories.includes('line') ? await getLineAnalytics(filter, deptId, isAdmin) : null;
 
     return NextResponse.json({
       success: true,

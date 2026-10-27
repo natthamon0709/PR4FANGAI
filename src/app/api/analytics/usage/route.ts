@@ -3,6 +3,9 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { resolveDateRange, getUsageAnalytics } from "@/lib/analytics-service";
 import { DateRangePreset } from "@/types/analytics";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getSessionFromRequest(req);
@@ -17,7 +20,7 @@ export async function GET(req: NextRequest) {
     const isAdmin = session.role === "administrator";
 
     const filter = resolveDateRange(preset, startDate, endDate);
-    const data = getUsageAnalytics(filter, isAdmin ? searchParams.get("department_id") || undefined : session.department_id, isAdmin);
+    const data = await getUsageAnalytics(filter, isAdmin ? searchParams.get("department_id") || undefined : session.department_id, isAdmin);
 
     return NextResponse.json({ success: true, ...data });
   } catch (error: any) {

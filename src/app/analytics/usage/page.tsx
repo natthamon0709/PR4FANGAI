@@ -41,7 +41,7 @@ export default function UsageAnalyticsPage() {
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
 
-    const res = await safeFetchJson(`/api/analytics/usage?${params.toString()}`);
+    const res = await safeFetchJson(`/api/analytics/usage?${params.toString()}`, { cache: 'no-store' });
     if (res.ok && res.data?.success) {
       setData(res.data);
     }
