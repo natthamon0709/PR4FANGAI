@@ -367,6 +367,7 @@ export interface QueryIntentAnalysis {
   isContactQuery: boolean;
   isMapQuery: boolean;
   isScheduleQuery: boolean;
+  isCurriculumQuery: boolean;
   matchedBranches: AcademicBranchEntity[];
   personName: string | null;
   rawTokens: string[];
@@ -381,7 +382,14 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
   const isRuleQuery = /แต่งกาย|ทรงผม|เนคไท|ตัดคะแนน|ลงโทษ|ทัณฑ์บน|ระเบียบ|เครื่องแบบ/i.test(cleanLow);
   const isContactQuery = /เบอร์โทร|โทรศัพท์|ติดต่อ|ติดต่อใคร|โทรหา|อู้กับไผ/i.test(cleanLow);
   const isMapQuery = /แผนผัง|ผัง|อาคาร|ห้อง|ตึก|แผนที่|ตี้ไหน|อยู่ตี้ใด/i.test(cleanLow);
-  const isScheduleQuery = /ตารางสอน|ตารางเรียน|ตารางนักเรียน|ตาราง|สอนวิชา|วิชาที่สอน|วิชาอะหยัง|วิชาอะไร|สอนห้อง|คาบสอน|รายวิชา|หลักสูตร|สอนอะไร|สอนอะหยัง/i.test(cleanLow);
+
+  // Curriculum & Majors query (e.g. วิทยาลัยเปิดสอนวิชาอะไรบ้าง, มีสาขาอะไรบ้าง, เปิดสอนหลักสูตรอะไร)
+  const isCurriculumQuery = /(?:เปิดสอน|สาขาวิชา|สาขาที่เปิด|หลักสูตร|มีสาขา|มีแผนก|ประเภทวิชา|ระดับ\s*(?:ปวช|ปวส)|เปิดสอนระดับ|มีสอนอะไร|มีวิชาอะไรเปิด|เปิดสอนวิชา|เปิดสอนอะไร)/i.test(cleanLow);
+
+  // Schedule query (explicit timetable/schedule, or teacher-specific course question)
+  const hasScheduleExplicitWord = /(?:ตารางสอน|ตารางเรียน|ตารางนักเรียน|ตาราง|คาบสอน|ชั่วโมงสอน|คาบเรียน)/i.test(cleanLow);
+  const hasTeacherCourseWord = isTeacherQuery && /(?:สอนอะไร|สอนอะหยัง|สอนวิชา|วิชาที่สอน|วิชาอะไร|วิชาอะหยัง)/i.test(cleanLow);
+  const isScheduleQuery = hasScheduleExplicitWord || hasTeacherCourseWord;
 
   // 2. Branch Matching
   const matchedBranches = ACADEMIC_BRANCHES.filter(b => 
@@ -390,7 +398,12 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
 
   // 3. Person Name Extraction (only if teacher/person/schedule related query)
   let personName: string | null = null;
-  if (isTeacherQuery || isScheduleQuery || /^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์|ตารางสอนของ|ตารางสอน|ตารางเรียนของ|ตารางเรียน|ข้อมูลของ)\s*/i.test(clean)) {
+  const INVALID_PERSON_NAMES = new Set([
+    'วิทยาลัย', 'วิทยาลัยเปิด', 'โรงเรียน', 'ที่นี่', 'ที่นี่เปิด', 'เปิด', 'เปิดสอน',
+    'แผนก', 'สาขา', 'สาขาวิชา', 'หลักสูตร', 'การเรียน', 'การสอน', 'เรียน', 'สอน', 'วิชา'
+  ]);
+
+  if (isTeacherQuery || (isScheduleQuery && !isCurriculumQuery) || /^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์|ตารางสอนของ|ตารางสอน|ตารางเรียนของ|ตารางเรียน|ข้อมูลของ)\s*/i.test(clean)) {
     let stripped = clean
       .replace(/^(ตารางสอนของ|ตารางสอน|ตารางเรียนของ|ตารางเรียน|ข้อมูลของ|รายชื่อของ|ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/gi, '')
       .trim();
@@ -415,7 +428,7 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
       }
     }
 
-    if (stripped.length >= 2 && stripped.length <= 40) {
+    if (stripped.length >= 2 && stripped.length <= 40 && !INVALID_PERSON_NAMES.has(stripped.toLowerCase())) {
       personName = stripped.toLowerCase();
     }
   }
@@ -433,6 +446,7 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
     isContactQuery,
     isMapQuery,
     isScheduleQuery,
+    isCurriculumQuery,
     matchedBranches,
     personName,
     rawTokens
@@ -736,9 +750,22 @@ export async function searchKnowledgeBase(
       }
     }
 
+    // Curriculum / Programs / Majors Boost (e.g. วิทยาลัยเปิดสอนวิชาอะไรบ้าง, มีสาขาอะไรบ้าง)
+    if (qAnalysis.isCurriculumQuery) {
+      if (item.knowledge_id === 'km-0006' || /หลักสูตรและการจัดการเรียนการสอน|สาขาวิชาที่เปิดสอน/i.test(titleLow)) {
+        score += 350.0;
+      } else if (/หลักสูตร|สาขาวิชา|การรับสมัคร|แผนการเรียน/i.test(titleLow)) {
+        score += 150.0;
+      }
+      // If asking about general college curriculum, penalize specific teacher schedules
+      if (/ตารางสอนครู/i.test(titleLow)) {
+        score -= 100.0;
+      }
+    }
+
     // Schedule / Subjects / Department Course Boost
-    if (qAnalysis.isScheduleQuery) {
-      if (/ตาราง|หลักสูตร|วิชา/i.test(titleLow)) {
+    if (qAnalysis.isScheduleQuery && !qAnalysis.isCurriculumQuery) {
+      if (/ตาราง|วิชา/i.test(titleLow)) {
         score += 120.0;
       }
       if (/ตารางสอน|ตารางเรียน|รายวิชา|วิชา/i.test(contentLow)) {
@@ -1115,13 +1142,12 @@ ${isDialect
       // Map official Google Gemini models resiliently (prioritizing active models with available quota)
       const primaryModel = config.model_name || 'gemini-flash-lite-latest';
       const candidateModels = Array.from(new Set([
-        primaryModel,
         'gemini-flash-lite-latest',
-        'gemma-4-26b-a4b-it',
-        'gemini-2.5-flash',
-        'gemini-1.5-flash',
-        'gemini-3.6-flash',
-        'gemini-3.8-flash'
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite-preview',
+        'gemini-3.1-flash-lite',
+        primaryModel,
+        'gemini-flash-latest'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -1518,14 +1544,12 @@ export async function transcribeAndProcessAudio(
     };
 
     const candidateModels = Array.from(new Set([
-      config.model_name || 'gemini-2.5-flash',
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-flash-latest',
-      'gemini-flash-latest',
-      'gemini-3.6-flash',
-      'gemini-3.1-flash-lite'
+      'gemini-flash-lite-latest',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite-preview',
+      'gemini-3.1-flash-lite',
+      config.model_name || 'gemini-flash-lite-latest',
+      'gemini-flash-latest'
     ])).filter(Boolean);
 
     for (const modelId of candidateModels) {
@@ -1609,6 +1633,28 @@ export async function executeRAGPipeline(params: {
     const isMale = config.voice_gender === 'male';
     const polite = isMale ? 'ครับ' : 'ค่ะ';
     const defaultMsg = `ขออภัย${polite} ระบบไม่สามารถจับใจความเสียงได้ชัดเจน กรุณาลองพูดใหม่อีกครั้ง หรือพิมพ์ข้อความคำถามได้เลย${polite}`;
+
+    let fallbackAudioUrl: string | undefined;
+    let fallbackDurationMs: number | undefined;
+
+    if (shouldProduceVoice) {
+      try {
+        const audioRes = await generateAudioReply({
+          text: defaultMsg,
+          voiceGender: config.voice_gender,
+          speed: config.voice_speed,
+          publicBaseUrl,
+          dialect: 'central'
+        });
+        if (audioRes.success && audioRes.audioUrl) {
+          fallbackAudioUrl = audioRes.audioUrl;
+          fallbackDurationMs = audioRes.durationMs;
+        }
+      } catch (err) {
+        console.warn('Failed to generate fallback voice reply:', err);
+      }
+    }
+
     return {
       question: '',
       answer: defaultMsg,
@@ -1616,6 +1662,8 @@ export async function executeRAGPipeline(params: {
       is_fallback: true,
       response_time_ms: Date.now() - startTime,
       voiceGender: config.voice_gender,
+      audioUrl: fallbackAudioUrl,
+      audioDurationMs: fallbackDurationMs,
       sources: []
     };
   }
@@ -1660,7 +1708,7 @@ export async function executeRAGPipeline(params: {
     let greetingAudioUrl: string | undefined;
     let greetingDurationMs: number | undefined;
 
-    if (shouldProduceVoice && config.voice_reply_enabled) {
+    if (shouldProduceVoice && (generateVoiceReply === true || config.voice_reply_enabled)) {
       try {
         const audioRes = await generateAudioReply({
           text: convIntent.replyText,
@@ -1850,7 +1898,7 @@ export async function executeRAGPipeline(params: {
   let audioUrl: string | undefined;
   let audioDurationMs: number | undefined;
 
-  if (shouldProduceVoice && config.voice_reply_enabled && answerText) {
+  if (shouldProduceVoice && (generateVoiceReply === true || config.voice_reply_enabled) && answerText) {
     try {
       const audioRes = await generateAudioReply({
         text: answerText,

@@ -1019,8 +1019,12 @@ export default function RobotReceptionPage() {
                                 <div>
                                   <div className="text-[11px] font-semibold text-[#9b1008] flex items-center gap-1.5">
                                     <span>เสียงตอบกลับของหุ่นยนต์</span>
-                                    <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-red-100 text-red-800">
-                                      {botGender === 'female' ? 'หญิง' : 'ชาย'}
+                                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] ${
+                                      (msg.result.voiceGender || botGender) === 'female'
+                                        ? 'bg-red-100 text-red-800'
+                                        : 'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {(msg.result.voiceGender || botGender) === 'female' ? 'หญิง' : 'ชาย'}
                                     </span>
                                     {msg.result.detectedDialect === 'kham_mueang' && (
                                       <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-100 text-amber-800">
