@@ -6,6 +6,25 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+
+    if (searchParams.get('debug') === '1') {
+      let wsImportStatus = 'ok';
+      let wsImportType = 'none';
+      try {
+        const wsModule = await import('ws');
+        wsImportType = typeof (wsModule.default || wsModule);
+      } catch (e: any) {
+        wsImportStatus = 'err: ' + e.message;
+      }
+      return NextResponse.json({
+        nodeVersion: process.version,
+        globalThisWs: typeof (globalThis as any).WebSocket,
+        wsImportStatus,
+        wsImportType,
+        envVercel: Boolean(process.env.VERCEL)
+      });
+    }
+
     const genderParam = searchParams.get('gender') || 'female';
     const voiceGender: 'female' | 'male' = genderParam === 'male' ? 'male' : 'female';
 

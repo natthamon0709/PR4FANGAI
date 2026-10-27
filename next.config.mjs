@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: false,
   experimental: {
-    serverComponentsExternalPackages: ['better-sqlite3', 'bcryptjs'],
+    serverComponentsExternalPackages: ['better-sqlite3', 'bcryptjs', 'ws'],
     outputFileTracingIncludes: {
       '/api/**/*': ['./data/**/*'],
       '/**/*': ['./data/**/*'],

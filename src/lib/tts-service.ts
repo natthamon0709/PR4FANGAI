@@ -554,7 +554,7 @@ async function synthesizeViaEdgeTts(
   speed: number = 1.0, 
   dialect: 'kham_mueang' | 'central' = 'central'
 ): Promise<Buffer | null> {
-  const WsClass = typeof WebSocket !== 'undefined' ? WebSocket : (typeof globalThis.WebSocket !== 'undefined' ? (globalThis.WebSocket as any) : null);
+  const WsClass: any = typeof WebSocket !== 'undefined' ? ((WebSocket as any)?.default || WebSocket) : (typeof globalThis.WebSocket !== 'undefined' ? (globalThis.WebSocket as any) : null);
   if (!WsClass) return null;
 
   return new Promise<Buffer | null>((resolve) => {
