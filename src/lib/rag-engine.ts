@@ -1757,6 +1757,25 @@ export async function executeRAGPipeline(params: {
           rank: s.rank
         }));
         await supabaseAdmin.from('ai_retrieved_sources').insert(sbSources);
+
+        // Update ai_reference_count on knowledge_items
+        for (const s of retrievedSources) {
+          if (s.knowledge_id) {
+            try {
+              const { data: cur } = await supabaseAdmin
+                .from('knowledge_items')
+                .select('ai_reference_count')
+                .eq('knowledge_id', s.knowledge_id)
+                .maybeSingle();
+              if (cur) {
+                await supabaseAdmin
+                  .from('knowledge_items')
+                  .update({ ai_reference_count: (cur.ai_reference_count || 0) + 1 })
+                  .eq('knowledge_id', s.knowledge_id);
+              }
+            } catch {}
+          }
+        }
       }
     } catch (sbErr) {
       console.warn('Supabase RAG query log warning:', sbErr);

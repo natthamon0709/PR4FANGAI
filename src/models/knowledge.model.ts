@@ -91,6 +91,24 @@ export class KnowledgeModel {
           .range(offset, offset + limit - 1);
 
         if (!sbErr && sbItems) {
+          // Dynamic calculation of AI Ref Count from ai_retrieved_sources
+          const pageKnowledgeIds = sbItems.map((i: any) => i.knowledge_id);
+          let refCountMap: Record<string, number> = {};
+          if (pageKnowledgeIds.length > 0) {
+            try {
+              const { data: refSources } = await supabaseAdmin
+                .from('ai_retrieved_sources')
+                .select('knowledge_id')
+                .in('knowledge_id', pageKnowledgeIds);
+
+              if (refSources) {
+                refSources.forEach((r: any) => {
+                  refCountMap[r.knowledge_id] = (refCountMap[r.knowledge_id] || 0) + 1;
+                });
+              }
+            } catch {}
+          }
+
           const { data: allItemsForCounts } = await supabaseAdmin
             .from('knowledge_items')
             .select('content_type');
@@ -121,7 +139,8 @@ export class KnowledgeModel {
               department_name: item.departments?.name || '',
               sub_department_name: item.sub_departments?.name || '',
               tags: parsedTags,
-              ai_retrieval_enabled: Boolean(item.ai_retrieval_enabled)
+              ai_retrieval_enabled: Boolean(item.ai_retrieval_enabled),
+              ai_reference_count: refCountMap[item.knowledge_id] !== undefined ? refCountMap[item.knowledge_id] : (item.ai_reference_count || 0)
             };
           });
 
@@ -292,6 +311,18 @@ export class KnowledgeModel {
             .eq('knowledge_id', knowledgeId)
             .order('uploaded_at', { ascending: false });
 
+          // Calculate real-time AI reference count from ai_retrieved_sources
+          let realAiRefCount = sbItem.ai_reference_count || 0;
+          try {
+            const { count: realCount } = await supabaseAdmin
+              .from('ai_retrieved_sources')
+              .select('*', { count: 'exact', head: true })
+              .eq('knowledge_id', knowledgeId);
+            if (realCount !== null && realCount !== undefined && realCount > 0) {
+              realAiRefCount = realCount;
+            }
+          } catch {}
+
           let parsedTags: string[] = [];
           try {
             parsedTags = JSON.parse(sbItem.tags || '[]');
@@ -305,6 +336,7 @@ export class KnowledgeModel {
             sub_department_name: (sbItem.sub_departments as any)?.name || '',
             tags: parsedTags,
             ai_retrieval_enabled: Boolean(sbItem.ai_retrieval_enabled),
+            ai_reference_count: realAiRefCount,
             attachments: sbAttachments || []
           };
         }

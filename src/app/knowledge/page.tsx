@@ -43,8 +43,8 @@ export default function KnowledgeListPage() {
     async function loadMeta() {
       try {
         const [authRes, deptRes] = await Promise.all([
-          fetch('/api/auth/me'),
-          fetch('/api/departments'),
+          fetch('/api/auth/me', { cache: 'no-store' }),
+          fetch('/api/departments', { cache: 'no-store' }),
         ]);
 
         if (!authRes.ok) {
@@ -80,7 +80,7 @@ export default function KnowledgeListPage() {
       params.set('page', page.toString());
       params.set('limit', '10');
 
-      const res = await fetch(`/api/knowledge?${params.toString()}`);
+      const res = await fetch(`/api/knowledge?${params.toString()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setItems(data.items || []);
