@@ -25,6 +25,7 @@ export interface TTSResult {
   durationMs: number;
   filename?: string;
   error?: string;
+  diagnostic?: string[];
 }
 
 const VOICE_MAP = {
@@ -552,10 +553,14 @@ async function synthesizeViaEdgeTts(
   text: string, 
   voiceName: string, 
   speed: number = 1.0, 
-  dialect: 'kham_mueang' | 'central' = 'central'
+  dialect: 'kham_mueang' | 'central' = 'central',
+  diagLog: string[] = []
 ): Promise<Buffer | null> {
   const WsClass: any = typeof WebSocket !== 'undefined' ? ((WebSocket as any)?.default || WebSocket) : (typeof globalThis.WebSocket !== 'undefined' ? (globalThis.WebSocket as any) : null);
-  if (!WsClass) return null;
+  if (!WsClass) {
+    diagLog.push('No WsClass available');
+    return null;
+  }
 
   return new Promise<Buffer | null>((resolve) => {
     let timeoutId: NodeJS.Timeout;
@@ -567,6 +572,8 @@ async function synthesizeViaEdgeTts(
 
       const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TTS_TRUSTED_CLIENT_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${EDGE_TTS_SEC_MS_GEC_VERSION}&ConnectionId=${connId}`;
 
+      diagLog.push(`Ws connecting to ${wsUrl.slice(0, 70)}...`);
+
       const ws = new WsClass(wsUrl, {
         headers: {
           'Pragma': 'no-cache',
@@ -577,19 +584,20 @@ async function synthesizeViaEdgeTts(
         }
       } as any);
 
-      (ws as any).binaryType = 'arraybuffer';
       const audioChunks: Buffer[] = [];
 
       timeoutId = setTimeout(() => {
+        diagLog.push(`Timeout fired at 8000ms. audioChunks=${audioChunks.length}`);
         try { ws.close(); } catch {}
         if (audioChunks.length > 0) {
           resolve(Buffer.concat(audioChunks));
         } else {
           resolve(null);
         }
-      }, 9000);
+      }, 8000);
 
       const onConnectOpen = () => {
+        diagLog.push('WS Open');
         // 1. Send speech config
         const configMsg =
           'Content-Type:application/json; charset=utf-8\r\n' +
@@ -608,6 +616,7 @@ async function synthesizeViaEdgeTts(
 
         // 2. Format SSML with natural breathing pauses and warm, human prosody
         const ssml = buildSsmlForSpeech(text, voiceName, speed, dialect);
+        diagLog.push(`SSML len=${ssml.length}, voice=${voiceName}`);
 
         const ssmlMsg =
           `X-RequestId:${reqId}\r\n` +
@@ -629,6 +638,7 @@ async function synthesizeViaEdgeTts(
           const str = typeof rawPayload === 'string' ? rawPayload : rawPayload.toString('utf8');
           if (str.includes('Path:turn.end')) {
             clearTimeout(timeoutId);
+            diagLog.push(`turn.end received. totalChunks=${audioChunks.length}`);
             try { ws.close(); } catch {}
             if (audioChunks.length > 0) {
               resolve(Buffer.concat(audioChunks));
@@ -658,6 +668,7 @@ async function synthesizeViaEdgeTts(
             const str = buf.toString('utf8');
             if (str.includes('Path:turn.end')) {
               clearTimeout(timeoutId);
+              diagLog.push(`turn.end via buffer received. totalChunks=${audioChunks.length}`);
               try { ws.close(); } catch {}
               if (audioChunks.length > 0) {
                 resolve(Buffer.concat(audioChunks));
@@ -684,11 +695,12 @@ async function synthesizeViaEdgeTts(
         (ws as any).on('message', (msgData: any, isBin: boolean) => handleData(msgData, isBin));
         (ws as any).on('error', (err: any) => {
           clearTimeout(timeoutId);
-          console.warn('Edge TTS WS Error:', err?.message || err);
+          diagLog.push(`WS Error: ${err?.message || err}`);
           resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
         });
         (ws as any).on('close', (code: any, reason: any) => {
           clearTimeout(timeoutId);
+          diagLog.push(`WS Close: code=${code}, reason=${reason?.toString()}`);
           resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
         });
       } else {
@@ -696,17 +708,18 @@ async function synthesizeViaEdgeTts(
         ws.onmessage = (event: any) => handleData(event.data);
         ws.onerror = (err: any) => {
           clearTimeout(timeoutId);
-          console.warn('Edge TTS WS Error:', err?.message || err);
+          diagLog.push(`WS OnError: ${err?.message || err}`);
           resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
         };
         ws.onclose = () => {
           clearTimeout(timeoutId);
+          diagLog.push(`WS OnClose`);
           resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
         };
       }
     } catch (err: any) {
       if (timeoutId!) clearTimeout(timeoutId);
-      console.warn('Edge TTS Exception:', err?.message || err);
+      diagLog.push(`WS Exception: ${err?.message || err}`);
       resolve(null);
     }
   });
@@ -790,28 +803,36 @@ export async function generateAudioReply(options: TTSOptions): Promise<TTSResult
 
   const voiceName = VOICE_MAP[voiceGender] || VOICE_MAP.female;
   let audioBuffer: Buffer | null = null;
+  const diagLog: string[] = [];
 
   // 1. Try edge-tts CLI tool first (Fast, high-fidelity Microsoft Edge Neural voice with v2 DRM)
   try {
     audioBuffer = await synthesizeViaEdgeTtsCli(cleanText, voiceName, speed);
-  } catch {}
+    if (audioBuffer) diagLog.push('CLI synthesized ok');
+  } catch (e: any) {
+    diagLog.push(`CLI error: ${e.message}`);
+  }
 
   // 2. Try Microsoft Edge Neural TTS WebSocket
   if (!audioBuffer || audioBuffer.length < 500) {
     try {
-      audioBuffer = await synthesizeViaEdgeTts(cleanText, voiceName, speed, dialect);
-    } catch {}
+      audioBuffer = await synthesizeViaEdgeTts(cleanText, voiceName, speed, dialect, diagLog);
+    } catch (e: any) {
+      diagLog.push(`WS Top Catch: ${e.message}`);
+    }
   }
 
   // 3. Fallback to Google TTS (only for female persona to strictly avoid female voice reading male "ครับ/ผม")
   if ((!audioBuffer || audioBuffer.length < 500) && voiceGender === 'female') {
     try {
       audioBuffer = await synthesizeViaGoogleTts(cleanText);
+      if (audioBuffer) diagLog.push('Google TTS fallback ok');
     } catch {}
   }
 
   // 4. Fallback to minimal valid audio frame if completely offline
   if (!audioBuffer || audioBuffer.length < 500) {
+    diagLog.push('Fell back to silent mp3');
     audioBuffer = createFallbackMp3();
   }
 
@@ -860,6 +881,7 @@ export async function generateAudioReply(options: TTSOptions): Promise<TTSResult
     success: true,
     audioUrl: finalAudioUrl,
     durationMs,
-    filename
+    filename,
+    diagnostic: diagLog
   };
 }

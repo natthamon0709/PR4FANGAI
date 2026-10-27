@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
         success: true,
         audioUrl: audioRes.audioUrl,
         durationMs: audioRes.durationMs,
-        gender: voiceGender
+        gender: voiceGender,
+        diagnostic: audioRes.diagnostic
       });
     }
 
