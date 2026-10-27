@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
 import { execFile } from 'child_process';
+import WebSocket from 'ws';
 import { uploadToStorage, isSupabaseConfigured } from './supabase';
 import {
   generateSecMsGecV2,
@@ -553,7 +554,8 @@ async function synthesizeViaEdgeTts(
   speed: number = 1.0, 
   dialect: 'kham_mueang' | 'central' = 'central'
 ): Promise<Buffer | null> {
-  if (typeof globalThis.WebSocket === 'undefined') return null;
+  const WsClass = typeof WebSocket !== 'undefined' ? WebSocket : (typeof globalThis.WebSocket !== 'undefined' ? (globalThis.WebSocket as any) : null);
+  if (!WsClass) return null;
 
   return new Promise<Buffer | null>((resolve) => {
     let timeoutId: NodeJS.Timeout;
@@ -565,7 +567,7 @@ async function synthesizeViaEdgeTts(
 
       const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TTS_TRUSTED_CLIENT_TOKEN}&Sec-MS-GEC=${gec}&Sec-MS-GEC-Version=${EDGE_TTS_SEC_MS_GEC_VERSION}&ConnectionId=${connId}`;
 
-      const ws = new globalThis.WebSocket(wsUrl, {
+      const ws = new WsClass(wsUrl, {
         headers: {
           'Pragma': 'no-cache',
           'Cache-Control': 'no-cache',
@@ -585,9 +587,9 @@ async function synthesizeViaEdgeTts(
         } else {
           resolve(null);
         }
-      }, 7000);
+      }, 9000);
 
-      ws.onopen = () => {
+      const onConnectOpen = () => {
         // 1. Send speech config
         const configMsg =
           'Content-Type:application/json; charset=utf-8\r\n' +
@@ -615,13 +617,16 @@ async function synthesizeViaEdgeTts(
         ws.send(ssmlMsg);
       };
 
-      ws.onmessage = async (event: any) => {
-        let data = event.data;
-        if (typeof Blob !== 'undefined' && data instanceof Blob) {
-          data = await data.arrayBuffer();
+      const handleData = (rawPayload: any) => {
+        // Handle Blob
+        if (typeof Blob !== 'undefined' && rawPayload instanceof Blob) {
+          rawPayload.arrayBuffer().then((ab: ArrayBuffer) => handleData(ab)).catch(() => {});
+          return;
         }
-        if (typeof data === 'string') {
-          if (data.includes('Path:turn.end')) {
+
+        // Handle text message
+        if (typeof rawPayload === 'string') {
+          if (rawPayload.includes('Path:turn.end')) {
             clearTimeout(timeoutId);
             try { ws.close(); } catch {}
             if (audioChunks.length > 0) {
@@ -630,29 +635,56 @@ async function synthesizeViaEdgeTts(
               resolve(null);
             }
           }
-        } else if (data instanceof ArrayBuffer) {
-          const buf = Buffer.from(data);
-          if (buf.length > 2) {
-            const headerLen = buf.readUInt16BE(0);
-            if (buf.length > 2 + headerLen) {
-              const audioBytes = buf.subarray(2 + headerLen);
-              audioChunks.push(audioBytes);
-            }
+          return;
+        }
+
+        // Handle binary message (Buffer, Uint8Array, or ArrayBuffer)
+        let buf: Buffer | null = null;
+        if (Buffer.isBuffer(rawPayload)) {
+          buf = rawPayload;
+        } else if (rawPayload instanceof ArrayBuffer) {
+          buf = Buffer.from(rawPayload);
+        } else if (rawPayload instanceof Uint8Array) {
+          buf = Buffer.from(rawPayload.buffer, rawPayload.byteOffset, rawPayload.byteLength);
+        }
+
+        if (buf && buf.length > 2) {
+          const headerLen = buf.readUInt16BE(0);
+          if (buf.length > 2 + headerLen) {
+            const audioBytes = buf.subarray(2 + headerLen);
+            audioChunks.push(audioBytes);
           }
         }
       };
 
-      ws.onerror = () => {
-        clearTimeout(timeoutId);
-        resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
-      };
-
-      ws.onclose = () => {
-        clearTimeout(timeoutId);
-        resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
-      };
-    } catch {
+      if (typeof (ws as any).on === 'function') {
+        (ws as any).on('open', onConnectOpen);
+        (ws as any).on('message', (msgData: any) => handleData(msgData));
+        (ws as any).on('error', (err: any) => {
+          clearTimeout(timeoutId);
+          console.warn('Edge TTS WS Error:', err?.message || err);
+          resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
+        });
+        (ws as any).on('close', () => {
+          clearTimeout(timeoutId);
+          resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
+        });
+      } else {
+        ws.onopen = onConnectOpen;
+        ws.onmessage = (event: any) => handleData(event.data);
+        ws.onerror = (err: any) => {
+          clearTimeout(timeoutId);
+          console.warn('Edge TTS WS Error:', err?.message || err);
+          resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
+        };
+        ws.onclose = () => {
+          clearTimeout(timeoutId);
+          resolve(audioChunks.length > 0 ? Buffer.concat(audioChunks) : null);
+        };
+      }
+    } catch (err: any) {
       if (timeoutId!) clearTimeout(timeoutId);
+      console.warn('Edge TTS Exception:', err?.message || err);
       resolve(null);
     }
   });

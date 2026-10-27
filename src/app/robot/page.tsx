@@ -150,6 +150,25 @@ export default function RobotReceptionPage() {
         const data = await res.json();
         if (data.audioUrl) {
           welcomeAudioUrlRef.current = data.audioUrl;
+
+          // แนบ audioUrl เข้าข้อความต้อนรับเพื่อให้มีเครื่องเล่นเสียงและปุ่มกดฟังซ้ำในหน้าจอทันที
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id.startsWith('welcome-robot')
+                ? {
+                    ...m,
+                    result: {
+                      answer: m.text,
+                      audioUrl: data.audioUrl,
+                      durationMs: data.durationMs,
+                      voiceGender: gender,
+                      sources: []
+                    } as any
+                  }
+                : m
+            )
+          );
+
           const played = await playAudioReply(data.audioUrl);
           if (!played) {
             setAutoplayBlocked(true);
