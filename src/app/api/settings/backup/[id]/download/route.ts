@@ -10,6 +10,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Forbidden: Administrator only' }, { status: 403 });
     }
 
+    if (!params.id || !/^[a-zA-Z0-9_-]+$/.test(params.id)) {
+      return NextResponse.json({ error: 'Invalid backup identifier' }, { status: 400 });
+    }
+
     const filePath = path.join(process.cwd(), 'data', 'backups', `${params.id}.db`);
     const fallbackDbPath = path.join(process.cwd(), 'data', 'pr4fang.db');
 

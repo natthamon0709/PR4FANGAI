@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import getDb from '@/lib/db';
 import { getSystemSetting } from '@/lib/integrations';
+
+function safeCompare(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 export async function GET(req: NextRequest) {
   try {
     const apiKey = req.headers.get('x-api-key') || req.headers.get('x-pr4fang-key');
     const configuredKey = getSystemSetting('n8n_api_key', 'fang_ai_n8n_live_sec_key_2026');
 
-    if (!apiKey || apiKey !== configuredKey) {
+    if (!apiKey || !safeCompare(apiKey, configuredKey)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

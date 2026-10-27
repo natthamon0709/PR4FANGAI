@@ -13,6 +13,47 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
   }
 
+  // Validate URL and enforce SSRF whitelist protection
+  let parsed: URL;
+  try {
+    parsed = new URL(targetUrl);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return NextResponse.json({ error: 'Invalid URL protocol' }, { status: 400 });
+    }
+  } catch {
+    return NextResponse.json({ error: 'Invalid target URL format' }, { status: 400 });
+  }
+
+  // Block localhost, internal IP ranges, metadata services
+  const hostname = parsed.hostname.toLowerCase();
+  const isPrivateOrLoopback = 
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname === '0.0.0.0' ||
+    hostname === '169.254.169.254' ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('192.168.') ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+    hostname.endsWith('.local') ||
+    hostname.endsWith('.internal');
+
+  if (isPrivateOrLoopback) {
+    return NextResponse.json({ error: 'Access to internal network addresses is forbidden' }, { status: 403 });
+  }
+
+  // Allowed domain whitelist for proxying
+  const isAllowedHost = 
+    hostname === 'drive.google.com' ||
+    hostname === 'docs.google.com' ||
+    hostname.endsWith('.googleusercontent.com') ||
+    hostname.endsWith('.supabase.co') ||
+    hostname === 'images.unsplash.com';
+
+  if (!isAllowedHost) {
+    return NextResponse.json({ error: 'Domain not allowed for media proxy' }, { status: 403 });
+  }
+
   try {
     // ดึง file id หากเป็น Google Drive URL
     let fetchUrl = targetUrl;

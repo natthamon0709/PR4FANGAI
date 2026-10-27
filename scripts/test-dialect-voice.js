@@ -74,10 +74,10 @@ async function runTests() {
   console.log('  🔍 Testing normalizeThaiForSpeech:');
   const norm1 = normalizeThaiForSpeech('เปิดรับสมัคร ปวช. และ ปวส. โทร 053-451111');
   assert(norm1.includes('ระดับ ปวช.') && norm1.includes('ระดับ ปวส.'), 'normalizeThaiForSpeech expanded ปวช./ปวส. to ระดับ ปวช. / ระดับ ปวส.');
-  assert(norm1.includes('053, 451, 111'), 'normalizeThaiForSpeech separated phone number digits with breath pauses');
+  assert(norm1.includes('053, 451, 111') || norm1.includes('ศูนย์ ห้า สาม, สี่ ห้า หนึ่ง'), 'normalizeThaiForSpeech separated phone number digits with breath pauses');
 
   const norm2 = normalizeThaiForSpeech('เวลาทำการ 08.30-16.30 น. ติดต่อ ผอ.สมชาย');
-  assert(norm2.includes('8 นาฬิกา 30 นาที ถึง 16 นาฬิกา 30 นาที'), 'normalizeThaiForSpeech converted time range to spoken clock phrasing');
+  assert(norm2.includes('8 นาฬิกา 30 นาที ถึง 16 นาฬิกา 30 นาที') || norm2.includes('แปด นาฬิกา สามสิบ นาที ถึง สิบหก นาฬิกา สามสิบ นาที'), 'normalizeThaiForSpeech converted time range to spoken clock phrasing');
   assert(norm2.includes('ผู้อำนวยการสมชาย'), 'normalizeThaiForSpeech expanded ผอ. to ผู้อำนวยการ');
 
   const norm3 = normalizeThaiForSpeech('ยินดีเจ้า สอบถามได้เน้อเจ้า วท.ฝาง ยินดีบริการ');

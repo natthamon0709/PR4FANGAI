@@ -15,7 +15,8 @@
     "test:api": "node scripts/test-api.js",
     "test:dashboard": "node scripts/test-dashboard.js",
     "test:knowledge": "node scripts/test-knowledge.js",
-    "test:dialect": "sucrase-node scripts/test-dialect-voice.js"
+    "test:dialect": "sucrase-node scripts/test-dialect-voice.js",
+    "test:security": "sucrase-node scripts/test-security-routes.js"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

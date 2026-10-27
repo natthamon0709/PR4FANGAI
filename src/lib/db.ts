@@ -537,8 +537,26 @@ function initTables(db: Database.Database) {
   try { db.prepare('ALTER TABLE line_channel_configs ADD COLUMN bot_picture_url TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE ai_engine_configs ADD COLUMN voice_reply_enabled INTEGER DEFAULT 1').run(); } catch {}
   try { db.prepare("ALTER TABLE ai_engine_configs ADD COLUMN voice_gender TEXT DEFAULT 'female'").run(); } catch {}
-  try { db.prepare("ALTER TABLE ai_engine_configs ADD COLUMN voice_dialect_mode TEXT DEFAULT 'adaptive'").run(); } catch {}
+  try { db.prepare('ALTER TABLE ai_engine_configs ADD COLUMN voice_dialect_mode TEXT DEFAULT \'adaptive\'').run(); } catch {}
   try { db.prepare('ALTER TABLE ai_engine_configs ADD COLUMN voice_speed REAL DEFAULT 1.0').run(); } catch {}
+
+  // High-performance secondary indexes for frequent queries & joins
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_users_email ON master_users(email);
+      CREATE INDEX IF NOT EXISTS idx_users_dept ON master_users(department_id);
+      CREATE INDEX IF NOT EXISTS idx_users_role_status ON master_users(role, status);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_dept_status ON knowledge_items(department_id, status);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge_items(content_type);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_updated ON knowledge_items(updated_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_ai_logs_created ON ai_query_logs(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_ai_logs_line_user ON ai_query_logs(line_user_id);
+      CREATE INDEX IF NOT EXISTS idx_login_logs_user ON login_audit_logs(user_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_reset_tokens_hash ON reset_password_tokens(token_hash, used);
+      CREATE INDEX IF NOT EXISTS idx_line_followers_blocked ON line_followers(blocked);
+      CREATE INDEX IF NOT EXISTS idx_activity_dept_created ON activity_feed(department_id, created_at DESC);
+    `);
+  } catch {}
 
   // 1. Seed Departments & Sub-departments if empty
   const deptCount = (db.prepare('SELECT COUNT(*) as c FROM departments').get() as any).c;

@@ -22,12 +22,14 @@ export async function POST(req: NextRequest) {
       resetUrl = `${origin}/reset-password?token=${resetToken}`;
     }
 
+    const isDev = process.env.NODE_ENV === 'development';
+
     // UX Rule: Generic message to prevent Email Enumeration attacks
     return NextResponse.json({
       success: true,
       message: 'หากอีเมลนี้อยู่ในระบบ เราได้ส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปยังอีเมลของคุณแล้ว (มีอายุการใช้งาน 30 นาที)',
-      // Attached for easy testing/demo
-      _demoResetUrl: resetUrl
+      // Attached only in local development for testing; suppressed in production
+      ...(isDev && resetUrl ? { _demoResetUrl: resetUrl } : {})
     });
   } catch (error) {
     return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการขอรีเซ็ตรหัสผ่าน' }, { status: 500 });

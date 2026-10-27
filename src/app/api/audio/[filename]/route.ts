@@ -10,9 +10,9 @@ export async function GET(
 ) {
   try {
     const filename = params.filename;
-    // Security check: prevent directory traversal
-    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-      return new NextResponse('Invalid filename', { status: 400 });
+    // Security check: strictly validate filename format to prevent path traversal
+    if (!filename || !/^[a-zA-Z0-9_-]+\.(mp3|wav|ogg)$/.test(filename)) {
+      return new NextResponse('Invalid filename format', { status: 400 });
     }
 
     let filePath = path.join(process.cwd(), 'public', 'audio', 'responses', filename);
