@@ -1079,16 +1079,16 @@ ${isDialect
       };
 
       // Map official Google Gemini models resiliently (prioritizing active models with available quota)
-      const primaryModel = config.model_name || 'gemini-2.5-flash';
+      const primaryModel = config.model_name || 'gemini-3.8-flash';
       const candidateModels = Array.from(new Set([
         primaryModel,
+        'gemini-3.8-flash',
+        'gemini-3.6-flash',
+        'gemini-3.1-flash-lite',
+        'gemini-flash-latest',
         'gemini-2.5-flash',
         'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-latest',
-        'gemini-flash-latest',
-        'gemini-3.6-flash',
-        'gemini-3.1-flash-lite'
+        'gemini-1.5-flash'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -1220,7 +1220,7 @@ ${isDialect
       const line = lines[i];
       if (/^(หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้าสาขาวิชา|ครูประจำสาขาวิชา|คณะผู้บริหาร|ผู้อำนวยการ|รองผู้อำนวยการ)$/i.test(line)) {
         currentRole = line;
-      } else if (currentRole && (line.includes('—') || line.includes('-') || line.startsWith('นาย') || line.startsWith('นาง') || line.startsWith('ว่าที่'))) {
+      } else if (currentRole && (line.includes('—') || line.includes('-') || /^\s*(?:\d+[\.\)]\s*)?(?:นาย|นางสาว|นาง|ว่าที่|ครู|อาจารย์)\b/i.test(line))) {
         formattedRoster.push(`• ${currentRole}: ${line}`);
       }
     }
@@ -1239,11 +1239,17 @@ ${isDialect
             }
           }
           teacherSpecificLines.push(`• ${lines[i]} (ตำแหน่ง: ${role})`);
-          // Append any following lines before the next teacher or header
-          for (let k = i + 1; k < Math.min(lines.length, i + 8); k++) {
-            if (/^(หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้าสาขาวิชา|ครูประจำสาขาวิชา|###)/i.test(lines[k])) break;
-            if (lines[k].startsWith('นาย') || lines[k].startsWith('นาง') || lines[k].startsWith('ว่าที่')) break;
-            teacherSpecificLines.push(`  ${lines[k]}`);
+          // Append any following lines before the next teacher, role header, or FAQ section
+          for (let k = i + 1; k < lines.length; k++) {
+            const nextLine = lines[k];
+            // Stop if encountering a new role/section header or FAQ marker
+            if (/^(?:หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้าสาขาวิชา|ครูประจำสาขาวิชา|คณะผู้บริหาร|ผู้อำนวยการ|รองผู้อำนวยการ|###)/i.test(nextLine)) break;
+            // Stop if encountering the next teacher (with or without numbers e.g. "5. นาย...", "นาย...", "ว่าที่...")
+            if (/^\s*(?:\d+[\.\)]\s*)?(?:นาย|นางสาว|นาง|ว่าที่|ครู|อาจารย์)\b/i.test(nextLine)) break;
+            if (/^\s*\d+[\.\)]\s+[^\d]/i.test(nextLine)) break;
+            teacherSpecificLines.push(`  ${nextLine}`);
+            // Safety cap: single teacher schedule/details should not exceed 15 lines
+            if (k - i >= 15) break;
           }
           teacherSpecificFound = true;
           break;
@@ -1255,8 +1261,13 @@ ${isDialect
         const introParticle = isDialect
           ? (isMale ? 'มีข้อมูลดังนี้เน้อครับ:' : 'มีข้อมูลดังนี้เน้อเจ้า:')
           : (isMale ? 'มีข้อมูลดังนี้ครับ:' : 'มีข้อมูลดังนี้ค่ะ:');
-        const deptClean = primarySource.title.replace(/^รายชื่อครูและบุคลากร/i, '').replace(/^รายชื่อครูบุคลากร/i, '').trim();
-        answerBody = `ข้อมูลสำหรับ ${deptClean} วิทยาลัยการอาชีพฝาง ${introParticle}\n\n` + teacherSpecificLines.join('\n');
+        let cleanTitle = primarySource.title
+          .replace(/^(?:รายชื่อครูและบุคลากร|รายชื่อครูบุคลากร|รายชื่อบุคลากร|ข้อมูลรายชื่อบุคลากร)\s*/i, '')
+          .trim();
+        const titleWithOrg = cleanTitle.includes('วิทยาลัยการอาชีพฝาง')
+          ? cleanTitle
+          : `${cleanTitle} วิทยาลัยการอาชีพฝาง`;
+        answerBody = `ข้อมูลสำหรับ ${titleWithOrg} ${introParticle}\n\n` + teacherSpecificLines.join('\n');
       }
     }
 
