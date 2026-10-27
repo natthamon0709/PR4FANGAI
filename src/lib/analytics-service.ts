@@ -1,4 +1,5 @@
 import getDb from "./db";
+import { supabaseAdmin, isSupabaseConfigured } from "./supabase";
 import {
   DateRangeFilter,
   DateRangePreset,
@@ -486,8 +487,168 @@ export function getUsageAnalytics(filter: DateRangeFilter, deptId?: string, isAd
 /**
  * 7.3 Knowledge Analytics Service
  */
-export function getKnowledgeAnalytics(filter: DateRangeFilter, deptId?: string, isAdmin: boolean = true): KnowledgeAnalyticsResponse {
+export async function getKnowledgeAnalytics(filter: DateRangeFilter, deptId?: string, isAdmin: boolean = true): Promise<KnowledgeAnalyticsResponse> {
   ensureReportSnapshotsSeeded(filter.startDate, filter.endDate);
+
+  // 1. Try Supabase Cloud
+  if (isSupabaseConfigured()) {
+    try {
+      let countQuery = supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true });
+      let publishedQuery = supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('status', 'published');
+      let aiQuery = supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('ai_retrieval_enabled', 1);
+
+      if (!isAdmin && deptId) {
+        countQuery = countQuery.eq('department_id', deptId);
+        publishedQuery = publishedQuery.eq('department_id', deptId);
+        aiQuery = aiQuery.eq('department_id', deptId);
+      }
+
+      const [totalRes, pubRes, aiRes, allItemsRes, deptsRes] = await Promise.all([
+        countQuery,
+        publishedQuery,
+        aiQuery,
+        supabaseAdmin.from('knowledge_items').select('knowledge_id, title, content_type, department_id, created_at, ai_reference_count'),
+        supabaseAdmin.from('departments').select('department_id, name, code')
+      ]);
+
+      if (!totalRes.error && totalRes.count !== null && totalRes.count !== undefined && allItemsRes.data) {
+        const totalItems = totalRes.count || 0;
+        const publishedItems = pubRes.count || 0;
+        const aiEnabledItems = aiRes.count || 0;
+        const allItems = allItemsRes.data;
+        const depts = deptsRes.data || [];
+        const deptMap = new Map(depts.map((d: any) => [d.department_id, d.name]));
+
+        const kpis: AnalyticsKpi[] = [
+          {
+            key: "total_knowledge",
+            label: "องค์ความรู้ทั้งหมด",
+            value: totalItems,
+            unit: "รายการ",
+            status: "neutral",
+            tooltip: "จำนวนองค์ความรู้ทั้งหมดในระบบ (รวมแบบร่างและเผยแพร่)"
+          },
+          {
+            key: "published_rate",
+            label: "อัตราการเผยแพร่",
+            value: totalItems > 0 ? Math.round((publishedItems / totalItems) * 100) : 100,
+            unit: "%",
+            status: "positive",
+            tooltip: "สัดส่วนเนื้อหาที่อยู่ในสถานะ Published พร้อมใช้งาน"
+          },
+          {
+            key: "ai_retrieval_rate",
+            label: "เปิดใช้งานสืบค้น AI (RAG)",
+            value: totalItems > 0 ? Math.round((aiEnabledItems / totalItems) * 100) : 100,
+            unit: "%",
+            status: "positive",
+            tooltip: "เนื้อหาที่อนุญาตให้ AI ดึงไปสังเคราะห์คำตอบใน LINE OA"
+          },
+          {
+            key: "total_categories",
+            label: "ฝ่ายที่ร่วมบันทึกข้อมูล",
+            value: new Set(allItems.map((i: any) => i.department_id)).size || 4,
+            unit: "ฝ่าย",
+            status: "neutral"
+          }
+        ];
+
+        // Growth Trend (Accumulative)
+        const dateCountMap: Record<string, number> = {};
+        allItems.forEach((i: any) => {
+          const d = i.created_at ? i.created_at.split('T')[0] : '2026-10-01';
+          dateCountMap[d] = (dateCountMap[d] || 0) + 1;
+        });
+
+        const sortedDates = Object.keys(dateCountMap).sort();
+        let runningTotal = 0;
+        const growthTrend: TrendDataPoint[] = sortedDates.map(d_date => {
+          runningTotal += dateCountMap[d_date];
+          return {
+            date: d_date,
+            label: formatThaiDate(d_date, "short"),
+            value: runningTotal,
+            secondaryValue: dateCountMap[d_date]
+          };
+        });
+
+        // Content Type Breakdown
+        const typeCountMap: Record<string, number> = {};
+        allItems.forEach((i: any) => {
+          const t = i.content_type || 'regulation';
+          typeCountMap[t] = (typeCountMap[t] || 0) + 1;
+        });
+
+        const colors = ["#800000", "#D97706", "#2563EB", "#059669"];
+        const typeMap: Record<string, string> = {
+          faq: "คำถาม-คำตอบ (FAQ)",
+          document: "ระเบียบและเอกสาร",
+          news: "ข่าวประชาสัมพันธ์",
+          announcement: "ประกาศทางการ",
+          regulation: "ระเบียบข้อบังคับ",
+          manual: "คู่มือปฏิบัติงาน",
+          course: "หลักสูตรและการเรียน"
+        };
+
+        const totalTypes = Object.values(typeCountMap).reduce((a, b) => a + b, 0);
+        const contentTypeBreakdown: DonutDataPoint[] = Object.entries(typeCountMap).map(([typeKey, count], idx) => ({
+          label: typeMap[typeKey] || typeKey,
+          value: count,
+          percentage: totalTypes > 0 ? Math.round((count / totalTypes) * 100) : 0,
+          color: colors[idx % colors.length]
+        }));
+
+        // Top Used Articles (by ai_reference_count)
+        const sortedByUse = [...allItems].sort((a: any, b: any) => (b.ai_reference_count || 0) - (a.ai_reference_count || 0)).slice(0, 6);
+        const maxUse = Math.max(...sortedByUse.map((r: any) => r.ai_reference_count || 0), 1);
+        const topUsedArticles: RankingItem[] = sortedByUse.map((r: any, idx: number) => ({
+          rank: idx + 1,
+          id: r.knowledge_id,
+          title: r.title,
+          subtitle: deptMap.get(r.department_id) || "วิทยาลัยการอาชีพฝาง",
+          count: r.ai_reference_count || 0,
+          percentage: Math.round(((r.ai_reference_count || 0) / maxUse) * 100),
+          linkUrl: "/knowledge/" + r.knowledge_id
+        }));
+
+        // Department Contributions
+        const deptCountMap: Record<string, number> = {};
+        allItems.forEach((i: any) => {
+          if (i.department_id) {
+            deptCountMap[i.department_id] = (deptCountMap[i.department_id] || 0) + 1;
+          }
+        });
+
+        const deptContribList = depts.map((d: any) => ({
+          id: d.department_id,
+          title: d.name,
+          count: deptCountMap[d.department_id] || 0
+        })).sort((a, b) => b.count - a.count);
+
+        const maxContrib = Math.max(...deptContribList.map(d => d.count), 1);
+        const departmentContributions: RankingItem[] = deptContribList.map((d, idx) => ({
+          rank: idx + 1,
+          id: d.id,
+          title: d.title,
+          count: d.count,
+          percentage: Math.round((d.count / maxContrib) * 100)
+        }));
+
+        return {
+          dateRange: filter,
+          kpis,
+          growthTrend,
+          contentTypeBreakdown,
+          topUsedArticles,
+          departmentContributions
+        };
+      }
+    } catch (sbErr) {
+      console.warn("Supabase getKnowledgeAnalytics error, falling back to SQLite:", sbErr);
+    }
+  }
+
+  // 2. Fallback to SQLite
   const db = getDb();
   const deptCond = !isAdmin && deptId ? "WHERE department_id = ?" : "";
   const deptParams = !isAdmin && deptId ? [deptId] : [];

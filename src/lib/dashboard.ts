@@ -66,55 +66,69 @@ export async function getDashboardSummary(
   if (isSupabaseConfigured()) {
     try {
       if (isAdmin) {
-        const [
-          sbKnowledge,
-          sbUsers,
-          sbActiveUsers,
-          sbPendingSync,
-          sbRecentWeek,
-          sbAiTotal,
-          sbAiResolved
-        ] = await Promise.all([
-          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }),
-          supabaseAdmin.from('master_users').select('*', { count: 'exact', head: true }),
-          supabaseAdmin.from('master_users').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('sync_status', 'pending'),
-          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
-          supabaseAdmin.from('ai_query_logs').select('*', { count: 'exact', head: true }),
-          supabaseAdmin.from('ai_query_logs').select('*', { count: 'exact', head: true }).eq('is_fallback', 0).gte('confidence_score', 0.70)
-        ]);
+        try {
+          const sbKnowledge = await supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true });
+          if (!sbKnowledge.error && sbKnowledge.count !== null && sbKnowledge.count !== undefined) {
+            totalKnowledgeCount = sbKnowledge.count;
+            supabaseKpiSuccess = true;
+          }
+        } catch {}
 
-        if (sbKnowledge.count !== null && sbUsers.count !== null) {
-          totalKnowledgeCount = sbKnowledge.count || 0;
-          totalUsersCount = sbUsers.count || 0;
-          activeUsersCount = sbActiveUsers.count || 0;
-          pendingSyncCount = sbPendingSync.count || 0;
-          recentWeekKnowledgeCount = sbRecentWeek.count || 0;
-          totalAiQueriesCount = sbAiTotal.count || 0;
-          resolvedAiQueriesCount = sbAiResolved.count || 0;
-          supabaseKpiSuccess = true;
-        }
+        try {
+          const sbUsers = await supabaseAdmin.from('master_users').select('*', { count: 'exact', head: true });
+          if (!sbUsers.error && sbUsers.count !== null && sbUsers.count !== undefined) {
+            totalUsersCount = sbUsers.count;
+          }
+        } catch {}
+
+        try {
+          const sbActive = await supabaseAdmin.from('master_users').select('*', { count: 'exact', head: true }).eq('status', 'active');
+          if (!sbActive.error && sbActive.count !== null && sbActive.count !== undefined) {
+            activeUsersCount = sbActive.count;
+          }
+        } catch {}
+
+        try {
+          const sbPending = await supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('sync_status', 'pending');
+          if (!sbPending.error && sbPending.count !== null && sbPending.count !== undefined) {
+            pendingSyncCount = sbPending.count;
+          }
+        } catch {}
+
+        try {
+          const sbRecent = await supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString());
+          if (!sbRecent.error && sbRecent.count !== null && sbRecent.count !== undefined) {
+            recentWeekKnowledgeCount = sbRecent.count;
+          }
+        } catch {}
+
+        try {
+          const sbAi = await supabaseAdmin.from('ai_query_logs').select('*', { count: 'exact', head: true });
+          if (!sbAi.error && sbAi.count !== null && sbAi.count !== undefined) {
+            totalAiQueriesCount = sbAi.count;
+          }
+          const sbAiRes = await supabaseAdmin.from('ai_query_logs').select('*', { count: 'exact', head: true }).eq('is_fallback', 0).gte('confidence_score', 0.70);
+          if (!sbAiRes.error && sbAiRes.count !== null && sbAiRes.count !== undefined) {
+            resolvedAiQueriesCount = sbAiRes.count;
+          }
+        } catch {}
       } else {
         const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-        const [
-          sbDeptKnowledge,
-          sbMyAdded,
-          sbMyUpdated,
-          sbDeptPending
-        ] = await Promise.all([
-          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('department_id', user.department_id),
-          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('created_by', user.user_id).gte('created_at', startOfMonth),
-          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('updated_by', user.user_id).gte('updated_at', startOfMonth),
-          supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('department_id', user.department_id).eq('sync_status', 'pending')
-        ]);
+        try {
+          const sbDept = await supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('department_id', user.department_id);
+          if (!sbDept.error && sbDept.count !== null) {
+            deptKnowledgeCount = sbDept.count;
+            supabaseKpiSuccess = true;
+          }
+          const sbMyAdd = await supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('created_by', user.user_id).gte('created_at', startOfMonth);
+          if (!sbMyAdd.error && sbMyAdd.count !== null) myAddedMonthCount = sbMyAdd.count;
 
-        if (sbDeptKnowledge.count !== null) {
-          deptKnowledgeCount = sbDeptKnowledge.count || 0;
-          myAddedMonthCount = sbMyAdded.count || 0;
-          myUpdatedMonthCount = sbMyUpdated.count || 0;
-          deptPendingSyncCount = sbDeptPending.count || 0;
-          supabaseKpiSuccess = true;
-        }
+          const sbMyUpd = await supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('updated_by', user.user_id).gte('updated_at', startOfMonth);
+          if (!sbMyUpd.error && sbMyUpd.count !== null) myUpdatedMonthCount = sbMyUpd.count;
+
+          const sbDeptPend = await supabaseAdmin.from('knowledge_items').select('*', { count: 'exact', head: true }).eq('department_id', user.department_id).eq('sync_status', 'pending');
+          if (!sbDeptPend.error && sbDeptPend.count !== null) deptPendingSyncCount = sbDeptPend.count;
+        } catch {}
       }
     } catch (sbErr) {
       console.warn('Dashboard Supabase KPI count warning:', sbErr);
@@ -295,6 +309,25 @@ export async function getDashboardSummary(
       FROM departments d
       ORDER BY d.code ASC
     `).all() as any[];
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: sbItems } = await supabaseAdmin.from('knowledge_items').select('department_id');
+        if (sbItems && sbItems.length > 0) {
+          const countByDept: Record<string, number> = {};
+          sbItems.forEach((item: any) => {
+            if (item.department_id) {
+              countByDept[item.department_id] = (countByDept[item.department_id] || 0) + 1;
+            }
+          });
+          depts.forEach((d: any) => {
+            if (countByDept[d.department_id] !== undefined) {
+              d.knowledge_count = countByDept[d.department_id];
+            }
+          });
+        }
+      } catch {}
+    }
 
     const deptColors: Record<string, string> = {
       RES: '#800000',

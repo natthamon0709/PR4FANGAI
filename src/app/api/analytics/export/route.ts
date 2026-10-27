@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (categories.includes('knowledge')) {
-        const km = getKnowledgeAnalytics(filter, deptId, isAdmin);
+        const km = await getKnowledgeAnalytics(filter, deptId, isAdmin);
         lines.push('"=== หมวดที่ 2: รายงานประสิทธิภาพองค์ความรู้ (Knowledge Management) ==="');
         lines.push('"ตัวชี้วัด (KPI)", "ค่าสถิติ", "หน่วย"');
         km.kpis.forEach(k => {
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
     const overview = getAnalyticsOverview(filter, deptId, isAdmin);
     const usage = categories.includes('usage') ? getUsageAnalytics(filter, deptId, isAdmin) : null;
-    const knowledge = categories.includes('knowledge') ? getKnowledgeAnalytics(filter, deptId, isAdmin) : null;
+    const knowledge = categories.includes('knowledge') ? await getKnowledgeAnalytics(filter, deptId, isAdmin) : null;
     const ai = categories.includes('ai') ? getAiPerformanceAnalytics(filter, deptId, isAdmin) : null;
     const line = categories.includes('line') ? getLineAnalytics(filter, deptId, isAdmin) : null;
 
