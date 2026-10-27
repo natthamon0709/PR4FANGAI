@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import os from 'os';
+import { execFile } from 'child_process';
 import { uploadToStorage, isSupabaseConfigured } from './supabase';
 
 export interface TTSOptions {
@@ -489,6 +491,54 @@ function getEdgeSecMsGec(): string {
 }
 
 /**
+ * Synthesize speech via edge-tts CLI tool with v2 DRM support (Fast, robust, authentic Thai neural voices)
+ */
+async function synthesizeViaEdgeTtsCli(
+  text: string,
+  voiceName: string,
+  speed: number = 1.0
+): Promise<Buffer | null> {
+  const tmpPath = path.join(os.tmpdir(), `edge-tts-${Date.now()}-${crypto.randomUUID().slice(0, 6)}.mp3`);
+  try {
+    const ratePercentage = Math.round((speed - 1.0) * 100);
+    const rateArg = ratePercentage >= 0 ? `+${ratePercentage}%` : `${ratePercentage}%`;
+
+    await new Promise<void>((resolve, reject) => {
+      const cmd = 'edge-tts';
+      const args = ['--voice', voiceName, '--text', text, '--write-media', tmpPath];
+      if (ratePercentage !== 0) {
+        args.push('--rate', rateArg);
+      }
+      execFile(cmd, args, { timeout: 8000 }, (error) => {
+        if (error) {
+          execFile('python3', ['-m', 'edge_tts', ...args], { timeout: 8000 }, (pyErr) => {
+            if (pyErr) reject(pyErr);
+            else resolve();
+          });
+        } else {
+          resolve();
+        }
+      });
+    });
+
+    if (fs.existsSync(tmpPath)) {
+      const buf = fs.readFileSync(tmpPath);
+      try { fs.unlinkSync(tmpPath); } catch {}
+      if (buf && buf.length > 500) {
+        return buf;
+      }
+    }
+  } catch (err) {
+    // If CLI failed, return null to allow WebSocket / fallback
+  } finally {
+    try {
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    } catch {}
+  }
+  return null;
+}
+
+/**
  * Synthesize speech via Microsoft Edge Neural TTS (High quality, free, natural Thai neural voice)
  * Works for both Female (PremwadeeNeural) and Male (NiwatNeural)
  */
@@ -682,19 +732,26 @@ export async function generateAudioReply(options: TTSOptions): Promise<TTSResult
   const voiceName = VOICE_MAP[voiceGender] || VOICE_MAP.female;
   let audioBuffer: Buffer | null = null;
 
-  // 1. Try Microsoft Edge Neural TTS (Natural, sweet, warm voice)
+  // 1. Try edge-tts CLI tool first (Fast, high-fidelity Microsoft Edge Neural voice with v2 DRM)
   try {
-    audioBuffer = await synthesizeViaEdgeTts(cleanText, voiceName, speed, dialect);
+    audioBuffer = await synthesizeViaEdgeTtsCli(cleanText, voiceName, speed);
   } catch {}
 
-  // 2. Fallback to Google TTS if Edge was unreachable
+  // 2. Try Microsoft Edge Neural TTS WebSocket
   if (!audioBuffer || audioBuffer.length < 500) {
+    try {
+      audioBuffer = await synthesizeViaEdgeTts(cleanText, voiceName, speed, dialect);
+    } catch {}
+  }
+
+  // 3. Fallback to Google TTS (only for female persona to strictly avoid female voice reading male "ครับ/ผม")
+  if ((!audioBuffer || audioBuffer.length < 500) && voiceGender === 'female') {
     try {
       audioBuffer = await synthesizeViaGoogleTts(cleanText);
     } catch {}
   }
 
-  // 3. Fallback to minimal valid audio frame if completely offline
+  // 4. Fallback to minimal valid audio frame if completely offline
   if (!audioBuffer || audioBuffer.length < 500) {
     audioBuffer = createFallbackMp3();
   }

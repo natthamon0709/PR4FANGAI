@@ -145,16 +145,53 @@ export default function BluetoothConfigModal({
   };
 
   // ทดสอบลำโพง
-  const handleTestSpeaker = () => {
+  const handleTestSpeaker = async () => {
     setIsTestingSpeaker(true);
     const polite = voiceGender === 'female' ? 'ค่ะ' : 'ครับ';
     const textToSpeak = `ทดสอบระบบเสียงลำโพงหุ่นยนต์วิทยาลัยการอาชีพฝาง${polite} เสียงทำงานได้ปกติ${polite}`;
 
+    // 1. ลองเล่นเสียงจริงจากระบบ Server Audio (NiwatNeural / PremwadeeNeural)
+    try {
+      const res = await fetch(`/api/robot/welcome-audio?gender=${voiceGender}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audioUrl) {
+          const audio = new Audio(data.audioUrl);
+          if (selectedSpeakerId && (audio as any).setSinkId) {
+            try { await (audio as any).setSinkId(selectedSpeakerId); } catch {}
+          }
+          audio.onended = () => setIsTestingSpeaker(false);
+          audio.onerror = () => fallbackSpeak(textToSpeak);
+          await audio.play();
+          return;
+        }
+      }
+    } catch {}
+
+    fallbackSpeak(textToSpeak);
+  };
+
+  const fallbackSpeak = (textToSpeak: string) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utterance.lang = 'th-TH';
       utterance.rate = 1.0;
+      utterance.pitch = voiceGender === 'male' ? 0.75 : 1.05;
+
+      try {
+        const voices = window.speechSynthesis.getVoices();
+        const thaiVoices = voices.filter(v => v.lang.startsWith('th'));
+        if (thaiVoices.length > 0) {
+          if (voiceGender === 'male') {
+            const maleV = thaiVoices.find(v => /male|man|niwat/i.test(v.name));
+            if (maleV) utterance.voice = maleV;
+          } else {
+            const femaleV = thaiVoices.find(v => /female|woman|kanya|premwadee|narisa/i.test(v.name));
+            if (femaleV) utterance.voice = femaleV;
+          }
+        }
+      } catch {}
 
       utterance.onend = () => setIsTestingSpeaker(false);
       utterance.onerror = () => setIsTestingSpeaker(false);

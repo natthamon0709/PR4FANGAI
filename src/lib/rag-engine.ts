@@ -381,7 +381,7 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
   const isRuleQuery = /แต่งกาย|ทรงผม|เนคไท|ตัดคะแนน|ลงโทษ|ทัณฑ์บน|ระเบียบ|เครื่องแบบ/i.test(cleanLow);
   const isContactQuery = /เบอร์โทร|โทรศัพท์|ติดต่อ|ติดต่อใคร|โทรหา|อู้กับไผ/i.test(cleanLow);
   const isMapQuery = /แผนผัง|ผัง|อาคาร|ห้อง|ตึก|แผนที่|ตี้ไหน|อยู่ตี้ใด/i.test(cleanLow);
-  const isScheduleQuery = /ตารางสอน|ตารางเรียน|ตารางนักเรียน|ตาราง|สอนวิชา|วิชาที่สอน|วิชาอะหยัง|วิชาอะไร|สอนห้อง|คาบสอน|รายวิชา|หลักสูตร/i.test(cleanLow);
+  const isScheduleQuery = /ตารางสอน|ตารางเรียน|ตารางนักเรียน|ตาราง|สอนวิชา|วิชาที่สอน|วิชาอะหยัง|วิชาอะไร|สอนห้อง|คาบสอน|รายวิชา|หลักสูตร|สอนอะไร|สอนอะหยัง/i.test(cleanLow);
 
   // 2. Branch Matching
   const matchedBranches = ACADEMIC_BRANCHES.filter(b => 
@@ -393,13 +393,29 @@ export function analyzeQueryIntent(text: string): QueryIntentAnalysis {
   if (isTeacherQuery || isScheduleQuery || /^(ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์|ตารางสอนของ|ตารางสอน|ตารางเรียนของ|ตารางเรียน|ข้อมูลของ)\s*/i.test(clean)) {
     let stripped = clean
       .replace(/^(ตารางสอนของ|ตารางสอน|ตารางเรียนของ|ตารางเรียน|ข้อมูลของ|รายชื่อของ|ใครเป็น|ว่าที่ร้อยตรีหญิง|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.หญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.|นางสาว|นาย|นาง|ครู|อาจารย์)\s*/gi, '')
-      .replace(/(อยู่สาขาอะไร|อยู่แผนกไหน|คือใคร|มีใครบ้าง|เบอร์โทรอะไร|สอนอะไร|ทำหน้าที่อะไร|อยู่ไหน|เป็นครูอะไร|อยู่ตี้ไหน|อยู่ตี้ใด|มีไผพ่อง|มีไผ|คือไผ|สอนอะหยัง|สอนวิชาอะไรบ้าง|สอนวิชาอะไร|สอนวิชาอะหยังพ่อง|สอนวิชาอะหยัง|วิชาอะไร|วิชาอะหยัง|สอนวิชา|บ้าง|พ่อง|คับ|ครับ|ค่ะ|คะ|เจ้า|เน้อครับ|เน้อเจ้า|เน้อ|นะครับ|นะคะ)$/gi, '')
       .trim();
-    // Second pass in case suffixes were chained e.g. "สอนวิชาอะหยังพ่องคับ" -> "สอนวิชาอะหยัง" -> ""
-    stripped = stripped
-      .replace(/(สอนวิชาอะไรบ้าง|สอนวิชาอะไร|สอนวิชาอะหยังพ่อง|สอนวิชาอะหยัง|สอนอะไร|สอนอะหยัง|วิชาอะไร|วิชาอะหยัง|สอนวิชา|บ้าง|พ่อง|คับ|ครับ|ค่ะ|คะ|เจ้า|เน้อครับ|เน้อเจ้า|เน้อ|นะครับ|นะคะ)$/gi, '')
-      .trim();
-    if (stripped.length >= 3 && stripped.length <= 40) {
+
+    const suffixes = [
+      'สอนวิชาอะไรบ้าง', 'สอนวิชาอะไร', 'สอนวิชาอะหยังพ่อง', 'สอนวิชาอะหยัง',
+      'สอนอะไรบ้าง', 'สอนอะหยังพ่อง', 'สอนอะไร', 'สอนอะหยัง', 'วิชาอะไร', 'วิชาอะหยัง', 
+      'สอนวิชา', 'อยู่สาขาอะไร', 'อยู่แผนกไหน', 'คือใคร', 'มีใครบ้าง', 'เบอร์โทรอะไร', 
+      'ทำหน้าที่อะไร', 'อยู่ไหน', 'เป็นครูอะไร', 'อยู่ตี้ไหน', 'อยู่ตี้ใด', 'มีไผพ่อง', 
+      'มีไผ', 'คือไผ', 'มีอะไรบ้าง', 'มีอะไร', 'บ้าง', 'พ่อง', 'คับ', 'ครับ', 
+      'ค่ะ', 'คะ', 'เจ้า', 'เน้อครับ', 'เน้อเจ้า', 'เน้อ', 'นะครับ', 'นะคะ'
+    ];
+    suffixes.sort((a, b) => b.length - a.length);
+
+    let prev = '';
+    while (prev !== stripped) {
+      prev = stripped;
+      for (const suf of suffixes) {
+        if (stripped.toLowerCase().endsWith(suf.toLowerCase())) {
+          stripped = stripped.slice(0, stripped.length - suf.length).trim();
+        }
+      }
+    }
+
+    if (stripped.length >= 2 && stripped.length <= 40) {
       personName = stripped.toLowerCase();
     }
   }
@@ -669,19 +685,23 @@ export async function searchKnowledgeBase(
     let personMatch = false;
 
     // A. Check FAQ questions
-    const itemFaqs = parseFaqQuestions(item.content);
-    for (const faq of itemFaqs) {
-      if (qAnalysis.cleanLow.includes(faq) || faq.includes(qAnalysis.cleanLow)) {
-        score += 250.0;
-        faqMatch = true;
-        break;
-      }
-      let wordsInFaq = 0;
-      qAnalysis.rawTokens.forEach(t => { if (faq.includes(t)) wordsInFaq++; });
-      if (qAnalysis.rawTokens.length > 0 && wordsInFaq / qAnalysis.rawTokens.length >= 0.75) {
-        score += 200.0;
-        faqMatch = true;
-        break;
+    // Skip general roster FAQ boost if user specifically asks for teaching schedule/courses
+    const isGeneralRosterDoc = titleLow.includes('รายชื่อครู') || titleLow.includes('รายชื่อบุคลากร');
+    if (!(qAnalysis.isScheduleQuery && isGeneralRosterDoc)) {
+      const itemFaqs = parseFaqQuestions(item.content);
+      for (const faq of itemFaqs) {
+        if (qAnalysis.cleanLow.includes(faq) || faq.includes(qAnalysis.cleanLow)) {
+          score += 250.0;
+          faqMatch = true;
+          break;
+        }
+        let wordsInFaq = 0;
+        qAnalysis.rawTokens.forEach(t => { if (faq.includes(t)) wordsInFaq++; });
+        if (qAnalysis.rawTokens.length > 0 && wordsInFaq / qAnalysis.rawTokens.length >= 0.75) {
+          score += 200.0;
+          faqMatch = true;
+          break;
+        }
       }
     }
 
@@ -719,10 +739,18 @@ export async function searchKnowledgeBase(
     // Schedule / Subjects / Department Course Boost
     if (qAnalysis.isScheduleQuery) {
       if (/ตาราง|หลักสูตร|วิชา/i.test(titleLow)) {
-        score += 80.0;
+        score += 120.0;
       }
       if (/ตารางสอน|ตารางเรียน|รายวิชา|วิชา/i.test(contentLow)) {
-        score += 40.0;
+        score += 60.0;
+      }
+      // If specific teacher is matched inside this schedule document, strongly boost
+      if (personMatch && (/ตาราง/i.test(titleLow) || /ตารางสอน/i.test(contentLow))) {
+        score += 220.0;
+      }
+      // If query asks for teaching schedule/courses, penalize general staff roster
+      if (isGeneralRosterDoc) {
+        score -= 100.0;
       }
     }
 
@@ -1022,12 +1050,17 @@ async function generateGroundedAnswer(
           parts: [
             {
               text: `${config.system_prompt}\n\nคำแนะนำและข้อกำหนดสำคัญสำหรับการตอบ:
-1. หากคำถามถามหารายชื่อครู, อาจารย์, หัวหน้าสาขา หรือบุคลากร:
+1. หากคำถามถามหารายชื่อครู, อาจารย์, หัวหน้าสาขา หรือบุคลากร (ภาพรวมของแผนก):
    - ให้สรุปและแสดงรายชื่อพร้อมตำแหน่งอย่างเป็นระเบียบ เช่น
      • หัวหน้าสาขาวิชา: [ชื่อ-สกุล] ([ตำแหน่ง])
      • ผู้ช่วยหัวหน้าสาขาวิชา: [ชื่อ-สกุล] ([ตำแหน่ง])
      • ครูประจำสาขาวิชา: [ชื่อ-สกุล] ([ตำแหน่ง])
    - ระบุชื่อสาขาวิชาของวิทยาลัยการอาชีพฝางให้ชัดเจน
+1.1 หากคำถามถามเจาะจงว่าครูท่านใด 'สอนอะไร', 'สอนวิชาอะไร', หรือถามหา 'ตารางสอน' ของครูท่านนั้น (เช่น ถามถึงครูนฤมล):
+   - สรุปตอบเฉพาะครูท่านที่ถูกถามถึงเท่านั้น! ห้ามคัดลอกหรือนำข้อมูลตารางสอน/รายชื่อของครูท่านอื่นในแผนกมาใส่ในคำตอบอย่างเด็ดขาด
+   - เริ่มต้นด้วยการระบุตำแหน่งและสังกัดแผนกวิชาของครูท่านนั้นให้ชัดเจน เช่น "ว่าที่ร้อยตรีหญิงนฤมล วงค์ร้อย เป็นหัวหน้าแผนกวิชาช่างก่อสร้าง..."
+   - แจกแจงสรุปรายวิชาที่ครูท่านนั้นสอนจากตารางสอนอย่างเป็นระเบียบ สละสลวย น่าฟัง (ระบุชื่อวิชา, รหัสวิชา, กลุ่มชั้นเรียนที่สอน) โดยคัดเลือกเฉพาะเนื้อหาส่วนของครูท่านนั้นมาเรียบเรียง
+   - หากในคลังข้อมูลไม่พบข้อมูลตารางสอนรายวิชาเฉพาะของครูท่านนี้ ให้ชี้แจงอย่างสุภาพว่าในระบบยังไม่มีข้อมูลตารางสอนรายบุคคลของครูท่านนี้ และแนะนำให้ติดต่อฝ่ายงานพัฒนาหลักสูตรหรือแผนกวิชาโดยตรง
 2. หากในองค์ความรู้มีหัวข้อ 'คำถามที่พบบ่อย (FAQ)' หรือ 'รายการคำถาม-คำตอบที่พบบ่อย' ที่ตรงกับสิ่งที่ผู้ใช้ถาม ให้นำคำตอบที่ระบุในคู่นั้นมาตอบผู้ใช้โดยตรง
 3. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ
 4. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด
@@ -1080,16 +1113,15 @@ ${isDialect
       };
 
       // Map official Google Gemini models resiliently (prioritizing active models with available quota)
-      const primaryModel = config.model_name || 'gemini-3.8-flash';
+      const primaryModel = config.model_name || 'gemini-flash-lite-latest';
       const candidateModels = Array.from(new Set([
         primaryModel,
-        'gemini-3.8-flash',
-        'gemini-3.6-flash',
-        'gemini-3.1-flash-lite',
-        'gemini-flash-latest',
+        'gemini-flash-lite-latest',
+        'gemma-4-26b-a4b-it',
         'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash'
+        'gemini-1.5-flash',
+        'gemini-3.6-flash',
+        'gemini-3.8-flash'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -1211,9 +1243,12 @@ ${isDialect
   }
 
   // Check if primarySource is a Teacher/Personnel/Schedule list and user asked about teachers or schedules
-  if ((qAnalysis.isTeacherQuery || qAnalysis.isScheduleQuery || primarySource.title?.includes('รายชื่อครู')) && primarySource.content) {
+  if ((qAnalysis.isTeacherQuery || qAnalysis.isScheduleQuery || primarySource.title?.includes('รายชื่อครู') || primarySource.title?.includes('ตารางสอน')) && primarySource.content) {
     const mainBody = primarySource.content.split(/###\s*คำถามที่พบบ่อย/i)[0] || primarySource.content;
-    const lines = mainBody.split('\n').map((l: string) => l.trim()).filter(Boolean);
+    const normalizedBody = mainBody
+      .replace(/(\d+[\.\)]\s*(?:ว่าที่|นาย|นางสาว|นาง|ครู|อาจารย์))/g, '\n$1\n')
+      .replace(/((?:วันจันทร์|วันอังคาร|วันพุธ|วันพฤหัสบดี|วันศุกร์):)/g, '\n  • $1 ');
+    const lines = normalizedBody.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const formattedRoster: string[] = [];
     let currentRole = '';
 
@@ -1232,7 +1267,7 @@ ${isDialect
       const teacherSpecificLines: string[] = [];
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].toLowerCase().includes(pLow)) {
-          let role = 'ครูประจำสาขาวิชา';
+          let role = 'ครูผู้สอน';
           for (let j = i; j >= Math.max(0, i - 6); j--) {
             if (/^(หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้าสาขาวิชา|ครูประจำสาขาวิชา|คณะผู้บริหาร|ผู้อำนวยการ|รองผู้อำนวยการ)$/i.test(lines[j])) {
               role = lines[j];
@@ -1245,12 +1280,12 @@ ${isDialect
             const nextLine = lines[k];
             // Stop if encountering a new role/section header or FAQ marker
             if (/^(?:หัวหน้าสาขาวิชา|ผู้ช่วยหัวหน้าสาขาวิชา|ครูประจำสาขาวิชา|คณะผู้บริหาร|ผู้อำนวยการ|รองผู้อำนวยการ|###)/i.test(nextLine)) break;
-            // Stop if encountering the next teacher (with or without numbers e.g. "5. นาย...", "นาย...", "ว่าที่...")
+            // Stop if encountering the next teacher (with or without numbers e.g. "2. นาย...", "นาย...", "ว่าที่...")
             if (/^\s*(?:\d+[\.\)]\s*)?(?:นาย|นางสาว|นาง|ว่าที่|ครู|อาจารย์)\b/i.test(nextLine)) break;
             if (/^\s*\d+[\.\)]\s+[^\d]/i.test(nextLine)) break;
             teacherSpecificLines.push(`  ${nextLine}`);
-            // Safety cap: single teacher schedule/details should not exceed 15 lines
-            if (k - i >= 15) break;
+            // Safety cap: single teacher schedule/details should not exceed 25 lines
+            if (k - i >= 25) break;
           }
           teacherSpecificFound = true;
           break;
