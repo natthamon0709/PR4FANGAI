@@ -400,29 +400,31 @@ export function buildSsmlForSpeech(
   speed: number = 1.0, 
   dialect: 'kham_mueang' | 'central' = 'central'
 ): string {
-  // Base rate adjustment: default speed 1.0 produces a relaxed, warm pace (-5%)
-  // For Kham Mueang (Northern dialect), apply a melodic, gentle cadence (-9%)
   const baseRate = dialect === 'kham_mueang' ? -9 : -5;
   const ratePercent = baseRate + Math.round((speed - 1.0) * 100);
   const rateStr = ratePercent >= 0 ? `+${ratePercent}%` : `${ratePercent}%`;
 
-  // Escape special XML characters
+  // Escape special XML characters & clean control codes
   let ssmlBody = text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  if (dialect === 'kham_mueang') {
-    // Insert natural breathing pause after Northern polite particles using spacing
-    ssmlBody = ssmlBody.replace(/(เน้อเจ้า|กะเจ้า|เจ้าข้า|ยินดีเจ้า|เจ้า|เน้อ)\s*/g, '$1, ');
-  }
-
   return (
-    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='th-TH'>` +
-    `<voice name='${voiceName}'><prosody pitch='+0Hz' rate='${rateStr}'>` +
+    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>` +
+    `<voice name='${voiceName}'><prosody pitch='+0Hz' rate='${rateStr}' volume='+0%'>` +
     `${ssmlBody}` +
     `</prosody></voice></speak>`
   );
+}
+
+function getEdgeTimestamp(): string {
+  const d = new Date();
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${days[d.getUTCDay()]} ${months[d.getUTCMonth()]} ${pad(d.getUTCDate())} ${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} GMT+0000 (Coordinated Universal Time)`;
 }
 
 /**
@@ -591,8 +593,11 @@ async function synthesizeViaEdgeTts(
 
       const onConnectOpen = () => {
         diagLog.push('WS Open');
+        const timestamp = getEdgeTimestamp();
+
         // 1. Send speech config
         const configMsg =
+          `X-Timestamp:${timestamp}\r\n` +
           'Content-Type:application/json; charset=utf-8\r\n' +
           'Path:speech.config\r\n\r\n' +
           JSON.stringify({
@@ -614,6 +619,7 @@ async function synthesizeViaEdgeTts(
         const ssmlMsg =
           `X-RequestId:${reqId}\r\n` +
           'Content-Type:application/ssml+xml\r\n' +
+          `X-Timestamp:${timestamp}Z\r\n` +
           'Path:ssml\r\n\r\n' +
           ssml;
         ws.send(ssmlMsg);
