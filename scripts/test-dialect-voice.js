@@ -94,7 +94,7 @@ async function runTests() {
   console.log('  🔍 Testing buildSsmlForSpeech:');
   const ssmlOutput = buildSsmlForSpeech('ยินดีเจ้า, สำหรับข้อมูลเพิ่มเติม ติดต่อได้เลยเน้อเจ้า', 'th-TH-PremwadeeNeural', 1.0);
   assert(ssmlOutput.includes("rate='-5%'"), 'buildSsmlForSpeech sets default prosody rate to warm/gentle -5%');
-  assert(ssmlOutput.includes("<break time='220ms'/>"), 'buildSsmlForSpeech inserted SSML break tags at breath pause points');
+  assert(ssmlOutput.includes("th-TH-PremwadeeNeural") && ssmlOutput.includes("<prosody"), 'buildSsmlForSpeech produces valid Edge TTS SSML without disallowed break tags');
   assert(ssmlOutput.includes("<voice name='th-TH-PremwadeeNeural'>"), 'buildSsmlForSpeech targets Premwadee Neural voice');
 
   const markdownText = '### ระเบียบการแต่งกาย\n* นักศึกษาชายสวม **เนคไทสีกรมท่า**\n[ดูรายละเอียด](https://fang.ac.th)';

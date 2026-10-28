@@ -413,16 +413,9 @@ export function buildSsmlForSpeech(
     .replace(/>/g, '&gt;');
 
   if (dialect === 'kham_mueang') {
-    // Insert natural melodious breath pauses after Northern polite particles
-    ssmlBody = ssmlBody.replace(/(เน้อเจ้า|กะเจ้า|เจ้าข้า|ยินดีเจ้า|เจ้า|เน้อ)\s*/g, `$1<break time='320ms'/> `);
+    // Insert natural breathing pause after Northern polite particles using spacing
+    ssmlBody = ssmlBody.replace(/(เน้อเจ้า|กะเจ้า|เจ้าข้า|ยินดีเจ้า|เจ้า|เน้อ)\s*/g, '$1, ');
   }
-
-  // Convert commas into natural SSML breaks (~220ms pause)
-  ssmlBody = ssmlBody.replace(/,\s*/g, `<break time='220ms'/> `);
-
-  // Convert periods or ellipses into sentence breaks (~380ms pause)
-  ssmlBody = ssmlBody.replace(/\.\.\.\s*/g, `<break time='380ms'/> `);
-  ssmlBody = ssmlBody.replace(/\.\s*/g, `<break time='350ms'/> `);
 
   return (
     `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='th-TH'>` +
