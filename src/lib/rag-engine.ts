@@ -1,5 +1,5 @@
 import getDb from './db';
-import { supabaseAdmin } from './supabase';
+import { supabaseAdmin, isSupabaseConfigured } from './supabase';
 import crypto from 'crypto';
 import { decryptApiKey } from './ai-crypto';
 import { generateAudioReply } from './tts-service';
@@ -1605,7 +1605,40 @@ export async function executeRAGPipeline(params: {
 }): Promise<RAGExecutionResult> {
   const startTime = Date.now();
   const db = getDb();
-  const baseConfig = getActiveAiConfig();
+  let baseConfig = getActiveAiConfig();
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: sbConfig, error: sbErr } = await supabaseAdmin
+        .from('ai_engine_configs')
+        .select('*')
+        .eq('is_active', 1)
+        .limit(1)
+        .maybeSingle();
+
+      if (!sbErr && sbConfig) {
+        baseConfig = {
+          config_id: sbConfig.config_id,
+          provider: sbConfig.provider,
+          model_name: sbConfig.model_name,
+          api_key_masked: sbConfig.api_key_encrypted ? sbConfig.api_key_encrypted.slice(-4) : '••••',
+          api_key_encrypted: sbConfig.api_key_encrypted,
+          system_prompt: sbConfig.system_prompt,
+          confidence_threshold: Number(sbConfig.confidence_threshold) || 0.70,
+          retrieval_top_k: Number(sbConfig.retrieval_top_k) || 5,
+          temperature: Number(sbConfig.temperature) || 0.3,
+          is_active: Boolean(sbConfig.is_active),
+          voice_reply_enabled: sbConfig.voice_reply_enabled !== undefined ? Boolean(sbConfig.voice_reply_enabled) : true,
+          voice_gender: sbConfig.voice_gender || 'female',
+          voice_dialect_mode: sbConfig.voice_dialect_mode || 'adaptive',
+          voice_speed: Number(sbConfig.voice_speed) || 1.0,
+          updated_by: sbConfig.updated_by,
+          updated_at: sbConfig.updated_at
+        };
+      }
+    } catch {}
+  }
+
   const config = {
     ...baseConfig,
     voice_gender: params.overrideVoiceGender || baseConfig.voice_gender || 'female'
