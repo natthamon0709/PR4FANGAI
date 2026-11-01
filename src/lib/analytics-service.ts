@@ -341,7 +341,7 @@ export async function getAnalyticsOverview(filter: DateRangeFilter, deptId?: str
             prevValue: 88,
             changePercent: successChange.changePercent,
             unit: "%",
-            status: successRate >= 80 ? "positive" : "negative",
+            status: successRate >= 85 ? "positive" : "negative",
             tooltip: "สัดส่วนคำถามที่ AI ตอบได้ถูกต้องตรงกับคลังข้อมูลโดยไม่ตัดเข้า Fallback"
           },
           {
@@ -484,7 +484,7 @@ export async function getAnalyticsOverview(filter: DateRangeFilter, deptId?: str
       prevValue: 88,
       changePercent: successChange.changePercent,
       unit: "%",
-      status: successRate >= 80 ? "positive" : "negative",
+      status: successRate >= 85 ? "positive" : "negative",
       tooltip: "สัดส่วนคำถามที่ AI ตอบได้ถูกต้องตรงกับคลังข้อมูลโดยไม่ตัดเข้า Fallback"
     },
     {
@@ -1168,7 +1168,7 @@ export async function getAiPerformanceAnalytics(filter: DateRangeFilter, deptId?
             label: "อัตราตอบสำเร็จ (Accuracy)",
             value: successRate,
             unit: "%",
-            status: successRate >= 80 ? "positive" : "negative",
+            status: successRate >= 85 ? "positive" : "negative",
             tooltip: "คำถามที่มีความมั่นใจผ่านเกณฑ์และส่งคำตอบตรงประเด็น"
           },
           {
@@ -1323,7 +1323,7 @@ export async function getAiPerformanceAnalytics(filter: DateRangeFilter, deptId?
       label: "อัตราตอบสำเร็จ (Accuracy)",
       value: successRate,
       unit: "%",
-      status: successRate >= 80 ? "positive" : "negative",
+      status: successRate >= 85 ? "positive" : "negative",
       tooltip: "คำถามที่มีความมั่นใจผ่านเกณฑ์และส่งคำตอบตรงประเด็น"
     },
     {

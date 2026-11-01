@@ -347,6 +347,9 @@ export function cleanTextForSpeech(
   // Apply Thai phonetic and prosody normalizer
   cleaned = normalizeThaiForSpeech(cleaned);
 
+  // Insert a natural breathing pause (comma) after sentence-ending polite particles if followed by more words
+  cleaned = cleaned.replace(/(ครับ|ค่ะ|คะ|นะคะ|นะครับ|เจ้า|เน้อเจ้า|เน้อครับ)([\s\n]+)(?=[ก-๙A-Za-z0-9])/g, '$1, ');
+
   // Clean up duplicate commas, periods, colons, spaces
   cleaned = cleaned
     .replace(/[:：]/g, ', ')
@@ -400,7 +403,8 @@ export function buildSsmlForSpeech(
   speed: number = 1.0, 
   dialect: 'kham_mueang' | 'central' = 'central'
 ): string {
-  const baseRate = dialect === 'kham_mueang' ? -9 : -5;
+  // Calm and natural baseline tempo: -12% for central Thai, -15% for northern dialect
+  const baseRate = dialect === 'kham_mueang' ? -15 : -12;
   const ratePercent = baseRate + Math.round((speed - 1.0) * 100);
   const rateStr = ratePercent >= 0 ? `+${ratePercent}%` : `${ratePercent}%`;
 
@@ -498,19 +502,18 @@ function getEdgeSecMsGec(): string {
 async function synthesizeViaEdgeTtsCli(
   text: string,
   voiceName: string,
-  speed: number = 1.0
+  speed: number = 1.0,
+  dialect: 'kham_mueang' | 'central' = 'central'
 ): Promise<Buffer | null> {
   const tmpPath = path.join(os.tmpdir(), `edge-tts-${Date.now()}-${crypto.randomUUID().slice(0, 6)}.mp3`);
   try {
-    const ratePercentage = Math.round((speed - 1.0) * 100);
+    const baseRate = dialect === 'kham_mueang' ? -15 : -12;
+    const ratePercentage = baseRate + Math.round((speed - 1.0) * 100);
     const rateArg = ratePercentage >= 0 ? `+${ratePercentage}%` : `${ratePercentage}%`;
 
     await new Promise<void>((resolve, reject) => {
       const cmd = 'edge-tts';
-      const args = ['--voice', voiceName, '--text', text, '--write-media', tmpPath];
-      if (ratePercentage !== 0) {
-        args.push('--rate', rateArg);
-      }
+      const args = ['--voice', voiceName, '--text', text, '--write-media', tmpPath, '--rate', rateArg];
       execFile(cmd, args, { timeout: 8000 }, (error) => {
         if (error) {
           execFile('python3', ['-m', 'edge_tts', ...args], { timeout: 8000 }, (pyErr) => {
@@ -806,7 +809,7 @@ export async function generateAudioReply(options: TTSOptions): Promise<TTSResult
 
   // 1. Try edge-tts CLI tool first (Fast, high-fidelity Microsoft Edge Neural voice with v2 DRM)
   try {
-    audioBuffer = await synthesizeViaEdgeTtsCli(cleanText, voiceName, speed);
+    audioBuffer = await synthesizeViaEdgeTtsCli(cleanText, voiceName, speed, dialect);
     if (audioBuffer) diagLog.push('CLI synthesized ok');
   } catch (e: any) {
     diagLog.push(`CLI error: ${e.message}`);

@@ -874,7 +874,7 @@ export default function ReportPreviewPane({
                 <tr>
                   <td className="border border-slate-200 p-2">อัตราความสำเร็จในการตอบ (Accuracy)</td>
                   <td className="border border-slate-200 p-2 text-right font-bold text-emerald-700">92.4%</td>
-                  <td className="border border-slate-200 p-2">&gt; 80%</td>
+                  <td className="border border-slate-200 p-2">&gt;= 85%</td>
                 </tr>
                 <tr>
                   <td className="border border-slate-200 p-2">คะแนนความมั่นใจเฉลี่ย (Avg Confidence)</td>

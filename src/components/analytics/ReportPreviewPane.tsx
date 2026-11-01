@@ -256,7 +256,7 @@ export default function ReportPreviewPane({
             <td className="border border-slate-200 py-1.5 px-2.5 text-right font-bold text-emerald-700">
               {ai ? `${getKpi(ai.kpis, 'success_rate', 92)}%` : '92%'}
             </td>
-            <td className="border border-slate-200 py-1.5 px-2.5">&gt; 80%</td>
+            <td className="border border-slate-200 py-1.5 px-2.5">&gt;= 85%</td>
             <td className="border border-slate-200 py-1.5 px-2.5 text-emerald-700 font-semibold">ผ่านเกณฑ์ดีเด่น</td>
           </tr>
           <tr>

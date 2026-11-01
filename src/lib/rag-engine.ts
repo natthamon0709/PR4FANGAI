@@ -1092,13 +1092,12 @@ async function generateGroundedAnswer(
 3. หากคำถามเกี่ยวข้องกับสภาพอากาศ ให้นำข้อมูลสภาพอากาศจริงของ อ.ฝาง จ.เชียงใหม่ มาตอบอย่างสุภาพและแม่นยำ
 4. กฎสำคัญ: ห้ามแสดงตัวอักษรนำหน้า เช่น 'Q:', 'A:', 'Q1:', 'A1:', 'คำถาม:', 'คำตอบ:' ในคำตอบอย่างเด็ดขาด
 5. กฎเข้มงวดป้องกันการตอบผิด (Strict Anti-Hallucination): ตอบเฉพาะข้อมูลที่มีระบุอยู่ในเอกสารอ้างอิงเท่านั้น ห้ามคาดเดาข้อมูลที่ไม่ปรากฏในเอกสาร หากไม่พบข้อมูลให้ตอบอย่างสุภาพว่ายังไม่พบข้อมูลและแนะนำช่องทางติดต่อฝ่ายงานที่เกี่ยวข้องอย่างชัดเจน
-6. รูปแบบการตอบสำหรับการแปลงเป็นเสียงพูดสังเคราะห์ (Text-to-Speech & Spoken Rhythm):
-   - ใช้ภาษาพูดที่นุ่มนวล เป็นมิตร สุภาพ และเป็นธรรมชาติเสมือนครูอาจารย์ที่ปรึกษาของวิทยาลัยการอาชีพฝางกำลังพูดคุยให้คำแนะนำ
-   - จัดวรรคตอนของประโยคให้มีจังหวะหยุดหายใจพอเหมาะ ไม่เขียนข้อความยาวติดกันเป็นพืด
+6. รูปแบบการตอบสำหรับการแสดงผลและแปลงเป็นเสียงพูด (Spoken Rhythm & Reading Clarity):
+   - ตอบด้วยภาษาที่นุ่มนวล เป็นมิตร สุภาพ และเป็นธรรมชาติเสมือนครูอาจารย์ที่ปรึกษาของวิทยาลัยการอาชีพฝางกำลังพูดคุยให้คำแนะนำ
+   - จัดวรรคตอนของประโยคให้มีจังหวะหยุดพักพอเหมาะ ไม่เขียนข้อความยาวติดกันเป็นพืด
    - กฎสำคัญเรื่องเครื่องหมาย: ห้ามใช้เครื่องหมายดอกจัน (*) หรือ Markdown ตัวหนา (**...**) ในคำตอบอย่างเด็ดขาด หากเป็นรายการหัวข้อย่อยให้ใช้สัญลักษณ์จุดกลม (•) หรือขึ้นบรรทัดใหม่แทน
-   - หลีกเลี่ยงการใช้อักษรย่อที่อ่านยาก และหลีกเลี่ยงสัญลักษณ์พิเศษที่ไม่จำเป็น เช่น *, #, /, |
+   - กฎสำคัญเรื่องตัวเลข (Strict Arabic Digits): ให้คงตัวเลขอารบิกมาตรฐานตามข้อมูลในฐานความรู้เสมอ เช่น วันที่ 16–18 ธันวาคม 2569, ภาคเรียนที่ 2 ปีการศึกษา 2569, เบอร์โทร 053-451234 ห้ามสะกดตัวเลขหรือปี พ.ศ. เป็นคำอ่านภาษาไทยตัวหนังสือ (ห้ามเขียน "สิบหก ถึง สิบแปด", ห้ามเขียน "สองพันห้าร้อยหกสิบเก้า", ห้ามเขียน "พุทธศักราช") เพราะระบบแปลงเสียงพูด (TTS) จะทำการแปลงเสียงอ่านให้เองในเบื้องหลัง
    - เมื่อแจกแจงรายการ ให้เขียนเชื่อมด้วยภาษาพูดที่เป็นธรรมชาติ เช่น "โดยเปิดสอนในระดับ ปวช. และ ปวส. ได้แก่ สาขา..."
-   - กฎการอ่านตัวเลข: ตัวเลขที่ไม่ใช่ค่าเงิน (เช่น 500 บาท), เวลา (เช่น 08.15 น.), วันที่ หรือปีการศึกษา/พ.ศ. หากเป็นรหัสวิชา รหัสกลุ่มเรียน เบอร์โทร หรือตัวเลขเฉพาะ ให้อ่านออกเสียงตรงตัวได้ง่าย (เช่น สอง สาม สอง หนึ่ง ศูนย์)
 ${isDialect
   ? (config.voice_gender === 'male'
       ? `7. กฎสำคัญบังคับตอบภาษาถิ่นเหนือ (คำเมือง) สำหรับผู้ชาย (STRICT KHAM MUEANG - MALE):
@@ -1139,14 +1138,13 @@ ${isDialect
         }
       };
 
-      // Map official Google Gemini models resiliently (prioritizing active models with available quota)
-      const primaryModel = config.model_name || 'gemini-flash-lite-latest';
+      // Map official Google Gemini models resiliently (prioritizing fast and high-availability models)
+      const primaryModel = config.model_name || 'gemini-3.1-flash-lite';
       const candidateModels = Array.from(new Set([
-        'gemini-flash-lite-latest',
-        'gemini-3.5-flash-lite',
-        'gemini-3.1-flash-lite-preview',
         'gemini-3.1-flash-lite',
         primaryModel,
+        'gemini-flash-lite-latest',
+        'gemini-3.5-flash-lite',
         'gemini-flash-latest'
       ])).filter(Boolean);
 
@@ -1156,7 +1154,7 @@ ${isDialect
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(promptPayload),
-            signal: AbortSignal.timeout(6000)
+            signal: AbortSignal.timeout(8000)
           });
 
           if (res.ok) {
@@ -1544,11 +1542,10 @@ export async function transcribeAndProcessAudio(
     };
 
     const candidateModels = Array.from(new Set([
+      'gemini-3.1-flash-lite',
+      config.model_name || 'gemini-3.1-flash-lite',
       'gemini-flash-lite-latest',
       'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite-preview',
-      'gemini-3.1-flash-lite',
-      config.model_name || 'gemini-flash-lite-latest',
       'gemini-flash-latest'
     ])).filter(Boolean);
 
@@ -1558,7 +1555,7 @@ export async function transcribeAndProcessAudio(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(promptPayload),
-          signal: AbortSignal.timeout(12000)
+          signal: AbortSignal.timeout(10000)
         });
 
         if (res.ok) {
