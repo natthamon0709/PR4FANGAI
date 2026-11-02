@@ -563,8 +563,8 @@ function initTables(db: Database.Database) {
   if (deptCount === 0) {
     const departmentsData = [
       { id: 'dept-01-resource', code: 'RES', name: 'ฝ่ายบริหารทรัพยากร' },
-      { id: 'dept-02-planning', code: 'PLN', name: 'ฝ่ายแผนงานและความร่วมมือ' },
-      { id: 'dept-03-student', code: 'STD', name: 'ฝ่ายพัฒนากิจการนักเรียนนักศึกษา' },
+      { id: 'dept-02-planning', code: 'PLN', name: 'ฝ่ายยุทธศาสตร์และแผนงาน' },
+      { id: 'dept-03-student', code: 'STD', name: 'ฝ่ายกิจการนักเรียนนักศึกษา' },
       { id: 'dept-04-academic', code: 'ACD', name: 'ฝ่ายวิชาการ' }
     ];
     const insertDept = db.prepare('INSERT INTO departments (department_id, code, name) VALUES (?, ?, ?)');

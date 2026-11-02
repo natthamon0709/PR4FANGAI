@@ -6,8 +6,8 @@
 -- 1. Departments (Master 4 ฝ่าย)
 INSERT INTO departments (department_id, code, name, display_order, is_active) VALUES
 ('dept-01-resource', 'RES', 'ฝ่ายบริหารทรัพยากร', 1, 1),
-('dept-02-planning', 'PLN', 'ฝ่ายแผนงานและความร่วมมือ', 2, 1),
-('dept-03-student', 'STD', 'ฝ่ายพัฒนากิจการนักเรียนนักศึกษา', 3, 1),
+('dept-02-planning', 'PLN', 'ฝ่ายยุทธศาสตร์และแผนงาน', 2, 1),
+('dept-03-student', 'STD', 'ฝ่ายกิจการนักเรียนนักศึกษา', 3, 1),
 ('dept-04-academic', 'ACD', 'ฝ่ายวิชาการ', 4, 1)
 ON CONFLICT (department_id) DO UPDATE SET
   code = EXCLUDED.code,
@@ -24,13 +24,13 @@ INSERT INTO sub_departments (sub_department_id, department_id, code, name, displ
 ('sub-01-06', 'dept-01-resource', 'RES-BLD', 'งานอาคารสถานที่', 6, 1),
 ('sub-01-07', 'dept-01-resource', 'RES-VEH', 'งานยานพาหนะ', 7, 1),
 ('sub-01-08', 'dept-01-resource', 'RES-PR', 'งานประชาสัมพันธ์', 8, 1),
--- ฝ่ายแผนงานและความร่วมมือ (5 งาน)
+-- ฝ่ายยุทธศาสตร์และแผนงาน (5 งาน)
 ('sub-02-01', 'dept-02-planning', 'PLN-BGT', 'งานวางแผนและงบประมาณ', 1, 1),
 ('sub-02-02', 'dept-02-planning', 'PLN-DIG', 'งานศูนย์ข้อมูลสารสนเทศและดิจิทัล', 2, 1),
 ('sub-02-03', 'dept-02-planning', 'PLN-COP', 'งานความร่วมมือ', 3, 1),
 ('sub-02-04', 'dept-02-planning', 'PLN-RND', 'งานวิจัย พัฒนา นวัตกรรมและสิ่งประดิษฐ์', 4, 1),
 ('sub-02-05', 'dept-02-planning', 'PLN-QA', 'งานประกันคุณภาพและมาตรฐานการศึกษา', 5, 1),
--- ฝ่ายพัฒนากิจการนักเรียนนักศึกษา (5 งาน)
+-- ฝ่ายกิจการนักเรียนนักศึกษา (5 งาน)
 ('sub-03-01', 'dept-03-student', 'STD-ACT', 'งานกิจกรรมนักเรียนนักศึกษา', 1, 1),
 ('sub-03-02', 'dept-03-student', 'STD-ADV', 'งานครูที่ปรึกษา', 2, 1),
 ('sub-03-03', 'dept-03-student', 'STD-DIS', 'งานปกครองและสวัสดิการนักเรียนนักศึกษา', 3, 1),

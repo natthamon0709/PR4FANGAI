@@ -97,8 +97,8 @@ function setupDepartmentsTab(ss) {
   const headers = ["รหัสฝ่าย (Department ID)", "โค้ด (Code)", "ชื่อฝ่าย"];
   const depts = [
     ["dept-01-resource", "RES", "ฝ่ายบริหารทรัพยากร"],
-    ["dept-02-planning", "PLN", "ฝ่ายแผนงานและความร่วมมือ"],
-    ["dept-03-student", "STD", "ฝ่ายพัฒนากิจการนักเรียนนักศึกษา"],
+    ["dept-02-planning", "PLN", "ฝ่ายยุทธศาสตร์และแผนงาน"],
+    ["dept-03-student", "STD", "ฝ่ายกิจการนักเรียนนักศึกษา"],
     ["dept-04-academic", "ACD", "ฝ่ายวิชาการ"]
   ];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);

@@ -22,8 +22,8 @@ const personnelList = [
   // คณะผู้บริหาร
   { name: 'นายปัญญา ช่างงาน', dept: 'ผู้อำนวยการวิทยาลัยการอาชีพฝาง', folderId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li', fileId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li_01' },
   { name: 'นายวรพงศ์ วงค์อ้าย', dept: 'รองผู้อำนวยการฝ่ายบริหารทรัพยากร', folderId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li', fileId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li_02' },
-  { name: 'นายชาลัน คุณหลวง', dept: 'รองผู้อำนวยการฝ่ายพัฒนากิจการนักเรียนนักศึกษา', folderId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li', fileId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li_03' },
-  { name: 'นางสาวชวาลินี สิงห์คำ', dept: 'รองผู้อำนวยการฝ่ายแผนงานและความร่วมมือ', folderId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li', fileId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li_04' },
+  { name: 'นายชาลัน คุณหลวง', dept: 'รองผู้อำนวยการฝ่ายกิจการนักเรียนนักศึกษา', folderId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li', fileId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li_03' },
+  { name: 'นางสาวชวาลินี สิงห์คำ', dept: 'รองผู้อำนวยการฝ่ายยุทธศาสตร์และแผนงาน', folderId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li', fileId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li_04' },
   { name: 'นางวิลาวัลย์ วัชโรทัย', dept: 'รองผู้อำนวยการฝ่ายวิชาการ', folderId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li', fileId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li_05' },
   { name: 'นางสายนที ดำดิบ', dept: 'ผู้ช่วยผู้อำนวยการ', folderId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li', fileId: '1XWK4Tw4oHwUXvt_LEuMFM-qXvHdCT6Li_06' },
 

@@ -534,7 +534,7 @@ export async function getAnalyticsOverview(filter: DateRangeFilter, deptId?: str
       }))
     : [
         { rank: 1, id: "kb-01", title: "ข้อมูลทั่วไปและประวัติวิทยาลัยการอาชีพฝาง", subtitle: "ฝ่ายบริหารทรัพยากร", count: 48, linkUrl: "/knowledge" },
-        { rank: 2, id: "kb-02", title: "ระเบียบวินัย การแต่งกาย และทรงผม", subtitle: "ฝ่ายพัฒนากิจการนักเรียนนักศึกษา", count: 42, linkUrl: "/knowledge" },
+        { rank: 2, id: "kb-02", title: "ระเบียบวินัย การแต่งกาย และทรงผม", subtitle: "ฝ่ายกิจการนักเรียนนักศึกษา", count: 42, linkUrl: "/knowledge" },
         { rank: 3, id: "kb-03", title: "หลักสูตรและการจัดการเรียนการสอน ปวช./ปวส.", subtitle: "ฝ่ายวิชาการ", count: 35, linkUrl: "/knowledge" },
         { rank: 4, id: "kb-04", title: "แผนผังอาคารสถานที่และจุดจอดรถ", subtitle: "ฝ่ายบริหารทรัพยากร", count: 29, linkUrl: "/knowledge" },
         { rank: 5, id: "kb-05", title: "คณะผู้บริหารและหัวหน้าสาขาวิชา", subtitle: "ฝ่ายบริหารทรัพยากร", count: 24, linkUrl: "/knowledge" }
@@ -1438,7 +1438,7 @@ export async function getAiPerformanceAnalytics(filter: DateRangeFilter, deptId?
     : [
         { rank: 1, id: "gap-01", title: '"การขอเอกสารใบรับรองผลการเรียน (Transcript)"', subtitle: "ฝ่ายวิชาการ", count: 8, linkUrl: "/knowledge/new" },
         { rank: 2, id: "gap-02", title: '"ขั้นตอนการสมัครเรียนรอบโควตาพิเศษ 2570"', subtitle: "ฝ่ายวิชาการ", count: 6, linkUrl: "/knowledge/new" },
-        { rank: 3, id: "gap-03", title: '"อัตราค่าบำรุงหอพักนักศึกษา"', subtitle: "ฝ่ายพัฒนากิจการนักเรียนนักศึกษา", count: 5, linkUrl: "/knowledge/new" }
+        { rank: 3, id: "gap-03", title: '"อัตราค่าบำรุงหอพักนักศึกษา"', subtitle: "ฝ่ายกิจการนักเรียนนักศึกษา", count: 5, linkUrl: "/knowledge/new" }
       ];
 
   return {
