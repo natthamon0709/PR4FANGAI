@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&amp;display=swap');
+      * { font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .main-title { font-size: 24px; font-weight: 700; fill: #0f172a; }
+      .sub-title { font-size: 14px; fill: #64748b; }
+      .step-badge { font-size: 13px; font-weight: 700; fill: #ffffff; text-anchor: middle; }
+      .step-title { font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .step-desc { font-size: 12px; fill: #475569; }
+      .cond-label { font-size: 12px; font-weight: 700; }
+    </style>
+
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="arrBlue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb" />
+    </marker>
+    <marker id="arrGreen" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a" />
+    </marker>
+    <marker id="arrRed" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1440" height="960" fill="#f8fafc" />
+
+  <!-- Top Title Banner -->
+  <g transform="translate(40, 30)">
+    <rect width="1360" height="75" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="8" height="75" rx="4" fill="#0284c7" />
+    
+    <!-- Title Icon (Flow / Git Branch) -->
+    <rect x="25" y="18" width="40" height="40" rx="8" fill="#e0f2fe" stroke="#bae6fd"/>
+    <circle cx="37" cy="30" r="3" fill="#0284c7"/>
+    <circle cx="37" cy="46" r="3" fill="#0284c7"/>
+    <circle cx="53" cy="38" r="3" fill="#0284c7"/>
+    <path d="M37 33 v10 M37 36 a8 8 0 0 1 8 5 h5" stroke="#0284c7" stroke-width="1.8" fill="none"/>
+
+    <text x="78" y="44" class="main-title">ภาคผนวก 3: แผนภาพขั้นตอนการทำงานของระบบ AI Assistant (RAG Pipeline Flowchart)</text>
+    <text x="78" y="66" class="sub-title">โฟลว์การสืบค้นข้อมูลแบบ Grounded AI, ค้นหาแบบ Semantic Search และสังเคราะห์เสียงพูดตอบกลับ</text>
+  </g>
+
+  <!-- STEP 1: USER INPUT -->
+  <g transform="translate(40, 135)">
+    <rect width="280" height="130" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.8" filter="url(#cardShadow)"/>
+    <circle cx="28" cy="28" r="14" fill="#2563eb" />
+    <text x="28" y="33" class="step-badge">1</text>
+    <text x="52" y="33" class="step-title" fill="#1e40af">รับคำถามจากผู้ใช้</text>
+    
+    <text x="20" y="62" class="step-desc">• ส่งคำถามผ่าน LINE Official Account</text>
+    <text x="20" y="82" class="step-desc">• สนทนาด้วยเสียงผ่านไมโครโฟนหุ่นยนต์</text>
+    <text x="20" y="102" class="step-desc">• พิมพ์สอบถามผ่านหน้า Web Dashboard</text>
+  </g>
+
+  <!-- Straight Arrow 1 -> 2 -->
+  <path d="M 320 200 L 375 200" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrBlue)" fill="none"/>
+
+  <!-- STEP 2: PREPROCESSING & DIALECT -->
+  <g transform="translate(375, 135)">
+    <rect width="310" height="130" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <circle cx="28" cy="28" r="14" fill="#6366f1" />
+    <text x="28" y="33" class="step-badge">2</text>
+    <text x="52" y="33" class="step-title" fill="#4338ca">ทำความสะอาด &amp; ตรวจจับสำเนียง</text>
+    
+    <text x="20" y="62" class="step-desc">• กรองคำหยาบและ Normalize ข้อความคำถาม</text>
+    <text x="20" y="82" class="step-desc">• ตรวจจับสำเนียงคำเมือง (เช่น เจ้า, ก่อ, อู้, ตี้ไหน)</text>
+    <text x="20" y="102" class="step-desc">• สกัดคีย์เวิร์ดสำคัญสำหรับการสืบค้นฐานข้อมูล</text>
+  </g>
+
+  <!-- Straight Arrow 2 -> 3 -->
+  <path d="M 685 200 L 740 200" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrBlue)" fill="none"/>
+
+  <!-- STEP 3: SEMANTIC RETRIEVAL -->
+  <g transform="translate(740, 135)">
+    <rect width="320" height="130" rx="12" fill="#fdf4ff" stroke="#c026d3" stroke-width="1.8" filter="url(#cardShadow)"/>
+    <circle cx="28" cy="28" r="14" fill="#c026d3" />
+    <text x="28" y="33" class="step-badge">3</text>
+    <text x="52" y="33" class="step-title" fill="#a21caf">สืบค้นคลังความรู้ (RAG Retrieval)</text>
+    
+    <text x="20" y="62" class="step-desc">• ค้นหาในตาราง knowledge_items (Top-K = 5)</text>
+    <text x="20" y="82" class="step-desc">• กรองเฉพาะเนื้อหาที่เปิด is_ai_retrievable = 1</text>
+    <text x="20" y="102" class="step-desc">• คำนวณความเกี่ยวข้อง (Title 95%, Content 80%)</text>
+  </g>
+
+  <!-- Straight Arrow 3 -> 4 -->
+  <path d="M 1060 200 L 1115 200" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrBlue)" fill="none"/>
+
+  <!-- STEP 4: CONFIDENCE DECISION -->
+  <g transform="translate(1115, 135)">
+    <rect width="285" height="130" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.8" filter="url(#cardShadow)"/>
+    <circle cx="28" cy="28" r="14" fill="#d97706" />
+    <text x="28" y="33" class="step-badge">4</text>
+    <text x="52" y="33" class="step-title" fill="#92400e">ตรวจสอบความมั่นใจ</text>
+    
+    <text x="20" y="62" class="cond-label" fill="#b45309">Confidence Score ≥ 0.70 ?</text>
+    <text x="20" y="82" class="step-desc">• มีข้อมูลตรงตามระเบียบวิทยาลัย</text>
+    <text x="20" y="102" class="step-desc">• หากคะแนนต่ำจะสลับสู่โหมด Fallback</text>
+  </g>
+
+  <!-- BRANCH 1: PASSED (GREEN DOWN & LEFT TO 5A) -->
+  <path d="M 1210 265 L 1210 330 L 985 330" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arrGreen)" fill="none"/>
+  <rect x="1080" y="316" width="100" height="26" rx="4" fill="#dcfce7" stroke="#86efac"/>
+  <text x="1130" y="333" font-size="12" font-weight="700" fill="#15803d" text-anchor="middle">✓ ผ่านเกณฑ์</text>
+
+  <!-- STEP 5A: LLM GENERATION (PASSED) -->
+  <g transform="translate(605, 290)">
+    <rect width="380" height="155" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" filter="url(#cardShadow)"/>
+    <circle cx="28" cy="28" r="14" fill="#16a34a" />
+    <text x="28" y="33" class="step-badge">5A</text>
+    <text x="52" y="33" class="step-title" fill="#15803d">สร้างคำตอบด้วย Grounded LLM</text>
+    
+    <text x="20" y="62" class="step-desc">• ประกอบ System Prompt + ข้อมูลความรู้ที่สืบค้นพบ</text>
+    <text x="20" y="82" class="step-desc">• สั่งให้โมเดล Gemini ตอบเฉพาะข้อเท็จจริง (Zero Hallucination)</text>
+    <text x="20" y="102" class="step-desc">• แนบรายการอ้างอิงเอกสารทางการและภาพประกอบ</text>
+    <text x="20" y="122" class="step-desc">• ปรับภาษาเป็นคำเมืองหากผู้ใช้ถามด้วยภาษาเหนือ</text>
+  </g>
+
+  <!-- BRANCH 2: FALLBACK (RED DOWN & LEFT TO 5B) -->
+  <path d="M 1290 265 L 1290 510 L 985 510" stroke="#dc2626" stroke-width="2.5" marker-end="url(#arrRed)" fill="none"/>
+  <rect x="1070" y="496" width="120" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5"/>
+  <text x="1130" y="513" font-size="12" font-weight="700" fill="#991b1b" text-anchor="middle">✗ ไม่พบข้อมูล</text>
+
+  <!-- STEP 5B: FALLBACK & GAP LOGGING -->
+  <g transform="translate(605, 470)">
+    <rect width="380" height="135" rx="12" fill="#fef2f2" stroke="#dc2626" stroke-width="2" filter="url(#cardShadow)"/>
+    <circle cx="28" cy="28" r="14" fill="#dc2626" />
+    <text x="28" y="33" class="step-badge">5B</text>
+    <text x="52" y="33" class="step-title" fill="#991b1b">ระบบ Fallback &amp; บันทึก AI Gap</text>
+    
+    <text x="20" y="62" class="step-desc">• ใช้ข้อความตอบกลับสุภาพ แนะนำช่องทางติดต่อฝ่ายงานตรง</text>
+    <text x="20" y="82" class="step-desc">• ให้เบอร์โทรศัพท์ภายในและสถานที่ตั้งห้องทำงาน</text>
+    <text x="20" y="102" class="step-desc">• บันทึกคำถามลงตาราง knowledge_gap_logs เพื่อให้บุคลากรมาเพิ่มข้อมูล</text>
+  </g>
+
+  <!-- ORTHOGONAL MERGE TO STEP 6 (TTS & MEDIA) -->
+  <path d="M 605 367 L 530 367 L 530 460" stroke="#2563eb" stroke-width="2.5" fill="none"/>
+  <path d="M 605 537 L 530 537 L 530 460" stroke="#2563eb" stroke-width="2.5" fill="none"/>
+  <path d="M 530 460 L 410 460" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrBlue)" fill="none"/>
+
+  <!-- STEP 6: VOICE SYNTHESIS & ATTACHMENTS -->
+  <g transform="translate(50, 400)">
+    <rect width="360" height="145" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" filter="url(#cardShadow)"/>
+    <circle cx="28" cy="28" r="14" fill="#2563eb" />
+    <text x="28" y="33" class="step-badge">6</text>
+    <text x="52" y="33" class="step-title" fill="#1d4ed8">สังเคราะห์เสียง &amp; แนบสื่อ (TTS &amp; Media)</text>
+    
+    <text x="20" y="62" class="step-desc">• หากเปิดโหมดเสียง: สังเคราะห์เป็นไฟล์ Audio (MP3)</text>
+    <text x="20" y="82" class="step-desc">• ปรับเสียงหญิง/ชาย ตามการตั้งค่าหุ่นยนต์</text>
+    <text x="20" y="102" class="step-desc">• ค้นหาภาพประกอบขั้นตอน หรือแผนผังที่เกี่ยวข้อง</text>
+    <text x="20" y="122" class="step-desc">• แนบเอกสาร PDF ระเบียบการให้ดาวน์โหลด</text>
+  </g>
+
+  <!-- Straight Down 6 -> 7 -->
+  <path d="M 230 545 L 230 635" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrBlue)" fill="none"/>
+
+  <!-- STEP 7: LOGGING & AUDIT TRAIL -->
+  <g transform="translate(40, 635)">
+    <rect width="400" height="165" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <circle cx="28" cy="28" r="14" fill="#0d9488" />
+    <text x="28" y="33" class="step-badge">7</text>
+    <text x="52" y="33" class="step-title" fill="#0f766e">บันทึกประวัติ (Audit &amp; AI Logs)</text>
+    
+    <text x="20" y="62" class="step-desc">• บันทึกคำถาม-คำตอบลงตาราง ai_query_logs</text>
+    <text x="20" y="82" class="step-desc">• บันทึกเวลาที่ใช้ประมวลผล (Response Time ms)</text>
+    <text x="20" y="102" class="step-desc">• เก็บค่า Confidence Score และสถานะ Fallback</text>
+    <text x="20" y="122" class="step-desc">• ซิงค์สถิติเข้า Google Sheets และ Dashboard</text>
+    
+    <rect x="20" y="132" width="360" height="24" rx="4" fill="#f0fdfa"/>
+    <text x="200" y="148" font-size="11" font-weight="700" fill="#0f766e" text-anchor="middle">พร้อมสำหรับการเทรนและปรับปรุงข้อมูลในอนาคต</text>
+  </g>
+
+  <!-- Straight Right 7 -> 8 -->
+  <path d="M 440 717 L 500 717" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrBlue)" fill="none"/>
+
+  <!-- STEP 8: FINAL DELIVERY -->
+  <g transform="translate(500, 635)">
+    <rect width="900" height="165" rx="14" fill="#f8fafc" stroke="#3b82f6" stroke-width="2" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="900" height="38" rx="14" fill="#eff6ff" />
+    <line x1="0" y1="38" x2="900" y2="38" stroke="#bfdbfe" stroke-width="1.5"/>
+    <circle cx="25" cy="19" r="12" fill="#2563eb" />
+    <text x="25" y="24" class="step-badge">8</text>
+    <text x="45" y="24" class="step-title" fill="#1e40af">ส่งผลลัพธ์กลับไปยังปลายทางของผู้ใช้งาน (Client Delivery)</text>
+
+    <!-- Sub-channel 1: LINE -->
+    <g transform="translate(25, 52)">
+      <rect width="265" height="95" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="1.2"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#16a34a"/>
+      <path d="M21 21 a6 5 0 0 1 10 0 c0 3 -3 5 -5 5 l-2 2 v-2 a6 5 0 0 1 -3 -5 z" stroke="#ffffff" stroke-width="1.4" fill="none"/>
+      <text x="48" y="30" font-size="13" font-weight="700" fill="#15803d">LINE Official Account</text>
+      <text x="12" y="56" class="step-desc">• Flex Message ตอบกลับทันที</text>
+      <text x="12" y="74" class="step-desc">• แสดงภาพระเบียบการและปุ่มโทรติดต่อ</text>
+    </g>
+
+    <!-- Sub-channel 2: Robot -->
+    <g transform="translate(315, 52)">
+      <rect width="265" height="95" rx="8" fill="#ffffff" stroke="#d8b4fe" stroke-width="1.2"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#7c3aed"/>
+      <path d="M20 22 h12 v8 h-12 z M26 18 v4 M23 25 a1 1 0 1 1 0 -0.1 M29 25 a1 1 0 1 1 0 -0.1" stroke="#ffffff" stroke-width="1.4" fill="none"/>
+      <text x="48" y="30" font-size="13" font-weight="700" fill="#6d28d9">AI Reception Robot</text>
+      <text x="12" y="56" class="step-desc">• สังเคราะห์เสียงพูดตอบรับ (Speech)</text>
+      <text x="12" y="74" class="step-desc">• ขยับศีรษะ แสดงการ์ดข้อมูลบนจอสัมผัส</text>
+    </g>
+
+    <!-- Sub-channel 3: Web Dashboard -->
+    <g transform="translate(605, 52)">
+      <rect width="270" height="95" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.2"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#2563eb"/>
+      <path d="M19 21 h14 v10 h-14 z M17 31 h18" stroke="#ffffff" stroke-width="1.4" fill="none"/>
+      <text x="48" y="30" font-size="13" font-weight="700" fill="#1d4ed8">Web Dashboard</text>
+      <text x="12" y="56" class="step-desc">• แชท Playground ทดสอบ RAG</text>
+      <text x="12" y="74" class="step-desc">• แสดงค่า Similarity และ Top-K ชัดเจน</text>
+    </g>
+  </g>
+</svg>

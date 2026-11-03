@@ -1,0 +1,594 @@
+// ============================================================================
+// PR4Fang AI — dbdiagram.io (DBML) Full Schema (35 Tables)
+// วิทยาลัยการอาชีพฝาง (Fang Industrial and Community Education College)
+// ============================================================================
+
+Project PR4Fang_AI {
+  database_type: 'PostgreSQL'
+  Note: 'โครงสร้างฐานข้อมูลระบบประชาสัมพันธ์อัจฉริยะ PR4Fang AI ครบ 35 ตารางตามสถาปัตยกรรมระบบจริง'
+}
+
+// ============================================================================
+// 1. กลุ่มโครงสร้างองค์กรและผู้ใช้งาน (Core Organization & Users — 5 Tables)
+// ============================================================================
+
+Table departments {
+  department_id varchar(64) [pk]
+  code varchar(32) [unique, not null]
+  name varchar(255) [not null]
+  display_order integer [default: 0]
+  is_active integer [default: 1]
+  created_at timestamp [default: `now()`]
+
+  Note: 'ข้อมูลแผนก/ฝ่ายงานหลักของวิทยาลัย'
+}
+
+Table sub_departments {
+  sub_department_id varchar(64) [pk]
+  department_id varchar(64) [not null]
+  code varchar(32) [unique, not null]
+  name varchar(255) [not null]
+  display_order integer [default: 0]
+  is_active integer [default: 1]
+  created_at timestamp [default: `now()`]
+
+  Note: 'ข้อมูลงานย่อยภายในแผนก'
+}
+
+Table master_users {
+  user_id varchar(64) [pk]
+  first_name varchar(128) [not null]
+  last_name varchar(128) [not null]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  phone varchar(32)
+  department_id varchar(64)
+  sub_department_id varchar(64)
+  role varchar(32) [not null, default: 'STAFF', note: 'ADMIN, SUPERADMIN, STAFF, DEPT_HEAD, STUDENT']
+  avatar_url text
+  status varchar(32) [not null, default: 'ACTIVE', note: 'ACTIVE, INACTIVE, SUSPENDED']
+  last_login_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'ผู้ใช้งานและเจ้าหน้าที่ระบบทั้งหมด'
+}
+
+Table reset_password_tokens {
+  token_id varchar(64) [pk]
+  user_id varchar(64) [not null]
+  token_hash varchar(255) [not null]
+  expires_at timestamp [not null]
+  used_at timestamp
+  created_at timestamp [default: `now()`]
+
+  Note: 'โทเคนสำหรับรีเซ็ตรหัสผ่าน'
+}
+
+Table login_audit_logs {
+  log_id varchar(64) [pk]
+  user_id varchar(64)
+  email_attempted varchar(255) [not null]
+  ip_address varchar(64)
+  user_agent text
+  status varchar(32) [not null, note: 'SUCCESS, FAILED_PASSWORD, FAILED_NOT_FOUND, LOCKED']
+  failure_reason text
+  created_at timestamp [default: `now()`]
+
+  Note: 'บันทึกประวัติการเข้าสู่ระบบและความปลอดภัย'
+}
+
+Ref: sub_departments.department_id > departments.department_id [delete: cascade]
+Ref: master_users.department_id > departments.department_id [delete: set null]
+Ref: master_users.sub_department_id > sub_departments.sub_department_id [delete: set null]
+Ref: reset_password_tokens.user_id > master_users.user_id [delete: cascade]
+Ref: login_audit_logs.user_id > master_users.user_id [delete: set null]
+
+
+// ============================================================================
+// 2. กลุ่มคลังความรู้และการจัดการข้อมูล (Knowledge Management — 5 Tables)
+// ============================================================================
+
+Table knowledge_items {
+  knowledge_id varchar(64) [pk]
+  department_id varchar(64) [not null]
+  sub_department_id varchar(64)
+  title varchar(500) [not null]
+  content text [not null]
+  summary text
+  content_type varchar(32) [not null, default: 'ARTICLE', note: 'ARTICLE, FAQ, REGULATION, ANNOUNCEMENT, CURRICULUM, SERVICE']
+  status varchar(32) [not null, default: 'PUBLISHED', note: 'DRAFT, REVIEW, PUBLISHED, ARCHIVED']
+  tags jsonb [default: '[]']
+  is_ai_retrievable integer [default: 1]
+  view_count integer [default: 0]
+  use_count integer [default: 0]
+  helpful_count integer [default: 0]
+  not_helpful_count integer [default: 0]
+  source_type varchar(32) [default: 'MANUAL', note: 'MANUAL, SHEET_SYNC, AI_GENERATED, IMPORT']
+  source_sheet_row_id varchar(64)
+  created_by varchar(64) [not null]
+  updated_by varchar(64)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'คลังเนื้อหาและบทความสำหรับตอบคำถาม RAG'
+}
+
+Table knowledge_attachments {
+  attachment_id varchar(64) [pk]
+  knowledge_id varchar(64) [not null]
+  file_name varchar(255) [not null]
+  file_url text [not null]
+  file_type varchar(64)
+  file_size_kb integer
+  display_order integer [default: 0]
+  created_at timestamp [default: `now()`]
+
+  Note: 'ไฟล์แนบและรูปภาพประกอบองค์ความรู้'
+}
+
+Table knowledge_version_history {
+  version_id varchar(64) [pk]
+  knowledge_id varchar(64) [not null]
+  version_number integer [not null]
+  title varchar(500) [not null]
+  content text [not null]
+  summary text
+  change_summary text
+  edited_by varchar(64) [not null]
+  created_at timestamp [default: `now()`]
+
+  Note: 'ประวัติการแก้ไขและเวอร์ชันย้อนหลังขององค์ความรู้'
+}
+
+Table activity_feed {
+  activity_id varchar(64) [pk]
+  actor_user_id varchar(64) [not null]
+  action_type varchar(64) [not null]
+  target_type varchar(64) [not null]
+  target_id varchar(64) [not null]
+  target_title varchar(255)
+  details jsonb
+  department_id varchar(64)
+  created_at timestamp [default: `now()`]
+
+  Note: 'ฟีดกิจกรรมการอัปเดตระบบ'
+}
+
+Table knowledge_gap_logs {
+  gap_id varchar(64) [pk]
+  question_text text [not null]
+  ask_count integer [default: 1]
+  status varchar(32) [default: 'OPEN', note: 'OPEN, IN_PROGRESS, RESOLVED, IGNORED']
+  assigned_to varchar(64)
+  resolved_knowledge_id varchar(64)
+  department_id varchar(64)
+  notes text
+  first_asked_at timestamp [default: `now()`]
+  last_asked_at timestamp [default: `now()`]
+
+  Note: 'คำถามที่ AI ไม่พบคำตอบ เพื่อนำไปสร้างองค์ความรู้เพิ่ม'
+}
+
+Ref: knowledge_items.department_id > departments.department_id [delete: cascade]
+Ref: knowledge_items.sub_department_id > sub_departments.sub_department_id [delete: set null]
+Ref: knowledge_items.created_by > master_users.user_id [delete: restrict]
+Ref: knowledge_items.updated_by > master_users.user_id [delete: set null]
+Ref: knowledge_attachments.knowledge_id > knowledge_items.knowledge_id [delete: cascade]
+Ref: knowledge_version_history.knowledge_id > knowledge_items.knowledge_id [delete: cascade]
+Ref: knowledge_version_history.edited_by > master_users.user_id [delete: restrict]
+Ref: activity_feed.actor_user_id > master_users.user_id [delete: cascade]
+Ref: knowledge_gap_logs.assigned_to > master_users.user_id [delete: set null]
+Ref: knowledge_gap_logs.resolved_knowledge_id > knowledge_items.knowledge_id [delete: set null]
+Ref: knowledge_gap_logs.department_id > departments.department_id [delete: set null]
+
+
+// ============================================================================
+// 3. กลุ่มการซิงค์ข้อมูล Google Sheets CMS (Sheets Integration — 3 Tables)
+// ============================================================================
+
+Table sheet_sync_configs {
+  config_id varchar(64) [pk]
+  department_id varchar(64)
+  sheet_name varchar(128) [not null]
+  spreadsheet_id varchar(255) [not null]
+  sheet_gid varchar(64)
+  sync_direction varchar(32) [default: 'SHEET_TO_DB', note: 'SHEET_TO_DB, DB_TO_SHEET, BI_DIRECTIONAL']
+  field_mapping jsonb [not null, default: '{}']
+  is_active integer [default: 1]
+  last_synced_at timestamp
+  last_sync_status varchar(32)
+  last_sync_error text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'การตั้งค่าเชื่อมโยงชีต Google Sheets กับตารางองค์ความรู้'
+}
+
+Table sync_logs {
+  log_id varchar(64) [pk]
+  config_id varchar(64) [not null]
+  event_type varchar(32) [not null, note: 'MANUAL, WEBHOOK, SCHEDULED, AUTO']
+  status varchar(32) [not null, note: 'SUCCESS, PARTIAL, FAILED']
+  rows_processed integer [default: 0]
+  rows_inserted integer [default: 0]
+  rows_updated integer [default: 0]
+  rows_deleted integer [default: 0]
+  rows_failed integer [default: 0]
+  error_message text
+  details jsonb
+  started_at timestamp [default: `now()`]
+  completed_at timestamp
+
+  Note: 'ประวัติและผลการซิงค์ข้อมูลจากชีต'
+}
+
+Table sync_conflicts {
+  conflict_id varchar(64) [pk]
+  config_id varchar(64) [not null]
+  row_identifier varchar(255) [not null]
+  field_name varchar(128) [not null]
+  db_value text
+  sheet_value text
+  resolution varchar(32) [default: 'PENDING', note: 'PENDING, USE_DB, USE_SHEET, MANUAL']
+  resolved_by varchar(64)
+  resolved_at timestamp
+  created_at timestamp [default: `now()`]
+
+  Note: 'ข้อขัดแย้งของข้อมูลระหว่าง DB และ Sheets'
+}
+
+Ref: sheet_sync_configs.department_id > departments.department_id [delete: set null]
+Ref: sync_logs.config_id > sheet_sync_configs.config_id [delete: cascade]
+Ref: sync_conflicts.config_id > sheet_sync_configs.config_id [delete: cascade]
+Ref: sync_conflicts.resolved_by > master_users.user_id [delete: set null]
+
+
+// ============================================================================
+// 4. กลุ่มการประมวลผลปัญญาประดิษฐ์และ RAG (AI Engine & Retrieval — 4 Tables)
+// ============================================================================
+
+Table ai_engine_configs {
+  config_id varchar(64) [pk]
+  provider varchar(64) [not null, default: 'GEMINI', note: 'GEMINI, OPENAI, ANTHROPIC, LOCAL']
+  model_name varchar(128) [not null, default: 'gemini-1.5-flash']
+  temperature float [default: 0.3]
+  top_p float [default: 0.95]
+  max_output_tokens integer [default: 2048]
+  system_instruction text
+  retrieval_top_k integer [default: 5]
+  confidence_threshold float [default: 0.65]
+  is_active integer [default: 1]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'การตั้งค่าโมเดล AI และพารามิเตอร์ RAG'
+}
+
+Table ai_query_logs {
+  log_id varchar(64) [pk]
+  channel varchar(32) [not null, default: 'LINE', note: 'LINE, WEB, ROBOT, API, DASHBOARD']
+  user_identifier varchar(128)
+  session_id varchar(128)
+  question text [not null]
+  answer text [not null]
+  intent varchar(128)
+  confidence_score float
+  is_fallback integer [default: 0]
+  response_time_ms integer
+  tokens_used integer
+  feedback_rating integer [note: '1 to 5 stars']
+  feedback_comment text
+  created_at timestamp [default: `now()`]
+
+  Note: 'ประวัติคำถาม-คำตอบทั้งหมดจากทุกช่องทาง'
+}
+
+Table ai_retrieved_sources {
+  source_id varchar(64) [pk]
+  log_id varchar(64) [not null]
+  knowledge_id varchar(64) [not null]
+  relevance_score float
+  rank_order integer
+  snippet text
+  created_at timestamp [default: `now()`]
+
+  Note: 'รายการแหล่งอ้างอิงของแต่ละคำตอบ'
+}
+
+Table drive_media_cache {
+  cache_id varchar(64) [pk]
+  file_id varchar(255) [unique, not null]
+  file_name varchar(255)
+  mime_type varchar(128)
+  proxy_url text
+  cached_at timestamp [default: `now()`]
+  expires_at timestamp
+
+  Note: 'แคชไฟล์มีเดียสำหรับส่งใน LINE หรือหุ่นยนต์'
+}
+
+Ref: ai_retrieved_sources.log_id > ai_query_logs.log_id [delete: cascade]
+Ref: ai_retrieved_sources.knowledge_id > knowledge_items.knowledge_id [delete: cascade]
+
+
+// ============================================================================
+// 5. กลุ่มการเชื่อมต่อ LINE Official Account (LINE Messaging — 5 Tables)
+// ============================================================================
+
+Table line_channel_configs {
+  channel_id varchar(64) [pk]
+  channel_name varchar(128) [not null]
+  channel_access_token text [not null]
+  channel_secret text [not null]
+  webhook_url text
+  is_active integer [default: 1]
+  welcome_message text
+  fallback_message text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'การตั้งค่าช่องทาง LINE OA'
+}
+
+Table line_rich_menus {
+  menu_id varchar(64) [pk]
+  channel_id varchar(64) [not null]
+  name varchar(128) [not null]
+  target_role varchar(32) [default: 'DEFAULT', note: 'DEFAULT, STUDENT, STAFF, GUEST']
+  areas_json jsonb [not null, default: '[]']
+  is_default integer [default: 0]
+  line_menu_id varchar(255)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'ริชเมนูของ LINE OA แยกตามกลุ่มผู้ใช้'
+}
+
+Table line_broadcasts {
+  broadcast_id varchar(64) [pk]
+  channel_id varchar(64) [not null]
+  title varchar(255) [not null]
+  message_payload jsonb [not null]
+  target_audience varchar(64) [default: 'ALL', note: 'ALL, STAFF, STUDENTS, CUSTOM']
+  target_filter jsonb
+  sent_count integer [default: 0]
+  status varchar(32) [default: 'DRAFT', note: 'DRAFT, SCHEDULED, SENDING, SENT, FAILED']
+  scheduled_at timestamp
+  sent_at timestamp
+  created_by varchar(64) [not null]
+  created_at timestamp [default: `now()`]
+
+  Note: 'ประวัติและคิวการบรอดแคสต์ข้อความ'
+}
+
+Table line_followers {
+  line_user_id varchar(128) [pk]
+  display_name varchar(255)
+  picture_url text
+  status_message text
+  master_user_id varchar(64)
+  role_scope varchar(32) [default: 'GUEST', note: 'GUEST, STUDENT, STAFF_INTERNAL, ADMIN']
+  is_blocked integer [default: 0]
+  first_seen_at timestamp [default: `now()`]
+  last_interaction_at timestamp [default: `now()`]
+
+  Note: 'ผู้ติดตาม LINE OA และการผูกบัญชีกับผู้ใช้จริง'
+}
+
+Table line_account_link_requests {
+  request_id varchar(64) [pk]
+  line_user_id varchar(128) [not null]
+  master_user_id varchar(64) [not null]
+  link_token varchar(128) [unique, not null]
+  expires_at timestamp [not null]
+  is_completed integer [default: 0]
+  created_at timestamp [default: `now()`]
+
+  Note: 'คำขอผูกบัญชี LINE กับระบบเจ้าหน้าที่วิทยาลัย'
+}
+
+Ref: line_rich_menus.channel_id > line_channel_configs.channel_id [delete: cascade]
+Ref: line_broadcasts.channel_id > line_channel_configs.channel_id [delete: cascade]
+Ref: line_broadcasts.created_by > master_users.user_id [delete: restrict]
+Ref: line_followers.master_user_id > master_users.user_id [delete: set null]
+Ref: line_account_link_requests.line_user_id > line_followers.line_user_id [delete: cascade]
+Ref: line_account_link_requests.master_user_id > master_users.user_id [delete: cascade]
+
+
+// ============================================================================
+// 6. กลุ่มการวิเคราะห์และออกรายงานสรุป (Analytics & Reporting — 5 Tables)
+// ============================================================================
+
+Table dashboard_summary_cache {
+  cache_id varchar(64) [pk]
+  scope varchar(32) [not null, default: 'GLOBAL', note: 'GLOBAL, DEPARTMENT']
+  department_id varchar(64)
+  total_queries integer [default: 0]
+  total_knowledge integer [default: 0]
+  total_users integer [default: 0]
+  total_followers integer [default: 0]
+  avg_confidence float [default: 0.0]
+  avg_response_time_ms integer [default: 0]
+  trend_percent float [default: 0.0]
+  cached_at timestamp [default: `now()`]
+  expires_at timestamp
+
+  Note: 'แคชตัวเลขสรุปสำหรับหน้าแดชบอร์ดหลัก'
+}
+
+Table report_snapshots {
+  snapshot_id varchar(64) [pk]
+  metric_key varchar(128) [not null]
+  period_type varchar(32) [not null, note: 'DAILY, WEEKLY, MONTHLY']
+  snapshot_date date [not null]
+  department_id varchar(64)
+  metric_value jsonb [not null]
+  created_at timestamp [default: `now()`]
+
+  Note: 'สแนปช็อตข้อมูลสถิติรายวัน/รายเดือน'
+}
+
+Table scheduled_report_configs {
+  config_id varchar(64) [pk]
+  title varchar(255) [not null]
+  report_type varchar(64) [not null, note: 'SUMMARY, QUERIES, GAPS, AUDIT']
+  frequency varchar(32) [not null, note: 'DAILY, WEEKLY, MONTHLY']
+  day_of_week integer
+  day_of_month integer
+  time_of_day varchar(8) [default: '08:00']
+  recipients jsonb [not null, default: '[]']
+  department_id varchar(64)
+  is_active integer [default: 1]
+  last_sent_at timestamp
+  created_by varchar(64) [not null]
+  created_at timestamp [default: `now()`]
+
+  Note: 'ตั้งเวลาส่งรายงานอัตโนมัติ'
+}
+
+Table custom_report_definitions {
+  definition_id varchar(64) [pk]
+  name varchar(255) [not null]
+  description text
+  query_config jsonb [not null]
+  chart_type varchar(32) [default: 'BAR', note: 'BAR, LINE, PIE, TABLE']
+  department_id varchar(64)
+  created_by varchar(64) [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'เทมเพลตรายงานที่ผู้ใช้สร้างเอง'
+}
+
+Table report_export_logs {
+  log_id varchar(64) [pk]
+  user_id varchar(64) [not null]
+  report_type varchar(64) [not null]
+  format varchar(16) [not null, note: 'CSV, XLSX, PDF']
+  file_url text
+  file_size_kb integer
+  filter_summary jsonb
+  created_at timestamp [default: `now()`]
+
+  Note: 'ประวัติการ Export รายงานออกจากระบบ'
+}
+
+Ref: dashboard_summary_cache.department_id > departments.department_id [delete: cascade]
+Ref: report_snapshots.department_id > departments.department_id [delete: set null]
+Ref: scheduled_report_configs.department_id > departments.department_id [delete: set null]
+Ref: scheduled_report_configs.created_by > master_users.user_id [delete: restrict]
+Ref: custom_report_definitions.department_id > departments.department_id [delete: set null]
+Ref: custom_report_definitions.created_by > master_users.user_id [delete: restrict]
+Ref: report_export_logs.user_id > master_users.user_id [delete: cascade]
+
+
+// ============================================================================
+// 7. กลุ่มการตั้งค่าระบบ ความปลอดภัย และบันทึกกิจกรรม (System Settings & Audit — 8 Tables)
+// ============================================================================
+
+Table system_settings {
+  key varchar(128) [pk]
+  value text [not null]
+  description text
+  is_secret integer [default: 0]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'ค่าคอนฟิกส่วนกลางของระบบ PR4Fang'
+}
+
+Table college_profile {
+  profile_id varchar(64) [pk]
+  name_th varchar(255) [not null]
+  name_en varchar(255)
+  address text
+  phone varchar(64)
+  email varchar(128)
+  website varchar(255)
+  logo_url text
+  timezone varchar(64) [default: 'Asia/Bangkok']
+  updated_at timestamp [default: `now()`]
+
+  Note: 'ข้อมูลโปรไฟล์และอัตลักษณ์ของวิทยาลัยการอาชีพฝาง'
+}
+
+Table security_policies {
+  policy_id varchar(64) [pk]
+  password_min_length integer [default: 8]
+  max_login_attempts integer [default: 5]
+  lockout_duration_mins integer [default: 30]
+  session_timeout_hours integer [default: 24]
+  mfa_required integer [default: 0]
+  ip_whitelist jsonb [default: '[]']
+  updated_at timestamp [default: `now()`]
+
+  Note: 'นโยบายความปลอดภัยและข้อกำหนดรหัสผ่าน'
+}
+
+Table notification_rules {
+  rule_id varchar(64) [pk]
+  event_type varchar(64) [not null]
+  notify_roles jsonb [not null, default: '[]']
+  notify_channels jsonb [not null, default: '[]', note: 'IN_APP, LINE, EMAIL']
+  is_active integer [default: 1]
+  created_at timestamp [default: `now()`]
+
+  Note: 'เงื่อนไขการแจ้งเตือนเหตุการณ์สำคัญ'
+}
+
+Table system_audit_logs {
+  log_id varchar(64) [pk]
+  actor_user_id varchar(64)
+  action varchar(128) [not null]
+  resource_type varchar(64) [not null]
+  resource_id varchar(64)
+  changes jsonb
+  ip_address varchar(64)
+  user_agent text
+  created_at timestamp [default: `now()`]
+
+  Note: 'บันทึก Audit Log กิจกรรมทุกขั้นตอนของแอดมิน'
+}
+
+Table backup_jobs {
+  backup_id varchar(64) [pk]
+  triggered_by varchar(64) [not null, note: 'MANUAL, SCHEDULED']
+  status varchar(32) [not null, default: 'IN_PROGRESS', note: 'IN_PROGRESS, SUCCESS, FAILED']
+  file_url text
+  file_size_kb integer
+  error_message text
+  started_at timestamp [default: `now()`]
+  completed_at timestamp
+
+  Note: 'ประวัติและสถานะการสำรองฐานข้อมูล'
+}
+
+Table user_preferences {
+  user_id varchar(64) [pk]
+  in_app_notifications integer [default: 1]
+  line_notifications integer [default: 1]
+  email_notifications integer [default: 0]
+  theme varchar(16) [default: 'light', note: 'light, dark, system']
+  updated_at timestamp [default: `now()`]
+
+  Note: 'การตั้งค่าส่วนบุคคลของผู้ใช้งาน'
+}
+
+Table announcements {
+  announcement_id varchar(64) [pk]
+  title varchar(255) [not null]
+  content text [not null]
+  target_role varchar(32) [default: 'ALL', note: 'ALL, STAFF, STUDENT']
+  priority varchar(16) [default: 'NORMAL', note: 'LOW, NORMAL, HIGH, URGENT']
+  is_active integer [default: 1]
+  expires_at timestamp
+  created_by varchar(64) [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Note: 'ประกาศข่าวสารประชาสัมพันธ์ภายในระบบ'
+}
+
+Ref: system_audit_logs.actor_user_id > master_users.user_id [delete: set null]
+Ref: user_preferences.user_id > master_users.user_id [delete: cascade]
+Ref: announcements.created_by > master_users.user_id [delete: restrict]

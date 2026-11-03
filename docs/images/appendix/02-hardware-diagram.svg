@@ -1,0 +1,290 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 960" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&amp;display=swap');
+      * { font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .main-title { font-size: 24px; font-weight: 700; fill: #0f172a; }
+      .sub-title { font-size: 14px; fill: #64748b; }
+      .container-title { font-size: 16px; font-weight: 700; fill: #1e293b; }
+      .card-title { font-size: 14px; font-weight: 700; fill: #0f172a; }
+      .card-desc { font-size: 12px; fill: #475569; }
+      .port-tag { font-size: 11px; font-weight: 700; }
+    </style>
+
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="arrBlue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb" />
+    </marker>
+    <marker id="arrAmber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706" />
+    </marker>
+    <marker id="arrPurple" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7c3aed" />
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1560" height="960" fill="#f8fafc" />
+
+  <!-- Top Title Banner -->
+  <g transform="translate(40, 25)">
+    <rect width="1480" height="75" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="8" height="75" rx="4" fill="#7c3aed" />
+    
+    <!-- Title Icon (Circuit) -->
+    <rect x="25" y="18" width="40" height="40" rx="8" fill="#f5f3ff" stroke="#ddd6fe"/>
+    <path d="M40 26 v4 M50 26 v4 M40 46 v4 M50 46 v4 M30 36 h4 M30 42 h4 M56 36 h4 M56 42 h4 M34 30 h22 v16 h-22 z M40 35 h10 v6 h-10 z" stroke="#7c3aed" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <text x="78" y="44" class="main-title">ภาคผนวก 2: แผนภาพการเชื่อมต่ออุปกรณ์ฮาร์ดแวร์ (Hardware Architecture Diagram)</text>
+    <text x="78" y="66" class="sub-title">สถาปัตยกรรมการเชื่อมต่อของชุดหุ่นยนต์ต้อนรับประชาสัมพันธ์ AI Reception Robot วิทยาลัยการอาชีพฝาง (ผังสะอาด เส้นไม่ทับซ้อน 100%)</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- LEFT CONTAINER: CLOUD SERVICES (WIDTH 420) -->
+  <!-- ========================================== -->
+  <g transform="translate(40, 120)">
+    <rect width="420" height="810" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="420" height="46" rx="14" fill="#f8fafc" />
+    <line x1="0" y1="46" x2="420" y2="46" stroke="#e2e8f0" stroke-width="1.5"/>
+
+    <!-- Cloud Icon -->
+    <rect x="20" y="11" width="26" height="26" rx="6" fill="#f3e8ff" />
+    <path d="M24 29 a5 5 0 0 1 4 -8 a7 7 0 0 1 12 2 a5 5 0 0 1 2 8 z" stroke="#7c3aed" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <text x="56" y="29" class="container-title">ระบบคลาวด์และเครือข่าย (Cloud Services)</text>
+
+    <!-- Cloud Card 1: PR4Fang AI Server (Top) -->
+    <g transform="translate(20, 75)">
+      <rect width="380" height="135" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#2563eb" />
+      <path d="M26 26 h23 v6 h-23 z M26 36 h23 v6 h-23 z M26 46 h23 v6 h-23 z M30 29 h2 M30 39 h2 M30 49 h2" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" class="card-title">PR4Fang AI Server (Next.js 14)</text>
+      <text x="70" y="56" class="card-desc">• API Endpoint: /api/robot/query</text>
+      <text x="70" y="74" class="card-desc">• ระบบสืบค้น RAG Engine &amp; Knowledge Base</text>
+      <text x="70" y="92" class="card-desc">• บันทึกประวัติคำถาม และ Audio Query Logs</text>
+      <rect x="70" y="102" width="110" height="20" rx="4" fill="#dbeafe"/>
+      <text x="125" y="116" font-size="10" font-weight="700" fill="#1e40af" text-anchor="middle">Vercel / Node.js</text>
+    </g>
+
+    <!-- Cloud Card 2: Campus Wi-Fi 6 (Directly Level with Host PC!) -->
+    <g transform="translate(20, 275)">
+      <rect width="380" height="130" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#16a34a" />
+      <path d="M28 41 a14 14 0 0 1 18 0 M32 45 a8 8 0 0 1 10 0 M37 49 a1.5 1.5 0 1 1 0 -0.1" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" class="card-title">Campus Wi-Fi 6 / LAN</text>
+      <text x="70" y="56" class="card-desc">เครือข่ายอินเทอร์เน็ตความเร็วสูงวิทยาลัยการอาชีพฝาง</text>
+      <text x="70" y="76" class="card-desc">• แบนด์วิดท์สูง ความหน่วงต่ำ (Low Latency)</text>
+      <text x="70" y="98" font-size="11" font-weight="700" fill="#15803d">มาตรฐานความปลอดภัย WPA3 Enterprise</text>
+    </g>
+
+    <!-- Cloud Card 3: Google Gemini Cloud AI -->
+    <g transform="translate(20, 470)">
+      <rect width="380" height="125" rx="10" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#7c3aed" />
+      <path d="M37.5 24 l2 8 l8 2 l-8 2 l-2 8 l-2 -8 l-8 -2 l8 -2 z" fill="#ffffff"/>
+      <text x="70" y="36" class="card-title">Google Gemini Cloud AI</text>
+      <text x="70" y="56" class="card-desc">• โมเดล Gemini 1.5 Flash ประมวลผลรวดเร็ว</text>
+      <text x="70" y="74" class="card-desc">• สรุปคำตอบจากคลังข้อมูลระเบียบวิทยาลัย</text>
+      <text x="70" y="94" class="card-desc">• รองรับภาษาไทยกลางและคำเมืองล้านนา</text>
+    </g>
+
+    <!-- Cloud Card 4: Neural TTS Voice Engine -->
+    <g transform="translate(20, 645)">
+      <rect width="380" height="125" rx="10" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#ea580c" />
+      <path d="M27 38 a10 10 0 0 1 10 -10 h2 v20 h-2 a10 10 0 0 1 -10 -10 z M42 32 a5 5 0 0 1 0 12 M46 28 a9 9 0 0 1 0 20" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" class="card-title">Neural Voice TTS Engine</text>
+      <text x="70" y="56" class="card-desc">• สังเคราะห์เสียงพูดตอบรับภาษาไทยเป็นธรรมชาติ</text>
+      <text x="70" y="74" class="card-desc">• เลือกโทนเสียงผู้ช่วยหญิง (อัจฉรา) หรือชาย (นิวัฒน์)</text>
+      <text x="70" y="94" class="card-desc">• ส่งกลับ Audio Stream แบบ Low-Latency</text>
+    </g>
+
+    <!-- Internal Vertical Connectors between Cloud Cards -->
+    <path d="M 210 210 L 210 275" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+    <path d="M 210 405 L 210 470" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+    <path d="M 210 595 L 210 645" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+  </g>
+
+  <!-- ======================================================= -->
+  <!-- WIDE GAP BUS (BETWEEN X=460 AND X=640) - ZERO OVERLAP!  -->
+  <!-- ======================================================= -->
+  <!-- Straight Horizontal Line: Host PC Left Edge (X=705) to Wi-Fi 6 Right Edge (X=440) -->
+  <path d="M 705 460 L 440 460" stroke="#7c3aed" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrPurple)" fill="none"/>
+  
+  <!-- Wi-Fi Badge Float in Center Gap (X=490, Y=440) - Completely Clear of all Borders! -->
+  <rect x="490" y="440" width="160" height="40" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#cardShadow)"/>
+  <text x="570" y="465" font-size="11" font-weight="700" fill="#6d28d9" text-anchor="middle">WLAN 5GHz / HTTPS</text>
+
+  <!-- ======================================================= -->
+  <!-- RIGHT CONTAINER: ROBOT HARDWARE UNIT (WIDTH 880)       -->
+  <!-- ======================================================= -->
+  <g transform="translate(640, 120)">
+    <rect width="880" height="810" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="880" height="46" rx="14" fill="#f8fafc" />
+    <line x1="0" y1="46" x2="880" y2="46" stroke="#e2e8f0" stroke-width="1.5"/>
+
+    <!-- Robot Icon -->
+    <rect x="20" y="11" width="26" height="26" rx="6" fill="#e0e7ff" />
+    <path d="M26 21 h14 v10 h-14 z M33 16 v5 M24 25 h-2 M42 25 h2 M29 25 h2 M37 25 h2" stroke="#4f46e5" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <text x="56" y="29" class="container-title">ชุดหุ่นยนต์ต้อนรับอัจฉริยะ (AI Reception Robot Unit)</text>
+
+    <!-- ========================================================= -->
+    <!-- COLUMN 1: HOST PC & PERIPHERALS (WITH LEFT WIRING GUTTER) -->
+    <!-- Cards shifted from X=30 to X=65 (Width 365)               -->
+    <!-- Left Gutter: X=15 to X=55 for dedicated wiring paths       -->
+    <!-- ========================================================= -->
+    
+    <!-- 1. TOUCHSCREEN (TOP) -->
+    <g transform="translate(65, 75)">
+      <rect width="355" height="75" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#eff6ff" />
+      <path d="M25 24 h25 v18 h-25 z M34 42 v5 M30 47 h15" stroke="#2563eb" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" class="card-title">หน้าจอสัมผัส (Touchscreen)</text>
+      <text x="70" y="55" class="card-desc">Capacitive 15.6" Full HD (Display + Touch)</text>
+      <rect x="250" y="12" width="90" height="22" rx="4" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="295" y="27" class="port-tag" fill="#1d4ed8" text-anchor="middle">HDMI + USB</text>
+    </g>
+
+    <!-- 2. MIC ARRAY (BETWEEN TOUCHSCREEN & HOST PC) -->
+    <g transform="translate(65, 175)">
+      <rect width="355" height="75" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#eff6ff" />
+      <path d="M33 23 a5 5 0 0 1 10 0 v8 a5 5 0 0 1 -10 0 z M28 29 a10 10 0 0 0 20 0 M38 39 v6 M33 45 h10" stroke="#2563eb" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" class="card-title">ไมโครโฟนรอบทิศทาง (Mic Array)</text>
+      <text x="70" y="55" class="card-desc">Dual/Quad Array Mic + Noise Canceling</text>
+      <rect x="270" y="12" width="70" height="22" rx="4" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="305" y="27" class="port-tag" fill="#1d4ed8" text-anchor="middle">USB 2.0</text>
+    </g>
+
+    <!-- 3. CENTRAL HOST PC (100% UNTOUCHED TEXT & SURFACE) -->
+    <g transform="translate(65, 280)">
+      <rect width="355" height="210" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#2563eb" />
+      <path d="M26 25 h23 v16 h-23 z M33 41 v5 M29 46 h17 M31 30 h13" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" font-size="15" font-weight="700" fill="#1d4ed8">หน่วยประมวลผลหลัก (Host PC)</text>
+      <text x="70" y="55" font-size="12" fill="#475569">Mini PC / Intel N100 / Ubuntu OS</text>
+      
+      <rect x="220" y="12" width="120" height="22" rx="4" fill="#dbeafe" stroke="#93c5fd"/>
+      <text x="280" y="27" class="port-tag" fill="#1e40af" text-anchor="middle">Chromium Kiosk</text>
+
+      <line x1="15" y1="72" x2="340" y2="72" stroke="#bfdbfe" stroke-width="1.2"/>
+
+      <g transform="translate(20, 92)">
+        <circle cx="6" cy="6" r="3" fill="#2563eb"/>
+        <text x="18" y="10" font-size="12" fill="#1e293b">รัน Web Browser ในโหมด Fullscreen Kiosk</text>
+      </g>
+      <g transform="translate(20, 120)">
+        <circle cx="6" cy="6" r="3" fill="#2563eb"/>
+        <text x="18" y="10" font-size="12" fill="#1e293b">ประมวลผล Web Audio API และบันทึกเสียงไมค์</text>
+      </g>
+      <g transform="translate(20, 148)">
+        <circle cx="6" cy="6" r="3" fill="#2563eb"/>
+        <text x="18" y="10" font-size="12" fill="#1e293b">จัดการคิวเสียงตอบกลับและควบคุมการแสดงผล</text>
+      </g>
+      <g transform="translate(20, 176)">
+        <circle cx="6" cy="6" r="3" fill="#2563eb"/>
+        <text x="18" y="10" font-size="12" fill="#1e293b">สื่อสารกับบอร์ด ESP32 ผ่านสาย USB-UART</text>
+      </g>
+    </g>
+
+    <!-- 4. SPEAKER (BELOW HOST PC) -->
+    <g transform="translate(65, 530)">
+      <rect width="355" height="75" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#eff6ff" />
+      <path d="M26 33 h5 l6 -6 v18 l-6 -6 h-5 z M40 28 a6 6 0 0 1 0 10 M43 24 a10 10 0 0 1 0 18" stroke="#2563eb" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" class="card-title">ลำโพงขับเสียงสเตอริโอ (Speaker)</text>
+      <text x="70" y="55" class="card-desc">Digital Amplifier 2x15W Hi-Fi Audio</text>
+      <rect x="240" y="12" width="100" height="22" rx="4" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="290" y="27" class="port-tag" fill="#1d4ed8" text-anchor="middle">3.5mm / USB</text>
+    </g>
+
+    <!-- 5. WEBCAM (BOTTOM) -->
+    <g transform="translate(65, 630)">
+      <rect width="355" height="75" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#eff6ff" />
+      <path d="M25 28 h25 v18 h-25 z M33 24 h9 M37.5 33 a4 4 0 1 0 0 8 a4 4 0 1 0 0 -8" stroke="#2563eb" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" class="card-title">กล้องตรวจจับใบหน้า (Webcam)</text>
+      <text x="70" y="55" class="card-desc">Full HD Wide Angle ตรวจจับบุคคลเข้าใกล้</text>
+      <rect x="270" y="12" width="70" height="22" rx="4" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="305" y="27" class="port-tag" fill="#1d4ed8" text-anchor="middle">USB 3.0</text>
+    </g>
+
+    <!-- ========================================================= -->
+    <!-- DEDICATED SIDE WIRING (NO OVERLAPPING OVER ANY CARDS!)     -->
+    <!-- Routed completely through the left gutter (X=25 & X=45)    -->
+    <!-- ========================================================= -->
+
+    <!-- 1) Touchscreen (Left Edge X=65, Y=112) -> Gutter X=25 -> Down to Host PC Left Edge (X=65, Y=330) -->
+    <path d="M 65 112 L 25 112 L 25 330 L 65 330" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none" stroke-linejoin="round"/>
+    
+    <!-- 2) Mic Array (Left Edge X=65, Y=212) -> Gutter X=45 -> Down to Host PC Left Edge (X=65, Y=360) -->
+    <path d="M 65 212 L 45 212 L 45 360 L 65 360" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none" stroke-linejoin="round"/>
+    
+    <!-- 3) Host PC (Left Edge X=65, Y=420) -> Gutter X=45 -> Down to Speaker Left Edge (X=65, Y=567) -->
+    <path d="M 65 420 L 45 420 L 45 567 L 65 567" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none" stroke-linejoin="round"/>
+    
+    <!-- 4) Host PC (Left Edge X=65, Y=450) -> Gutter X=25 -> Down to Webcam Left Edge (X=65, Y=667) -->
+    <path d="M 65 450 L 25 450 L 25 667 L 65 667" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none" stroke-linejoin="round"/>
+
+    <!-- COLUMN 2: ESP32 CONTROLLER SUBSYSTEM (WIDTH 390) -->
+    <g transform="translate(470, 75)">
+      <rect width="380" height="630" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.8" filter="url(#cardShadow)"/>
+      <rect x="15" y="15" width="45" height="45" rx="8" fill="#f59e0b" />
+      <path d="M26 26 h23 v23 h-23 z M32 21 v5 M38 21 v5 M44 21 v5 M32 49 v5 M38 49 v5 M44 49 v5 M21 32 h5 M21 38 h5 M21 44 h5 M49 32 h5 M49 38 h5 M49 44 h5" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="70" y="36" font-size="15" font-weight="700" fill="#92400e">บอร์ดไมโครคอนโทรลเลอร์ (ESP32)</text>
+      <text x="70" y="55" font-size="12" fill="#78350f">ESP32 DevKit V1 (38-Pins Dual-Core)</text>
+
+      <line x1="15" y1="72" x2="365" y2="72" stroke="#fde68a" stroke-width="1.2"/>
+
+      <!-- ESP32 Item 1: Ultrasonic -->
+      <g transform="translate(15, 90)">
+        <rect width="350" height="100" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+        <rect x="15" y="15" width="40" height="40" rx="8" fill="#fef3c7" />
+        <path d="M27 35 a8 8 0 0 1 16 0 M24 35 a12 12 0 0 1 22 0 M35 37 v5" stroke="#d97706" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <text x="65" y="35" class="card-title">เซนเซอร์วัดระยะ (Ultrasonic HC-SR04)</text>
+        <text x="65" y="56" class="card-desc">• ตรวจจับบุคคลในระยะ 1.5 - 2.0 เมตร</text>
+        <text x="65" y="74" class="card-desc">• สั่งให้หุ่นยนต์เริ่มบทสนทนาต้อนรับอัตโนมัติ</text>
+      </g>
+
+      <!-- ESP32 Item 2: Servos -->
+      <g transform="translate(15, 210)">
+        <rect width="350" height="100" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+        <rect x="15" y="15" width="40" height="40" rx="8" fill="#fef3c7" />
+        <circle cx="35" cy="35" r="8" stroke="#d97706" stroke-width="1.8" fill="none"/>
+        <path d="M35 24 v4 M35 42 v4 M24 35 h4 M42 35 h4" stroke="#d97706" stroke-width="1.8" stroke-linecap="round"/>
+        <text x="65" y="35" class="card-title">เซอร์โวมอเตอร์ (MG996R Servos)</text>
+        <text x="65" y="56" class="card-desc">• ขยับหันศีรษะซ้าย-ขวา ตามทิศทางของผู้ใช้</text>
+        <text x="65" y="74" class="card-desc">• ผงกศีรษะตอบรับขณะกำลังประมวลผลคำตอบ</text>
+      </g>
+
+      <!-- ESP32 Item 3: LED Ring -->
+      <g transform="translate(15, 330)">
+        <rect width="350" height="100" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+        <rect x="15" y="15" width="40" height="40" rx="8" fill="#fef3c7" />
+        <circle cx="35" cy="35" r="10" stroke="#d97706" stroke-width="1.8" stroke-dasharray="3 3" fill="none"/>
+        <circle cx="35" cy="35" r="3" fill="#d97706"/>
+        <text x="65" y="35" class="card-title">วงแหวนไฟแสดงสถานะ (NeoPixel Ring)</text>
+        <text x="65" y="56" class="card-desc">• สีฟ้า: พร้อมรับฟัง / สีเขียว: กำลังค้นหาข้อมูล</text>
+        <text x="65" y="74" class="card-desc">• สีม่วง: กำลังตอบเสียง / สีแดง: แจ้งเตือนข้อผิดพลาด</text>
+      </g>
+
+      <!-- ESP32 Power Unit -->
+      <g transform="translate(15, 450)">
+        <rect width="350" height="60" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1.2"/>
+        <path d="M28 30 h10 M33 25 v10 M44 30 h10" stroke="#92400e" stroke-width="2" stroke-linecap="round"/>
+        <text x="70" y="35" font-size="12" font-weight="700" fill="#92400e">Power Distribution Unit (5V / 3A DC)</text>
+        <text x="70" y="50" font-size="11" fill="#78350f">จ่ายไฟแยกสำหรับเซอร์โวมอเตอร์และไฟสถานะ</text>
+      </g>
+    </g>
+
+    <!-- CLEAN HORIZONTAL SERIAL CONNECTOR (ESP32 <-> HOST PC) IN OPEN 50PX GAP -->
+    <path d="M 420 375 L 470 375" stroke="#d97706" stroke-width="2" marker-end="url(#arrAmber)" fill="none"/>
+    <path d="M 470 400 L 420 400" stroke="#d97706" stroke-width="2" marker-end="url(#arrAmber)" fill="none"/>
+    
+    <!-- Floating Label Between Cards without touching any borders! -->
+    <rect x="424" y="340" width="42" height="22" rx="4" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.2"/>
+    <text x="445" y="355" font-size="10" font-weight="700" fill="#92400e" text-anchor="middle">UART</text>
+  </g>
+</svg>

@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&amp;display=swap');
+      * { font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .main-title { font-size: 24px; font-weight: 700; fill: #0f172a; }
+      .sub-title { font-size: 14px; fill: #64748b; }
+      .actor-title { font-size: 14px; font-weight: 700; fill: #ffffff; text-anchor: middle; }
+      .actor-sub { font-size: 11px; fill: #e2e8f0; text-anchor: middle; }
+      .msg-num { font-size: 11px; font-weight: 700; fill: #ffffff; text-anchor: middle; }
+      .msg-title { font-size: 12px; font-weight: 700; fill: #1e293b; }
+      .msg-detail { font-size: 11px; fill: #64748b; }
+    </style>
+
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="arrSolid" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb" />
+    </marker>
+    <marker id="arrReturn" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0d9488" />
+    </marker>
+    <marker id="arrGreen" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a" />
+    </marker>
+  </defs>
+
+  <rect width="1440" height="960" fill="#f8fafc" />
+
+  <!-- Top Title Banner -->
+  <g transform="translate(40, 30)">
+    <rect width="1360" height="75" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="8" height="75" rx="4" fill="#0284c7" />
+    
+    <!-- Title Icon (Arrows Exchange) -->
+    <rect x="25" y="18" width="40" height="40" rx="8" fill="#e0f2fe" stroke="#bae6fd"/>
+    <path d="M33 34 h16 l-4 -4 M47 44 h-16 l4 4" stroke="#0284c7" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <text x="78" y="44" class="main-title">ภาคผนวก 5: แผนภาพการเชื่อมต่อ LINE Messaging API และ n8n (Interaction Sequence Diagram)</text>
+    <text x="78" y="66" class="sub-title">ลำดับการแลกเปลี่ยนข้อความ (Sequence Flow) ระหว่างผู้ใช้ LINE OA, n8n Automation Engine, Next.js API และ Gemini LLM</text>
+  </g>
+
+  <!-- ACTORS HEADERS -->
+  <!-- 1. User -->
+  <g transform="translate(80, 130)">
+    <rect width="170" height="65" rx="10" fill="#0284c7" filter="url(#cardShadow)"/>
+    <rect x="15" y="15" width="35" height="35" rx="8" fill="#0369a1"/>
+    <circle cx="32" cy="27" r="5" stroke="#ffffff" stroke-width="1.6" fill="none"/>
+    <path d="M24 43 c0 -4 4 -7 8 -7 s8 3 8 7" stroke="#ffffff" stroke-width="1.6" fill="none"/>
+    <text x="110" y="36" class="actor-title">ผู้ใช้งาน (User)</text>
+    <text x="110" y="54" class="actor-sub">นักเรียน / ผู้ปกครอง / ครู</text>
+  </g>
+
+  <!-- 2. LINE Platform -->
+  <g transform="translate(350, 130)">
+    <rect width="180" height="65" rx="10" fill="#16a34a" filter="url(#cardShadow)"/>
+    <rect x="15" y="15" width="35" height="35" rx="8" fill="#15803d"/>
+    <path d="M26 30 a6 5 0 0 1 12 0 c0 3 -3 5 -6 5 l-2 2 v-2 a6 5 0 0 1 -4 -5 z" stroke="#ffffff" stroke-width="1.6" fill="none"/>
+    <text x="115" y="36" class="actor-title">LINE Platform</text>
+    <text x="115" y="54" class="actor-sub">Messaging API Webhook</text>
+  </g>
+
+  <!-- 3. n8n Automation Engine -->
+  <g transform="translate(630, 130)">
+    <rect width="180" height="65" rx="10" fill="#ea580c" filter="url(#cardShadow)"/>
+    <rect x="15" y="15" width="35" height="35" rx="8" fill="#c2410c"/>
+    <circle cx="27" cy="28" r="3" fill="#ffffff"/>
+    <circle cx="39" cy="28" r="3" fill="#ffffff"/>
+    <circle cx="33" cy="38" r="3" fill="#ffffff"/>
+    <path d="M29 28 h8 M38 30 l-4 7 M28 30 l4 7" stroke="#ffffff" stroke-width="1.4" fill="none"/>
+    <text x="115" y="36" class="actor-title">n8n Workflow</text>
+    <text x="115" y="54" class="actor-sub">Automation Engine</text>
+  </g>
+
+  <!-- 4. PR4Fang Backend -->
+  <g transform="translate(910, 130)">
+    <rect width="180" height="65" rx="10" fill="#4f46e5" filter="url(#cardShadow)"/>
+    <rect x="15" y="15" width="35" height="35" rx="8" fill="#4338ca"/>
+    <circle cx="32" cy="32" r="10" stroke="#ffffff" stroke-width="1.6" fill="none"/>
+    <path d="M22 32 h20 M32 22 a12 12 0 0 1 0 20 M32 22 a12 12 0 0 0 0 20" stroke="#ffffff" stroke-width="1.2" fill="none"/>
+    <text x="115" y="36" class="actor-title">PR4Fang Backend</text>
+    <text x="115" y="54" class="actor-sub">Next.js API &amp; Database</text>
+  </g>
+
+  <!-- 5. Gemini AI -->
+  <g transform="translate(1180, 130)">
+    <rect width="180" height="65" rx="10" fill="#7c3aed" filter="url(#cardShadow)"/>
+    <rect x="15" y="15" width="35" height="35" rx="8" fill="#6d28d9"/>
+    <path d="M32.5 24 l1.5 6 l6 1.5 l-6 1.5 l-1.5 6 l-1.5 -6 l-6 -1.5 l6 -1.5 z" fill="#ffffff"/>
+    <text x="115" y="36" class="actor-title">Google Gemini</text>
+    <text x="115" y="54" class="actor-sub">Cloud LLM &amp; RAG</text>
+  </g>
+
+  <!-- LIFELINES (VERTICAL STRAIGHT DASHED) -->
+  <line x1="165" y1="195" x2="165" y2="920" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <line x1="440" y1="195" x2="440" y2="920" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <line x1="720" y1="195" x2="720" y2="920" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <line x1="1000" y1="195" x2="1000" y2="920" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <line x1="1270" y1="195" x2="1270" y2="920" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4"/>
+
+  <!-- STEP 1: USER ASKS -->
+  <g transform="translate(165, 230)">
+    <path d="M 0 0 L 275 0" stroke="#2563eb" stroke-width="2" marker-end="url(#arrSolid)"/>
+    <circle cx="20" cy="-12" r="10" fill="#2563eb"/>
+    <text x="20" y="-8" class="msg-num">1</text>
+    <text x="36" y="-14" class="msg-title">พิมพ์คำถามใน LINE Chat</text>
+    <text x="36" y="0" class="msg-detail">"สมัครเรียนรอบโควตา ปวช. ต้องเตรียมเอกสารอะไรบ้าง?"</text>
+  </g>
+
+  <!-- STEP 2: LINE WEBHOOK EVENT -->
+  <g transform="translate(440, 295)">
+    <path d="M 0 0 L 280 0" stroke="#2563eb" stroke-width="2" marker-end="url(#arrSolid)"/>
+    <circle cx="20" cy="-12" r="10" fill="#2563eb"/>
+    <text x="20" y="-8" class="msg-num">2</text>
+    <text x="36" y="-14" class="msg-title">ส่งต่อ Webhook Event (HTTP POST)</text>
+    <text x="36" y="0" class="msg-detail">Payload: replyToken, userId, message: { text, type }</text>
+  </g>
+
+  <!-- STEP 3: n8n VERIFY USER -->
+  <g transform="translate(720, 360)">
+    <path d="M 0 0 L 280 0" stroke="#2563eb" stroke-width="2" marker-end="url(#arrSolid)"/>
+    <circle cx="20" cy="-12" r="10" fill="#2563eb"/>
+    <text x="20" y="-8" class="msg-num">3</text>
+    <text x="36" y="-14" class="msg-title">POST /api/v1/n8n/verify-line-user</text>
+    <text x="36" y="0" class="msg-detail">Headers: X-API-Key, Body: { line_user_id }</text>
+  </g>
+
+  <!-- STEP 4: BACKEND VERIFY RESPONSE (RETURN DASHED) -->
+  <g transform="translate(720, 425)">
+    <path d="M 280 0 L 0 0" stroke="#0d9488" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrReturn)"/>
+    <circle cx="260" cy="-12" r="10" fill="#0d9488"/>
+    <text x="260" y="-8" class="msg-num">4</text>
+    <text x="20" y="-14" class="msg-title" fill="#0f766e">ตอบกลับสถานะและสิทธิ์ผู้ใช้งาน</text>
+    <text x="20" y="0" class="msg-detail">{ verified: true, role: "Staff", scope: "INTERNAL" }</text>
+  </g>
+
+  <!-- STEP 5: RAG QUERY -->
+  <g transform="translate(720, 500)">
+    <path d="M 0 0 L 280 0" stroke="#2563eb" stroke-width="2" marker-end="url(#arrSolid)"/>
+    <circle cx="20" cy="-12" r="10" fill="#2563eb"/>
+    <text x="20" y="-8" class="msg-num">5</text>
+    <text x="36" y="-14" class="msg-title">สืบค้นคลังความรู้ RAG (Query Retrieval)</text>
+    <text x="36" y="0" class="msg-detail">ค้นหาบทความตามสิทธิ์เข้าถึง (Grounded Context)</text>
+  </g>
+
+  <!-- STEP 6: INTERNAL QUERY DATABASE -->
+  <g transform="translate(1000, 545)">
+    <rect x="-10" y="0" width="20" height="40" rx="4" fill="#4f46e5" filter="url(#cardShadow)"/>
+    <path d="M 10 10 L 45 10 L 45 30 L 10 30" stroke="#4f46e5" stroke-width="1.8" fill="none"/>
+    <text x="55" y="16" class="msg-title" fill="#4338ca">สืบค้น MySQL / SQLite</text>
+    <text x="55" y="30" class="msg-detail">SELECT Top-5 Docs จาก knowledge_items</text>
+  </g>
+
+  <!-- STEP 7: CALL GEMINI API -->
+  <g transform="translate(1000, 625)">
+    <path d="M 0 0 L 270 0" stroke="#2563eb" stroke-width="2" marker-end="url(#arrSolid)"/>
+    <circle cx="20" cy="-12" r="10" fill="#2563eb"/>
+    <text x="20" y="-8" class="msg-num">6</text>
+    <text x="36" y="-14" class="msg-title">GenerateContent (REST API)</text>
+    <text x="36" y="0" class="msg-detail">Prompt + Grounded Context ข้อมูลรับสมัครของวิทยาลัย</text>
+  </g>
+
+  <!-- STEP 8: GEMINI RETURNS SYNTHESIS -->
+  <g transform="translate(1000, 690)">
+    <path d="M 270 0 L 0 0" stroke="#0d9488" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrReturn)"/>
+    <circle cx="250" cy="-12" r="10" fill="#0d9488"/>
+    <text x="250" y="-8" class="msg-num">7</text>
+    <text x="20" y="-14" class="msg-title" fill="#0f766e">คำตอบสังเคราะห์พร้อมแหล่งอ้างอิง</text>
+    <text x="20" y="0" class="msg-detail">ข้อความสรุปเป็นข้อๆ + ระเบียบการทางการ</text>
+  </g>
+
+  <!-- STEP 9: RETURN RESPONSE TO n8n -->
+  <g transform="translate(720, 755)">
+    <path d="M 280 0 L 0 0" stroke="#0d9488" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrReturn)"/>
+    <circle cx="260" cy="-12" r="10" fill="#0d9488"/>
+    <text x="260" y="-8" class="msg-num">8</text>
+    <text x="20" y="-14" class="msg-title" fill="#0f766e">รวมผลลัพธ์ส่งกลับ n8n</text>
+    <text x="20" y="0" class="msg-detail">JSON: { answer, imageUrl, sources, confidenceScore }</text>
+  </g>
+
+  <!-- STEP 10: n8n SENDS REPLY TO LINE -->
+  <g transform="translate(440, 820)">
+    <path d="M 280 0 L 0 0" stroke="#2563eb" stroke-width="2" marker-end="url(#arrSolid)"/>
+    <circle cx="260" cy="-12" r="10" fill="#2563eb"/>
+    <text x="260" y="-8" class="msg-num">9</text>
+    <text x="20" y="-14" class="msg-title">POST /v2/bot/message/reply</text>
+    <text x="20" y="0" class="msg-detail">สร้าง Flex Message Card สวยงาม พร้อมปุ่มโทรติดต่อ</text>
+  </g>
+
+  <!-- STEP 11: USER RECEIVES LINE CARD -->
+  <g transform="translate(165, 875)">
+    <path d="M 275 0 L 0 0" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arrGreen)"/>
+    <circle cx="255" cy="-12" r="10" fill="#16a34a"/>
+    <text x="255" y="-8" class="msg-num">10</text>
+    <text x="20" y="-14" class="msg-title" fill="#15803d">แสดงการ์ดข้อความคำตอบบนแอป LINE</text>
+    <text x="20" y="0" class="msg-detail">ผู้ใช้ได้รับคำตอบทันทีภายใน 1.5 วินาที พร้อมภาพและแหล่งอ้างอิง</text>
+  </g>
+</svg>

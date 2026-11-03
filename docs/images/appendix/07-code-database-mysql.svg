@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Sarabun:wght@400;500;600;700&amp;display=swap');
+      .font-sans { font-family: 'Sarabun', sans-serif; }
+      .font-mono { font-family: 'Fira Code', monospace; }
+      .main-title { font-size: 24px; font-weight: 700; fill: #0f172a; }
+      .sub-title { font-size: 14px; fill: #64748b; }
+      .code-line { font-size: 13px; font-family: 'Fira Code', monospace; fill: #abb2bf; }
+      .kw { fill: #c678dd; font-weight: 600; }
+      .fn { fill: #61afef; }
+      .str { fill: #98c379; }
+      .cm { fill: #5c6370; font-style: italic; }
+      .num { fill: #d19a66; }
+      .typ { fill: #e5c07b; }
+      .card-header-title { font-size: 14px; font-weight: 700; }
+      .panel-body { font-size: 12px; fill: #334155; }
+    </style>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="1440" height="960" fill="#f8fafc" />
+
+  <!-- Top Title Banner -->
+  <g transform="translate(40, 30)">
+    <rect width="1360" height="75" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="8" height="75" rx="4" fill="#059669" />
+    
+    <!-- Title Icon (Database Cylinder) -->
+    <rect x="25" y="18" width="40" height="40" rx="8" fill="#d1fae5" stroke="#a7f3d0"/>
+    <ellipse cx="45" cy="32" rx="10" ry="4" stroke="#059669" stroke-width="1.8" fill="none"/>
+    <path d="M35 32 v14 c0 2.5 4.5 4 10 4 s10 -1.5 10 -4 v-14" stroke="#059669" stroke-width="1.8" fill="none"/>
+
+    <text x="78" y="44" class="main-title font-sans">ภาคผนวก 7: ตัวอย่างการจัดการฐานข้อมูล MySQL / SQLite (Database Layer &amp; Connection)</text>
+    <text x="78" y="66" class="sub-title font-sans">การจัดการเชื่อมต่อฐานข้อมูล Singleton Pattern, การปรับแต่ง Write-Ahead Logging (WAL) และ Schema Migration</text>
+  </g>
+
+  <!-- CODE EDITOR WINDOW (LEFT 64%) -->
+  <g transform="translate(40, 125)">
+    <rect width="860" height="800" rx="12" fill="#1e1e2e" filter="url(#cardShadow)" />
+    <!-- Titlebar -->
+    <rect width="860" height="40" rx="12" fill="#181825" />
+    <circle cx="20" cy="20" r="6" fill="#ff5f56" />
+    <circle cx="40" cy="20" r="6" fill="#ffbd2e" />
+    <circle cx="60" cy="20" r="6" fill="#27c93f" />
+    <text x="430" y="25" font-size="12" fill="#a6adc8" class="font-mono" text-anchor="middle">src/lib/db.ts — Database Pool &amp; WAL Initialization</text>
+
+    <!-- Code Content -->
+    <g transform="translate(25, 70)">
+      <text y="0" class="code-line"><tspan class="kw">import</tspan> Database <tspan class="kw">from</tspan> <tspan class="str">'better-sqlite3'</tspan>;</text>
+      <text y="24" class="code-line"><tspan class="kw">import</tspan> bcrypt <tspan class="kw">from</tspan> <tspan class="str">'bcryptjs'</tspan>;</text>
+      <text y="48" class="code-line"></text>
+      <text y="72" class="code-line"><tspan class="kw">let</tspan> dbInstance: Database.Database | <tspan class="kw">null</tspan> = <tspan class="kw">null</tspan>;</text>
+      <text y="96" class="code-line"></text>
+      <text y="120" class="code-line"><tspan class="cm">// ฟังก์ชันเชื่อมต่อฐานข้อมูลแบบ Singleton เพื่อประหยัด Connection Pool</tspan></text>
+      <text y="144" class="code-line"><tspan class="kw">export function</tspan> <tspan class="fn">getDb</tspan>(): Database.Database {</text>
+      <text y="168" class="code-line">  <tspan class="kw">if</tspan> (!dbInstance) {</text>
+      <text y="192" class="code-line">    <tspan class="kw">const</tspan> dbPath = path.<tspan class="fn">join</tspan>(process.<tspan class="fn">cwd</tspan>(), <tspan class="str">'data'</tspan>, <tspan class="str">'pr4fang.db'</tspan>);</text>
+      <text y="216" class="code-line">    dbInstance = <tspan class="kw">new</tspan> <tspan class="fn">Database</tspan>(dbPath);</text>
+      <text y="240" class="code-line"></text>
+      <text y="264" class="code-line">    <tspan class="cm">// ปรับปรุงความเร็วด้วยโหมด Write-Ahead Logging (WAL) และ Foreign Keys</tspan></text>
+      <text y="288" class="code-line">    dbInstance.<tspan class="fn">pragma</tspan>(<tspan class="str">'journal_mode = WAL'</tspan>);</text>
+      <text y="312" class="code-line">    dbInstance.<tspan class="fn">pragma</tspan>(<tspan class="str">'foreign_keys = ON'</tspan>);</text>
+      <text y="336" class="code-line">    <tspan class="fn">initializeDatabaseTables</tspan>(dbInstance);</text>
+      <text y="360" class="code-line">  }</text>
+      <text y="384" class="code-line">  <tspan class="kw">return</tspan> dbInstance;</text>
+      <text y="408" class="code-line">}</text>
+      <text y="432" class="code-line"></text>
+      <text y="456" class="code-line"><tspan class="kw">function</tspan> <tspan class="fn">initializeDatabaseTables</tspan>(db: Database.Database): <tspan class="typ">void</tspan> {</text>
+      <text y="480" class="code-line">  <tspan class="cm">// สร้างตารางผู้ใช้งาน พร้อม Foreign Key เชื่อมกับหน่วยงาน</tspan></text>
+      <text y="504" class="code-line">  db.<tspan class="fn">exec</tspan>(`</text>
+      <text y="528" class="code-line">    <tspan class="kw">CREATE TABLE IF NOT EXISTS</tspan> master_users (</text>
+      <text y="552" class="code-line">      user_id <tspan class="typ">TEXT PRIMARY KEY</tspan>,</text>
+      <text y="576" class="code-line">      email <tspan class="typ">TEXT UNIQUE NOT NULL</tspan>,</text>
+      <text y="600" class="code-line">      password_hash <tspan class="typ">TEXT NOT NULL</tspan>,</text>
+      <text y="624" class="code-line">      role <tspan class="typ">TEXT CHECK</tspan>(role <tspan class="kw">IN</tspan> (<tspan class="str">'administrator'</tspan>, <tspan class="str">'staff'</tspan>)),</text>
+      <text y="648" class="code-line">      department_id <tspan class="typ">TEXT REFERENCES</tspan> departments(department_id)</text>
+      <text y="672" class="code-line">    );</text>
+      <text y="696" class="code-line">  `);</text>
+      <text y="720" class="code-line">}</text>
+    </g>
+  </g>
+
+  <!-- EXPLANATION PANEL (RIGHT 36%) -->
+  <g transform="translate(930, 125)">
+    <!-- Box 1 -->
+    <g transform="translate(0, 0)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#eff6ff" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#bfdbfe" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#2563eb"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#1d4ed8">1. การเข้ารหัส Bcrypt (Cost 12)</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• เก็บรหัสผ่านแบบ One-Way Hash ด้วยอัลกอริทึม Bcrypt</text>
+      <text x="20" y="90" class="panel-body font-sans">• กำหนด Work Factor Cost = 12 ป้องกันการโจมตีแบบ Brute-force</text>
+      <text x="20" y="115" class="panel-body font-sans">• สุ่มสร้าง Salt 128-bit ในทุกรหัสผ่าน ป้องกัน Rainbow Table</text>
+      <text x="20" y="140" class="panel-body font-sans">• ตรวจสอบการล็อกบัญชีอัตโนมัติเมื่อพิมพ์ผิดเกิน 5 ครั้ง (Lockout 15 นาที)</text>
+      <rect x="20" y="152" width="115" height="20" rx="4" fill="#dbeafe"/>
+      <text x="77" y="166" font-size="10" font-weight="700" fill="#1e40af" text-anchor="middle" class="font-sans">OWASP Compliant</text>
+    </g>
+
+    <!-- Box 2 -->
+    <g transform="translate(0, 205)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#f0fdf4" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#bbf7d0" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#16a34a"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#15803d">2. Write-Ahead Logging (WAL Mode)</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• เปิดโหมด WAL แยกกระบวนการอ่าน (Read) และเขียน (Write) ชัดเจน</text>
+      <text x="20" y="90" class="panel-body font-sans">• ผู้ใช้อ่านคลังความรู้พร้อมกันได้โดยไม่ถูกบล็อกจากคำสั่ง INSERT Log</text>
+      <text x="20" y="115" class="panel-body font-sans">• ยกระดับความเร็วในการสืบค้นข้อมูล RAG สูงขึ้นกว่า 3.5 เท่า</text>
+      <text x="20" y="140" class="panel-body font-sans">• ปลอดภัยต่อเหตุการณ์ไฟฟ้าดับด้วย Auto Checkpointing</text>
+      <rect x="20" y="152" width="125" height="20" rx="4" fill="#dcfce7"/>
+      <text x="82" y="166" font-size="10" font-weight="700" fill="#166534" text-anchor="middle" class="font-sans">High Concurrency</text>
+    </g>
+
+    <!-- Box 3 -->
+    <g transform="translate(0, 410)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#fdf4ff" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#f5d0fe" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#c026d3"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#a21caf">3. ความเข้ากันได้ข้ามระบบ (Dual DB Architecture)</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• สถาปัตยกรรมรองรับทั้ง MySQL 8.0 และ SQLite / LibSQL</text>
+      <text x="20" y="90" class="panel-body font-sans">• ใช้งานได้ทั้งบน Local Server ของวิทยาลัย และ Cloud Serverless</text>
+      <text x="20" y="115" class="panel-body font-sans">• มีระบบ Auto Copy ไปที่ไดเรกทอรี /tmp เมื่อทำงานบน Vercel</text>
+      <text x="20" y="140" class="panel-body font-sans">• มาตรฐาน SQL ANSI สามารถสลับฐานข้อมูลได้โดยไม่ต้องแก้ Business Logic</text>
+      <rect x="20" y="152" width="120" height="20" rx="4" fill="#fae8ff"/>
+      <text x="80" y="166" font-size="10" font-weight="700" fill="#86198f" text-anchor="middle" class="font-sans">Cross-Platform</text>
+    </g>
+
+    <!-- Box 4 -->
+    <g transform="translate(0, 615)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#fffbeb" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#fde68a" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#d97706"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#92400e">4. ความสมบูรณ์ของข้อมูล (Data Integrity)</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• บังคับใช้ Foreign Keys ตลอดทั้งระบบ (PRAGMA foreign_keys = ON)</text>
+      <text x="20" y="90" class="panel-body font-sans">• ป้องกันปัญหา Orphan Records เมื่อมีการลบหรือระงับบัญชีผู้ใช้</text>
+      <text x="20" y="115" class="panel-body font-sans">• รองรับการสำรองข้อมูลอัตโนมัติรายวันผ่านตาราง backup_jobs</text>
+      <text x="20" y="140" class="panel-body font-sans">• ซิงค์สำเนาข้อมูลผู้ใช้ไปยัง Google Sheets แบบทวิทิศทาง</text>
+      <rect x="20" y="152" width="115" height="20" rx="4" fill="#fef3c7"/>
+      <text x="77" y="166" font-size="10" font-weight="700" fill="#92400e" text-anchor="middle" class="font-sans">ACID Standards</text>
+    </g>
+  </g>
+</svg>

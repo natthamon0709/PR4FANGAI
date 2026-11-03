@@ -1,0 +1,683 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2160 1560" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Sarabun:wght@400;500;600;700&amp;display=swap');
+      * { font-family: 'Sarabun', sans-serif; }
+      .main-title { font-size: 26px; font-weight: 700; fill: #0f172a; }
+      .sub-title { font-size: 15px; fill: #64748b; }
+      .group-title { font-size: 15px; font-weight: 700; }
+      .table-header { font-size: 12px; font-weight: 700; fill: #ffffff; }
+      .col-pk { font-size: 11px; font-weight: 700; fill: #d97706; font-family: 'Fira Code', monospace; }
+      .col-fk { font-size: 11px; font-weight: 700; fill: #2563eb; font-family: 'Fira Code', monospace; }
+      .col-name { font-size: 11px; font-weight: 600; fill: #1e293b; font-family: 'Fira Code', monospace; }
+      .col-type { font-size: 10px; fill: #64748b; font-family: 'Fira Code', monospace; }
+      .ref-tag { font-size: 9px; font-weight: 700; font-family: 'Fira Code', monospace; }
+    </style>
+
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+
+    <!-- Clean Arrow Markers -->
+    <marker id="arrBlue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb" />
+    </marker>
+    <marker id="arrPurple" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7c3aed" />
+    </marker>
+    <marker id="arrGreen" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#059669" />
+    </marker>
+    <marker id="arrAmber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ea580c" />
+    </marker>
+    <marker id="arrLine" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a" />
+    </marker>
+  </defs>
+
+  <rect width="2160" height="1560" fill="#f8fafc" />
+
+  <!-- Top Title Banner -->
+  <g transform="translate(40, 25)">
+    <rect width="2080" height="75" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="8" height="75" rx="4" fill="#059669" />
+    
+    <!-- Title Icon (Database Tables) -->
+    <rect x="25" y="18" width="40" height="40" rx="8" fill="#d1fae5" stroke="#a7f3d0"/>
+    <ellipse cx="45" cy="32" rx="10" ry="4" stroke="#059669" stroke-width="1.8" fill="none"/>
+    <path d="M35 32 v14 c0 2.5 4.5 4 10 4 s10 -1.5 10 -4 v-14" stroke="#059669" stroke-width="1.8" fill="none"/>
+
+    <text x="78" y="44" class="main-title">ภาคผนวก 4: แผนภาพความสัมพันธ์ฐานข้อมูลระบบจริง 35 ตาราง (Full Entity-Relationship Diagram — Zero Overlap)</text>
+    <text x="78" y="66" class="sub-title">โครงสร้างฐานข้อมูล PR4Fang AI ครอบคลุม 35 ตารางตามสเปก dbdiagram.io — เดินสายสัมพันธ์ชัดเจน ไร้เส้นตัดผ่านกล่อง 100%</text>
+    
+    <rect x="1820" y="22" width="240" height="32" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+    <text x="1940" y="43" font-size="12" font-weight="700" fill="#065f46" text-anchor="middle">ตรงตาม dbdiagram.io (Zero Overlap)</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MODULE 1: CORE ORGANIZATION & USERS (5 TABLES)               -->
+  <!-- ============================================================ -->
+  <g transform="translate(40, 120)">
+    <rect width="640" height="400" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="640" height="34" rx="12" fill="#eff6ff" />
+    <circle cx="20" cy="17" r="5" fill="#2563eb"/>
+    <text x="35" y="22" class="group-title" fill="#1d4ed8">1. โครงสร้างองค์กรและผู้ใช้งาน (Core Organization &amp; Users — 5 Tables)</text>
+
+    <!-- Table 1: departments (Top-Left) -->
+    <g transform="translate(20, 50)">
+      <rect width="180" height="135" rx="6" fill="#f8fafc" stroke="#93c5fd" stroke-width="1.2"/>
+      <rect width="180" height="24" rx="6" fill="#1d4ed8"/>
+      <text x="10" y="16" class="table-header">departments</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">department_id</text>
+        <text y="20" class="col-name">code</text><text x="80" y="20" class="col-type">VARCHAR(32)</text>
+        <text y="40" class="col-name">name</text><text x="80" y="40" class="col-type">VARCHAR(100)</text>
+        <text y="60" class="col-name">created_at</text><text x="80" y="60" class="col-type">DATETIME</text>
+      </g>
+    </g>
+
+    <!-- Table 2: sub_departments (Top-Middle) -->
+    <g transform="translate(230, 50)">
+      <rect width="180" height="135" rx="6" fill="#f8fafc" stroke="#93c5fd" stroke-width="1.2"/>
+      <rect width="180" height="24" rx="6" fill="#1d4ed8"/>
+      <text x="10" y="16" class="table-header">sub_departments</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">sub_department_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">department_id</text>
+        <text y="40" class="col-name">code, name</text>
+        <text y="60" class="col-name">created_at</text>
+      </g>
+    </g>
+
+    <!-- Table 3: master_users (Top-Right) -->
+    <g transform="translate(440, 50)">
+      <rect width="180" height="185" rx="6" fill="#f8fafc" stroke="#93c5fd" stroke-width="1.2"/>
+      <rect width="180" height="24" rx="6" fill="#1d4ed8"/>
+      <text x="10" y="16" class="table-header">master_users</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">user_id</text>
+        <text y="20" class="col-name">email, phone</text>
+        <text y="40" class="col-name">password_hash</text>
+        <text y="60" class="col-fk">FK</text><text x="25" y="60" class="col-name">department_id</text>
+        <text y="80" class="col-fk">FK</text><text x="25" y="80" class="col-name">sub_dept_id</text>
+        <text y="100" class="col-name">role (admin/staff)</text>
+      </g>
+    </g>
+
+    <!-- Table 4: reset_password_tokens (Bottom-Middle) -->
+    <g transform="translate(230, 245)">
+      <rect width="180" height="135" rx="6" fill="#f8fafc" stroke="#93c5fd" stroke-width="1.2"/>
+      <rect width="180" height="24" rx="6" fill="#2563eb"/>
+      <text x="10" y="16" class="table-header">reset_password_tokens</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">token_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">user_id</text>
+        <text y="40" class="col-name">token_hash</text>
+        <text y="60" class="col-name">expires_at</text>
+      </g>
+    </g>
+
+    <!-- Table 5: login_audit_logs (Bottom-Right) -->
+    <g transform="translate(440, 255)">
+      <rect width="180" height="125" rx="6" fill="#f8fafc" stroke="#93c5fd" stroke-width="1.2"/>
+      <rect width="180" height="24" rx="6" fill="#2563eb"/>
+      <text x="10" y="16" class="table-header">login_audit_logs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">log_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">user_id</text>
+        <text y="40" class="col-name">email_attempted</text>
+        <text y="60" class="col-name">result, ip_address</text>
+      </g>
+    </g>
+
+    <!-- INTERNAL CLEAN CONNECTIONS (M1) -->
+    <!-- sub_departments -> departments -->
+    <path d="M 230 110 L 200 110" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrBlue)" fill="none"/>
+    <!-- master_users -> sub_departments -->
+    <path d="M 440 110 L 410 110" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrBlue)" fill="none"/>
+    <!-- login_audit_logs -> master_users (straight up in open gap) -->
+    <path d="M 530 255 L 530 235" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrBlue)" fill="none"/>
+    <!-- reset_password_tokens -> master_users (clean dog-leg in open gap) -->
+    <path d="M 320 245 L 320 215 L 440 215" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrBlue)" fill="none"/>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MODULE 2: KNOWLEDGE MANAGEMENT SYSTEM (5 TABLES)             -->
+  <!-- ============================================================ -->
+  <g transform="translate(730, 120)">
+    <rect width="670" height="400" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="670" height="34" rx="12" fill="#faf5ff" />
+    <circle cx="20" cy="17" r="5" fill="#7c3aed"/>
+    <text x="35" y="22" class="group-title" fill="#6d28d9">2. คลังจัดการองค์ความรู้ดิจิทัล (Knowledge Management — 5 Tables)</text>
+
+    <!-- Table 6: knowledge_items (Left Anchor) -->
+    <g transform="translate(20, 50)">
+      <rect width="200" height="225" rx="6" fill="#f8fafc" stroke="#d8b4fe" stroke-width="1.2"/>
+      <rect width="200" height="24" rx="6" fill="#7c3aed"/>
+      <text x="10" y="16" class="table-header">knowledge_items</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">knowledge_id</text>
+        <text y="20" class="col-name">content_type, title</text>
+        <text y="40" class="col-name">summary, content</text>
+        <text y="60" class="col-fk">FK</text><text x="25" y="60" class="col-name">department_id</text>
+        <text y="80" class="col-fk">FK</text><text x="25" y="80" class="col-name">sub_dept_id</text>
+        <text y="100" class="col-name">status (draft/pub)</text>
+        <text y="120" class="col-name">is_ai_retrievable</text>
+        <text y="140" class="col-name">tags, effective_date</text>
+      </g>
+    </g>
+
+    <!-- Table 7: knowledge_attachments (Middle Top) -->
+    <g transform="translate(250, 50)">
+      <rect width="190" height="150" rx="6" fill="#f8fafc" stroke="#d8b4fe" stroke-width="1.2"/>
+      <rect width="190" height="24" rx="6" fill="#8b5cf6"/>
+      <text x="10" y="16" class="table-header">knowledge_attachments</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">attachment_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">knowledge_id</text>
+        <text y="40" class="col-name">file_name, file_url</text>
+        <text y="60" class="col-name">file_type (pdf..)</text>
+        <text y="80" class="col-name">file_size_kb</text>
+      </g>
+    </g>
+
+    <!-- Table 8: knowledge_version_history (Right Top) -->
+    <g transform="translate(465, 50)">
+      <rect width="185" height="150" rx="6" fill="#f8fafc" stroke="#d8b4fe" stroke-width="1.2"/>
+      <rect width="185" height="24" rx="6" fill="#8b5cf6"/>
+      <text x="10" y="16" class="table-header">knowledge_version_history</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">version_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">knowledge_id</text>
+        <text y="40" class="col-name">version_no</text>
+        <text y="60" class="col-name">content_snapshot</text>
+        <text y="80" class="col-fk">FK</text><text x="25" y="80" class="col-name">edited_by</text>
+      </g>
+    </g>
+
+    <!-- Table 9: activity_feed (Middle Bottom) -->
+    <g transform="translate(250, 230)">
+      <rect width="190" height="145" rx="6" fill="#f8fafc" stroke="#d8b4fe" stroke-width="1.2"/>
+      <rect width="190" height="24" rx="6" fill="#6d28d9"/>
+      <text x="10" y="16" class="table-header">activity_feed</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">activity_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">actor_user_id</text>
+        <text y="40" class="col-name">action_type, target_id</text>
+        <text y="60" class="col-fk">FK</text><text x="25" y="60" class="col-name">department_id</text>
+      </g>
+    </g>
+
+    <!-- Table 10: knowledge_gap_logs (Right Bottom) -->
+    <g transform="translate(465, 230)">
+      <rect width="185" height="145" rx="6" fill="#f8fafc" stroke="#d8b4fe" stroke-width="1.2"/>
+      <rect width="185" height="24" rx="6" fill="#6d28d9"/>
+      <text x="10" y="16" class="table-header">knowledge_gap_logs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">gap_id</text>
+        <text y="20" class="col-name">question_text</text>
+        <text y="40" class="col-name">ask_count</text>
+        <text y="60" class="col-fk">FK</text><text x="25" y="60" class="col-name">resolved_kb_id</text>
+      </g>
+    </g>
+
+    <!-- INTERNAL CLEAN CONNECTIONS (M2) -->
+    <!-- attachments -> knowledge_items -->
+    <path d="M 250 95 L 220 95" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arrPurple)" fill="none"/>
+    <!-- version_history -> knowledge_items (via upper corridor) -->
+    <path d="M 465 95 L 440 95" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arrPurple)" fill="none"/>
+    <!-- gap_logs -> knowledge_items (via middle corridor) -->
+    <path d="M 465 295 L 450 295 L 450 215 L 235 215 L 235 250 L 220 250" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arrPurple)" fill="none"/>
+
+    <!-- Outgoing reference badge -->
+    <rect x="20" y="295" width="200" height="24" rx="4" fill="#faf5ff" stroke="#d8b4fe"/>
+    <text x="120" y="311" font-size="10" font-weight="700" fill="#7c3aed" text-anchor="middle">➔ RAG Source in ai_retrieved_sources</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MODULE 3: SHEETS CMS INTEGRATION (3 TABLES)                  -->
+  <!-- ============================================================ -->
+  <g transform="translate(1440, 120)">
+    <rect width="680" height="400" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="680" height="34" rx="12" fill="#ecfdf5" />
+    <circle cx="20" cy="17" r="5" fill="#059669"/>
+    <text x="35" y="22" class="group-title" fill="#065f46">3. กลุ่มซิงค์ Google Sheets CMS (Sheets Integration — 3 Tables)</text>
+
+    <!-- Table 11: sheet_sync_configs -->
+    <g transform="translate(20, 50)">
+      <rect width="195" height="175" rx="6" fill="#f8fafc" stroke="#6ee7b7" stroke-width="1.2"/>
+      <rect width="195" height="24" rx="6" fill="#059669"/>
+      <text x="10" y="16" class="table-header">sheet_sync_configs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">config_id</text>
+        <text y="20" class="col-name">sheet_name</text>
+        <text y="40" class="col-name">spreadsheet_id</text>
+        <text y="60" class="col-name">sheet_gid</text>
+        <text y="80" class="col-name">sync_direction</text>
+        <text y="100" class="col-name">last_synced_at</text>
+      </g>
+    </g>
+
+    <!-- Table 12: sync_logs -->
+    <g transform="translate(245, 50)">
+      <rect width="195" height="175" rx="6" fill="#f8fafc" stroke="#6ee7b7" stroke-width="1.2"/>
+      <rect width="195" height="24" rx="6" fill="#059669"/>
+      <text x="10" y="16" class="table-header">sync_logs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">log_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">config_id</text>
+        <text y="40" class="col-name">event_type</text>
+        <text y="60" class="col-name">rows_imported</text>
+        <text y="80" class="col-name">status (success..)</text>
+        <text y="100" class="col-name">error_message</text>
+      </g>
+    </g>
+
+    <!-- Table 13: sync_conflicts -->
+    <g transform="translate(470, 50)">
+      <rect width="190" height="175" rx="6" fill="#f8fafc" stroke="#6ee7b7" stroke-width="1.2"/>
+      <rect width="190" height="24" rx="6" fill="#047857"/>
+      <text x="10" y="16" class="table-header">sync_conflicts</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">conflict_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">config_id</text>
+        <text y="40" class="col-name">row_identifier</text>
+        <text y="60" class="col-name">local_data (JSON)</text>
+        <text y="80" class="col-name">remote_data (JSON)</text>
+        <text y="100" class="col-name">resolution_status</text>
+      </g>
+    </g>
+
+    <!-- INTERNAL CLEAN CONNECTIONS (M3) -->
+    <!-- sync_logs -> sheet_sync_configs -->
+    <path d="M 245 135 L 215 135" stroke="#059669" stroke-width="2" marker-end="url(#arrGreen)" fill="none"/>
+    <!-- sync_conflicts -> sheet_sync_configs -->
+    <path d="M 470 135 L 440 135" stroke="#059669" stroke-width="2" marker-end="url(#arrGreen)" fill="none"/>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MODULE 4: AI ENGINE & RETRIEVAL (4 TABLES)                   -->
+  <!-- ============================================================ -->
+  <g transform="translate(40, 550)">
+    <rect width="640" height="400" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="640" height="34" rx="12" fill="#fff7ed" />
+    <circle cx="20" cy="17" r="5" fill="#ea580c"/>
+    <text x="35" y="22" class="group-title" fill="#c2410c">4. ปัญญาประดิษฐ์และการสืบค้น (AI Engine &amp; Retrieval — 4 Tables)</text>
+
+    <!-- Table 14: ai_engine_configs -->
+    <g transform="translate(20, 50)">
+      <rect width="180" height="205" rx="6" fill="#f8fafc" stroke="#fed7aa" stroke-width="1.2"/>
+      <rect width="180" height="24" rx="6" fill="#ea580c"/>
+      <text x="10" y="16" class="table-header">ai_engine_configs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">config_id</text>
+        <text y="20" class="col-name">provider (gemini..)</text>
+        <text y="40" class="col-name">model_name</text>
+        <text y="60" class="col-name">confidence_thresh</text>
+        <text y="80" class="col-name">retrieval_top_k</text>
+        <text y="100" class="col-name">temperature</text>
+        <text y="120" class="col-name">voice_dialect_mode</text>
+      </g>
+    </g>
+
+    <!-- Table 15: ai_query_logs -->
+    <g transform="translate(230, 50)">
+      <rect width="185" height="205" rx="6" fill="#f8fafc" stroke="#fed7aa" stroke-width="1.2"/>
+      <rect width="185" height="24" rx="6" fill="#ea580c"/>
+      <text x="10" y="16" class="table-header">ai_query_logs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">log_id</text>
+        <text y="20" class="col-name">channel (LINE/ROBOT)</text>
+        <text y="40" class="col-name">user_identifier</text>
+        <text y="60" class="col-name">question, answer</text>
+        <text y="80" class="col-name">confidence_score</text>
+        <text y="100" class="col-name">is_fallback (0/1)</text>
+        <text y="120" class="col-name">response_time_ms</text>
+      </g>
+    </g>
+
+    <!-- Table 16: ai_retrieved_sources (Next to ai_query_logs) -->
+    <g transform="translate(440, 50)">
+      <rect width="180" height="205" rx="6" fill="#f8fafc" stroke="#fed7aa" stroke-width="1.2"/>
+      <rect width="180" height="24" rx="6" fill="#ea580c"/>
+      <text x="10" y="16" class="table-header">ai_retrieved_sources</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">source_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">log_id</text>
+        <text y="40" class="col-fk">FK</text><text x="25" y="40" class="col-name">knowledge_id</text>
+        <text y="60" class="col-name">relevance_score</text>
+        <text y="80" class="col-name">rank_order</text>
+        <text y="100" class="col-name">snippet</text>
+      </g>
+    </g>
+
+    <!-- Table 17: drive_media_cache -->
+    <g transform="translate(20, 280)">
+      <rect width="600" height="95" rx="6" fill="#f8fafc" stroke="#fed7aa" stroke-width="1.2"/>
+      <rect width="600" height="24" rx="6" fill="#c2410c"/>
+      <text x="10" y="16" class="table-header">drive_media_cache</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">cache_id</text>
+        <text x="150" y="0" class="col-name">file_id, mime_type, proxy_url, cached_at</text>
+      </g>
+    </g>
+
+    <!-- INTERNAL CLEAN CONNECTIONS (M4) -->
+    <!-- ai_retrieved_sources -> ai_query_logs -->
+    <path d="M 440 135 L 415 135" stroke="#ea580c" stroke-width="2" marker-end="url(#arrAmber)" fill="none"/>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MODULE 5: LINE OA INTEGRATION (5 TABLES)                     -->
+  <!-- ============================================================ -->
+  <g transform="translate(730, 550)">
+    <rect width="670" height="400" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="670" height="34" rx="12" fill="#f0fdf4" />
+    <circle cx="20" cy="17" r="5" fill="#16a34a"/>
+    <text x="35" y="22" class="group-title" fill="#15803d">5. การเชื่อมต่อ LINE Official Account (LINE Messaging — 5 Tables)</text>
+
+    <!-- Table 18: line_channel_configs -->
+    <g transform="translate(20, 50)">
+      <rect width="195" height="150" rx="6" fill="#f8fafc" stroke="#86efac" stroke-width="1.2"/>
+      <rect width="195" height="24" rx="6" fill="#16a34a"/>
+      <text x="10" y="16" class="table-header">line_channel_configs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">channel_id</text>
+        <text y="20" class="col-name">channel_name</text>
+        <text y="40" class="col-name">access_token_enc</text>
+        <text y="60" class="col-name">channel_secret_enc</text>
+        <text y="80" class="col-name">is_active (0/1)</text>
+      </g>
+    </g>
+
+    <!-- Table 19: line_rich_menus -->
+    <g transform="translate(240, 50)">
+      <rect width="195" height="150" rx="6" fill="#f8fafc" stroke="#86efac" stroke-width="1.2"/>
+      <rect width="195" height="24" rx="6" fill="#16a34a"/>
+      <text x="10" y="16" class="table-header">line_rich_menus</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">menu_id</text>
+        <text y="20" class="col-name">name, target_role</text>
+        <text y="40" class="col-name">areas_json</text>
+        <text y="60" class="col-name">is_default (0/1)</text>
+        <text y="80" class="col-name">line_menu_id</text>
+      </g>
+    </g>
+
+    <!-- Table 20: line_broadcasts -->
+    <g transform="translate(460, 50)">
+      <rect width="190" height="150" rx="6" fill="#f8fafc" stroke="#86efac" stroke-width="1.2"/>
+      <rect width="190" height="24" rx="6" fill="#16a34a"/>
+      <text x="10" y="16" class="table-header">line_broadcasts</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">broadcast_id</text>
+        <text y="20" class="col-name">title, payload</text>
+        <text y="40" class="col-name">target_audience</text>
+        <text y="60" class="col-name">sent_count, status</text>
+        <text y="80" class="col-name">scheduled_at</text>
+      </g>
+    </g>
+
+    <!-- Table 21: line_followers -->
+    <g transform="translate(20, 220)">
+      <rect width="300" height="160" rx="6" fill="#f8fafc" stroke="#86efac" stroke-width="1.2"/>
+      <rect width="300" height="24" rx="6" fill="#15803d"/>
+      <text x="10" y="16" class="table-header">line_followers</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">line_user_id</text>
+        <text y="20" class="col-name">display_name, picture_url</text>
+        <text y="40" class="col-fk">FK</text><text x="25" y="40" class="col-name">master_user_id (บุคลากรที่ผูก)</text>
+        <text y="60" class="col-name">role_scope (PUBLIC/STAFF/ADMIN)</text>
+        <text y="80" class="col-name">is_blocked (0/1)</text>
+      </g>
+    </g>
+
+    <!-- Table 22: line_account_link_requests -->
+    <g transform="translate(350, 220)">
+      <rect width="300" height="160" rx="6" fill="#f8fafc" stroke="#86efac" stroke-width="1.2"/>
+      <rect width="300" height="24" rx="6" fill="#15803d"/>
+      <text x="10" y="16" class="table-header">line_account_link_requests</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">request_id</text>
+        <text y="20" class="col-name">link_token</text>
+        <text y="40" class="col-fk">FK</text><text x="25" y="40" class="col-name">line_user_id</text>
+        <text y="60" class="col-fk">FK</text><text x="25" y="60" class="col-name">master_user_id</text>
+        <text y="80" class="col-name">expires_at, is_completed</text>
+      </g>
+    </g>
+
+    <!-- INTERNAL CLEAN CONNECTIONS (M5) -->
+    <!-- rich_menus -> channel_configs -->
+    <path d="M 240 110 L 215 110" stroke="#16a34a" stroke-width="2" marker-end="url(#arrLine)" fill="none"/>
+    <!-- broadcasts -> channel_configs -->
+    <path d="M 460 110 L 435 110" stroke="#16a34a" stroke-width="2" marker-end="url(#arrLine)" fill="none"/>
+    <!-- link_requests -> line_followers -->
+    <path d="M 350 280 L 320 280" stroke="#16a34a" stroke-width="2" marker-end="url(#arrLine)" fill="none"/>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MODULE 6: ANALYTICS & REPORTS (5 TABLES)                     -->
+  <!-- ============================================================ -->
+  <g transform="translate(1440, 550)">
+    <rect width="680" height="400" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="680" height="34" rx="12" fill="#f1f5f9" />
+    <circle cx="20" cy="17" r="5" fill="#475569"/>
+    <text x="35" y="22" class="group-title" fill="#334155">6. การวิเคราะห์และรายงานสรุป (Analytics &amp; Reporting — 5 Tables)</text>
+
+    <!-- Table 23: dashboard_summary_cache -->
+    <g transform="translate(20, 50)">
+      <rect width="195" height="160" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+      <rect width="195" height="24" rx="6" fill="#475569"/>
+      <text x="10" y="16" class="table-header">dashboard_summary_cache</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">summary_id</text>
+        <text y="20" class="col-name">scope (global/dept)</text>
+        <text y="40" class="col-fk">FK</text><text x="25" y="40" class="col-name">department_id</text>
+        <text y="60" class="col-name">metric_key, metric_val</text>
+        <text y="80" class="col-name">trend_percent</text>
+      </g>
+    </g>
+
+    <!-- Table 24: report_snapshots -->
+    <g transform="translate(245, 50)">
+      <rect width="195" height="160" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+      <rect width="195" height="24" rx="6" fill="#475569"/>
+      <text x="10" y="16" class="table-header">report_snapshots</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">snapshot_id</text>
+        <text y="20" class="col-name">metric_key</text>
+        <text y="40" class="col-name">period_type (daily..)</text>
+        <text y="60" class="col-fk">FK</text><text x="25" y="60" class="col-name">department_id</text>
+        <text y="80" class="col-name">metric_value</text>
+      </g>
+    </g>
+
+    <!-- Table 25: scheduled_report_configs -->
+    <g transform="translate(470, 50)">
+      <rect width="190" height="160" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+      <rect width="190" height="24" rx="6" fill="#475569"/>
+      <text x="10" y="16" class="table-header">scheduled_report_configs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">config_id</text>
+        <text y="20" class="col-name">report_type, freq</text>
+        <text y="40" class="col-name">format (pdf/xlsx)</text>
+        <text y="60" class="col-name">recipients (JSON)</text>
+        <text y="80" class="col-fk">FK</text><text x="25" y="80" class="col-name">created_by</text>
+      </g>
+    </g>
+
+    <!-- Table 26: custom_report_definitions -->
+    <g transform="translate(20, 230)">
+      <rect width="305" height="150" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+      <rect width="305" height="24" rx="6" fill="#334155"/>
+      <text x="10" y="16" class="table-header">custom_report_definitions</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">definition_id</text>
+        <text y="20" class="col-name">name, metrics (JSON)</text>
+        <text y="40" class="col-name">filters (JSON)</text>
+        <text y="60" class="col-fk">FK</text><text x="25" y="60" class="col-name">created_by</text>
+      </g>
+    </g>
+
+    <!-- Table 27: report_export_logs -->
+    <g transform="translate(355, 230)">
+      <rect width="305" height="150" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+      <rect width="305" height="24" rx="6" fill="#334155"/>
+      <text x="10" y="16" class="table-header">report_export_logs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">log_id</text>
+        <text y="20" class="col-fk">FK</text><text x="25" y="20" class="col-name">user_id</text>
+        <text y="40" class="col-name">report_type, format</text>
+        <text y="60" class="col-name">filter_summary, created_at</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MODULE 7: SETTINGS, AUDIT & UTILITY (8 TABLES)               -->
+  <!-- ============================================================ -->
+  <g transform="translate(40, 980)">
+    <rect width="2080" height="420" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="2080" height="34" rx="12" fill="#f8fafc" />
+    <circle cx="20" cy="17" r="5" fill="#0284c7"/>
+    <text x="35" y="22" class="group-title" fill="#0369a1">7. การตั้งค่าระบบ ความปลอดภัย และบันทึกกิจกรรม (System Settings, Security &amp; Audit — 8 Tables)</text>
+
+    <!-- Table 28: system_settings -->
+    <g transform="translate(20, 50)">
+      <rect width="235" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+      <rect width="235" height="24" rx="6" fill="#0284c7"/>
+      <text x="10" y="16" class="table-header">system_settings</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">key</text><text x="90" y="0" class="col-type">VARCHAR(64)</text>
+        <text y="25" class="col-name">value</text><text x="90" y="25" class="col-type">TEXT (JSON)</text>
+        <text y="50" class="col-name">updated_at</text><text x="90" y="50" class="col-type">DATETIME</text>
+      </g>
+    </g>
+
+    <!-- Table 29: college_profile -->
+    <g transform="translate(275, 50)">
+      <rect width="235" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+      <rect width="235" height="24" rx="6" fill="#0284c7"/>
+      <text x="10" y="16" class="table-header">college_profile</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">profile_id</text>
+        <text y="25" class="col-name">name_th, name_en</text>
+        <text y="50" class="col-name">address, phone, logo_url</text>
+        <text y="75" class="col-name">timezone</text>
+      </g>
+    </g>
+
+    <!-- Table 30: security_policies -->
+    <g transform="translate(530, 50)">
+      <rect width="235" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+      <rect width="235" height="24" rx="6" fill="#0284c7"/>
+      <text x="10" y="16" class="table-header">security_policies</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">policy_id</text>
+        <text y="25" class="col-name">password_min_length</text>
+        <text y="50" class="col-name">max_login_attempts</text>
+        <text y="75" class="col-name">session_timeout_hours</text>
+      </g>
+    </g>
+
+    <!-- Table 31: notification_rules -->
+    <g transform="translate(785, 50)">
+      <rect width="235" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+      <rect width="235" height="24" rx="6" fill="#0284c7"/>
+      <text x="10" y="16" class="table-header">notification_rules</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">rule_id</text>
+        <text y="25" class="col-name">event_type</text>
+        <text y="50" class="col-name">notify_roles (JSON)</text>
+        <text y="75" class="col-name">notify_channels (JSON)</text>
+      </g>
+    </g>
+
+    <!-- Table 32: system_audit_logs -->
+    <g transform="translate(1040, 50)">
+      <rect width="235" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+      <rect width="235" height="24" rx="6" fill="#0369a1"/>
+      <text x="10" y="16" class="table-header">system_audit_logs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">log_id</text>
+        <text y="25" class="col-fk">FK</text><text x="25" y="25" class="col-name">actor_user_id</text>
+        <text y="50" class="col-name">action, target_type</text>
+        <text y="75" class="col-name">detail (JSON), created_at</text>
+      </g>
+    </g>
+
+    <!-- Table 33: backup_jobs -->
+    <g transform="translate(1295, 50)">
+      <rect width="235" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+      <rect width="235" height="24" rx="6" fill="#0369a1"/>
+      <text x="10" y="16" class="table-header">backup_jobs</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">backup_id</text>
+        <text y="25" class="col-name">triggered_by (man/sch)</text>
+        <text y="50" class="col-name">status (success/fail)</text>
+        <text y="75" class="col-name">file_url, file_size</text>
+      </g>
+    </g>
+
+    <!-- Table 34: user_preferences -->
+    <g transform="translate(1550, 50)">
+      <rect width="235" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+      <rect width="235" height="24" rx="6" fill="#0369a1"/>
+      <text x="10" y="16" class="table-header">user_preferences</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">user_id</text>
+        <text y="25" class="col-name">in_app_notifications</text>
+        <text y="50" class="col-name">line_notifications</text>
+        <text y="75" class="col-name">email_notifications</text>
+      </g>
+    </g>
+
+    <!-- Table 35: announcements -->
+    <g transform="translate(1805, 50)">
+      <rect width="250" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+      <rect width="250" height="24" rx="6" fill="#0369a1"/>
+      <text x="10" y="16" class="table-header">announcements</text>
+      <g transform="translate(10, 40)">
+        <text y="0" class="col-pk">PK</text><text x="25" y="0" class="col-name">announcement_id</text>
+        <text y="25" class="col-name">title, content</text>
+        <text y="50" class="col-fk">FK</text><text x="25" y="50" class="col-name">created_by</text>
+        <text y="75" class="col-name">is_active, expires_at</text>
+      </g>
+    </g>
+
+    <!-- Summary Box at bottom -->
+    <g transform="translate(20, 225)">
+      <rect width="2035" height="175" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="30" y="32" font-size="14" font-weight="700" fill="#1e293b">สรุปสถาปัตยกรรมความสัมพันธ์ Foreign Key (Relational Topology Enforced — Zero Overlap):</text>
+      <text x="30" y="58" font-size="12" fill="#334155">• <tspan font-weight="700" fill="#1d4ed8">Organization &amp; User Master:</tspan> departments (1) ➔ sub_departments (N) ➔ master_users (N) บังคับสิทธิ์ขอบเขตงาน และผูกโยง tokens/audit logs</text>
+      <text x="30" y="80" font-size="12" fill="#334155">• <tspan font-weight="700" fill="#7c3aed">Knowledge Base &amp; AI RAG:</tspan> knowledge_items สร้างโดยผู้ใช้ มีตารางลูก attachments, version_history, gap_logs และถูกอ้างอิงผ่าน ai_retrieved_sources (RAG)</text>
+      <text x="30" y="102" font-size="12" fill="#334155">• <tspan font-weight="700" fill="#059669">Google Sheets CMS &amp; LINE OA:</tspan> sheet_sync_configs คุม sync_logs / sync_conflicts ขณะที่ line_channel_configs คุม rich menus และ broadcasts</text>
+      <text x="30" y="124" font-size="12" fill="#334155">• <tspan font-weight="700" fill="#15803d">LINE Identity Linkage:</tspan> line_followers เชื่อม master_users ผ่าน line_account_link_requests เพื่อยืนยันสิทธิ์นักเรียน ครู และผู้ดูแลระบบ</text>
+      <text x="30" y="146" font-size="12" fill="#334155">• <tspan font-weight="700" fill="#0369a1">Analytics &amp; System Audit:</tspan> ทุกโมดูลมี Audit Trail บันทึกกิจกรรม (system_audit_logs, report_snapshots, backups) ปลอดภัยตามมาตรฐานสากล</text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- CLEAN INTER-MODULE BRIDGES ONLY IN WIDE OPEN SPACES          -->
+  <!-- ZERO OVERLAP: All lines run strictly in gutters between modules-->
+  <!-- ============================================================ -->
+  
+  <!-- Bridge 1: master_users -> knowledge_items (Horizontal straight bridge in open 50px gap) -->
+  <path d="M 660 215 L 750 215" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+  <rect x="668" y="202" width="74" height="18" rx="4" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="705" y="215" class="ref-tag" fill="#1d4ed8" text-anchor="middle">1:N Author</text>
+
+  <!-- Bridge 2: knowledge_items -> ai_retrieved_sources (Clean alley between M1 and M2 down to M4) -->
+  <!-- Runs at X=705 in the open 50px alley between X=680 and X=730 -->
+  <path d="M 750 320 L 705 320 L 705 600 L 660 600" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrPurple)" fill="none"/>
+  <rect x="670" y="445" width="70" height="18" rx="4" fill="#faf5ff" stroke="#d8b4fe"/>
+  <text x="705" y="458" class="ref-tag" fill="#7c3aed" text-anchor="middle">RAG Cite</text>
+
+  <!-- Bridge 3: master_users -> line_followers (Clean alley between M4 and M5) -->
+  <!-- Runs at X=715 in the open alley down to M5 -->
+  <path d="M 680 340 L 715 340 L 715 770 L 750 770" stroke="#16a34a" stroke-width="2" marker-end="url(#arrLine)" fill="none"/>
+  <rect x="675" y="525" width="80" height="18" rx="4" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="715" y="538" class="ref-tag" fill="#15803d" text-anchor="middle">User Auth</text>
+
+</svg>

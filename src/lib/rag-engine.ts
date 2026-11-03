@@ -1139,13 +1139,13 @@ ${isDialect
       };
 
       // Map official Google Gemini models resiliently (prioritizing fast and high-availability models)
-      const primaryModel = config.model_name || 'gemini-3.1-flash-lite';
+      const primaryModel = config.model_name || 'gemini-3.5-flash-lite';
       const candidateModels = Array.from(new Set([
-        'gemini-3.1-flash-lite',
         primaryModel,
-        'gemini-flash-lite-latest',
         'gemini-3.5-flash-lite',
-        'gemini-flash-latest'
+        'gemini-flash-lite-latest',
+        'gemini-3-flash-preview',
+        'gemini-3.1-flash-lite'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -1365,12 +1365,24 @@ ${isDialect
     }
 
     if (relevantSnippet && relevantSnippet.length > 20) {
-      answerBody = cleanFaqArtifacts(relevantSnippet.replace(/[#*`]/g, ''));
+      // ตัดข้อความตามประโยคหรือเครื่องหมายวรรคตอนที่สมบูรณ์ ไม่ตัดค้างกลางคำ
+      let cleanSnippet = relevantSnippet.replace(/[#*`]/g, '').trim();
+      const lastSentenceEnd = Math.max(cleanSnippet.lastIndexOf('。'), cleanSnippet.lastIndexOf('.'), cleanSnippet.lastIndexOf('\n'), cleanSnippet.lastIndexOf(' '));
+      if (lastSentenceEnd > 20 && cleanSnippet.length > 300) {
+        cleanSnippet = cleanSnippet.substring(0, lastSentenceEnd).trim();
+      }
+      answerBody = cleanFaqArtifacts(cleanSnippet);
     } else if (primarySource.summary && primarySource.summary.length > 20 && !primarySource.summary.startsWith('A:')) {
       answerBody = cleanFaqArtifacts(primarySource.summary);
     } else if (primarySource.content) {
       const mainContent = primarySource.content.split(/###\s*(?:คำถามที่พบบ่อย|รายการคำถาม)/i)[0] || primarySource.content;
-      answerBody = cleanFaqArtifacts(mainContent.substring(0, 450).replace(/[#*`]/g, ''));
+      // ตัดข้อความตามย่อหน้าหรือบรรทัดที่สมบูรณ์ ป้องกันข้อความถูกหั่นขาดกลางประโยค
+      let rawSnippet = mainContent.replace(/[#*`]/g, '').trim();
+      if (rawSnippet.length > 450) {
+        const breakIndex = rawSnippet.lastIndexOf('\n', 450);
+        rawSnippet = (breakIndex > 100 ? rawSnippet.substring(0, breakIndex) : rawSnippet.substring(0, 450)).trim();
+      }
+      answerBody = cleanFaqArtifacts(rawSnippet);
     }
   }
 
@@ -1542,11 +1554,11 @@ export async function transcribeAndProcessAudio(
     };
 
     const candidateModels = Array.from(new Set([
-      'gemini-3.1-flash-lite',
-      config.model_name || 'gemini-3.1-flash-lite',
-      'gemini-flash-lite-latest',
+      config.model_name || 'gemini-3.5-flash-lite',
       'gemini-3.5-flash-lite',
-      'gemini-flash-latest'
+      'gemini-flash-lite-latest',
+      'gemini-3-flash-preview',
+      'gemini-3.1-flash-lite'
     ])).filter(Boolean);
 
     for (const modelId of candidateModels) {

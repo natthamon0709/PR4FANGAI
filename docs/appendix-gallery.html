@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ภาคผนวกรูปภาพระบบ PR4Fang AI (Technical Appendix Gallery)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Sarabun', sans-serif;
+    }
+    body {
+      background: #f1f5f9;
+      color: #1e293b;
+      padding: 30px 20px 80px;
+    }
+    .header-container {
+      max-width: 1440px;
+      margin: 0 auto 30px;
+      background: #ffffff;
+      padding: 24px 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      border-left: 8px solid #2563eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .header-text h1 {
+      font-size: 24px;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .header-text p {
+      color: #64748b;
+      font-size: 14px;
+    }
+    .action-btns {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+    .btn-outline {
+      background: #f8fafc;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-outline:hover {
+      background: #e2e8f0;
+    }
+    .gallery-grid {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+    .item-card {
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+    .item-header {
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .item-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .item-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .image-preview-wrapper {
+      padding: 20px;
+      background: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: auto;
+    }
+    .image-preview-wrapper img {
+      width: 100%;
+      height: auto;
+      max-height: 900px;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      background: #ffffff;
+    }
+    .item-footer {
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #f1f5f9;
+      background: #ffffff;
+    }
+    .item-desc {
+      font-size: 13px;
+      color: #64748b;
+    }
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .header-container, .btn, .item-footer {
+        display: none !important;
+      }
+      .gallery-grid {
+        gap: 0;
+      }
+      .item-card {
+        box-shadow: none;
+        border: none;
+        page-break-after: always;
+        margin-bottom: 0;
+      }
+      .image-preview-wrapper {
+        padding: 0;
+        background: #ffffff;
+      }
+      .image-preview-wrapper img {
+        box-shadow: none;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Controls -->
+  <div class="header-container">
+    <div class="header-text">
+      <h1>ภาคผนวกรูปภาพและแผนภาพระบบ (PR4Fang AI Appendix Gallery)</h1>
+      <p>คลังภาพแผนภาพสถาปัตยกรรม, ผังฮาร์ดแวร์หุ่นยนต์, ER Diagram ครบทั้ง 35 ตาราง และการ์ดโค้ด (Vector SVG ความละเอียดสูง ไร้ Emoji)</p>
+    </div>
+    <div class="action-btns">
+      <button class="btn btn-outline" onclick="window.print()">พิมพ์หรือบันทึก PDF ทันที</button>
+      <a href="APPENDIX_TECHNICAL_DOCUMENTATION.md" class="btn btn-primary">เปิดดูเอกสาร Markdown</a>
+    </div>
+  </div>
+
+  <!-- Images Gallery List -->
+  <div class="gallery-grid">
+
+    <!-- 1. System Architecture -->
+    <div class="item-card" id="img-01">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 1: แผนภาพสถาปัตยกรรมระบบ PR4Fang AI (System Architecture Diagram)</span>
+        <span class="item-badge">สถาปัตยกรรม 4-Layer</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/01-system-architecture.svg" alt="PR4Fang System Architecture">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">แสดงการแบ่งชั้น Presentation, Gateway, AI Integration และ Database Storage</span>
+        <a href="images/appendix/01-system-architecture.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+    <!-- 2. Hardware Diagram -->
+    <div class="item-card" id="img-02">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 2: แผนภาพการเชื่อมต่ออุปกรณ์ฮาร์ดแวร์หุ่นยนต์ (Hardware Architecture)</span>
+        <span class="item-badge">AI Reception Robot (Orthogonal Wiring)</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/02-hardware-diagram.svg" alt="Hardware Architecture Diagram">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">เส้นตรงตั้งฉาก ไม่ทับตัวหนังสือ พร้อมไอคอนเวกเตอร์ Mini PC, จอสัมผัส, ไมค์, ลำโพง, ESP32</span>
+        <a href="images/appendix/02-hardware-diagram.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+    <!-- 3. AI RAG Flowchart -->
+    <div class="item-card" id="img-03">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 3: แผนภาพขั้นตอนการทำงานของระบบ AI Assistant (RAG Pipeline Flowchart)</span>
+        <span class="item-badge">AI Workflow</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/03-ai-rag-flowchart.svg" alt="AI RAG Pipeline Flowchart">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">ขั้นตอนรับคำถาม, ตรวจจับคำเมือง, ค้นหา Context, ตรวจสอบ Confidence และ Fallback</span>
+        <a href="images/appendix/03-ai-rag-flowchart.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+    <!-- 4. MySQL ER Diagram (35 TABLES) -->
+    <div class="item-card" id="img-04">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 4: แผนภาพความสัมพันธ์ฐานข้อมูลระบบจริง 35 ตาราง (Full System ER Diagram)</span>
+        <span class="item-badge">35 Tables ครบทั้งระบบ</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/04-database-er-diagram.svg" alt="MySQL ER Diagram 35 Tables">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">โครงสร้าง 35 ตาราง 6 กลุ่มโมดูล (Users, Knowledge, Sheets CMS, RAG AI, LINE OA, Reports, Audit)</span>
+        <a href="images/appendix/04-database-er-diagram.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+    <!-- 5. LINE & n8n Sequence -->
+    <div class="item-card" id="img-05">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 5: แผนภาพการเชื่อมต่อ LINE Messaging API และ n8n (Interaction Sequence)</span>
+        <span class="item-badge">Webhook & Automation</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/05-line-n8n-sequence.svg" alt="LINE n8n Interaction Sequence">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">ลำดับ 10 ขั้นตอนการแลกเปลี่ยนข้อมูลระหว่าง LINE OA, n8n, Next.js API และ Gemini Cloud</span>
+        <a href="images/appendix/05-line-n8n-sequence.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+    <!-- 6. Code AI Assistant -->
+    <div class="item-card" id="img-06">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 6: ตัวอย่างการพัฒนาระบบ AI Assistant (RAG Engine & Semantic Search)</span>
+        <span class="item-badge">Source Code Snapshot</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/06-code-ai-rag.svg" alt="Code AI Assistant">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">ซอร์สโค้ด src/lib/rag-engine.ts พร้อม 4 คำอธิบายเทคนิคและผลการทดสอบ Benchmark</span>
+        <a href="images/appendix/06-code-ai-rag.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+    <!-- 7. Code MySQL Database -->
+    <div class="item-card" id="img-07">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 7: ตัวอย่างการจัดการฐานข้อมูล MySQL / SQLite (Database Layer & Migration)</span>
+        <span class="item-badge">Source Code Snapshot</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/07-code-database-mysql.svg" alt="Code Database">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">ซอร์สโค้ด src/lib/db.ts: Singleton Pattern, WAL Optimization และ Bcrypt Cost 12</span>
+        <a href="images/appendix/07-code-database-mysql.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+    <!-- 8. Code API & n8n -->
+    <div class="item-card" id="img-08">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 8: ตัวอย่างการเชื่อมต่อ API และ n8n Automation Webhook</span>
+        <span class="item-badge">Source Code Snapshot</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/08-code-api-n8n.svg" alt="Code API & n8n">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">ซอร์สโค้ด verify-line-user/route.ts: ตรวจสอบ X-API-Key และแยก Scope สิทธิ์บุคลากร</span>
+        <a href="images/appendix/08-code-api-n8n.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+    <!-- 9. Code Admin Dashboard -->
+    <div class="item-card" id="img-09">
+      <div class="item-header">
+        <span class="item-title">ภาพที่ 9: ตัวอย่างการพัฒนาระบบจัดการข้อมูล Admin Dashboard (KPI & Metrics API)</span>
+        <span class="item-badge">Source Code Snapshot</span>
+      </div>
+      <div class="image-preview-wrapper">
+        <img src="images/appendix/09-code-admin-dashboard.svg" alt="Code Admin Dashboard">
+      </div>
+      <div class="item-footer">
+        <span class="item-desc">ซอร์สโค้ด dashboard/summary/route.ts: คำนวณความแม่นยำ AI และสถิติรวม 30 วัน</span>
+        <a href="images/appendix/09-code-admin-dashboard.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
