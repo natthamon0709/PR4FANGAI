@@ -1,0 +1,260 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&amp;display=swap');
+      * { font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .main-title { font-size: 24px; font-weight: 700; fill: #0f172a; }
+      .sub-title { font-size: 14px; fill: #64748b; }
+      .layer-badge { font-size: 14px; font-weight: 700; }
+      .card-title { font-size: 14px; font-weight: 700; fill: #0f172a; }
+      .card-desc { font-size: 12px; fill: #475569; }
+      .tag-text { font-size: 10px; font-weight: 700; text-anchor: middle; }
+    </style>
+
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="arrBlue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb" />
+    </marker>
+    <marker id="arrGreen" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a" />
+    </marker>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1440" height="960" fill="#f8fafc" />
+
+  <!-- Top Title Banner -->
+  <g transform="translate(40, 30)">
+    <rect width="1360" height="75" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="8" height="75" rx="4" fill="#2563eb" />
+    
+    <!-- Title Icon (Layers) -->
+    <rect x="25" y="18" width="40" height="40" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+    <path d="M45 25 l12 6 l-12 6 l-12 -6 z M33 37 l12 6 l12 -6 M33 43 l12 6 l12 -6" stroke="#2563eb" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <text x="78" y="44" class="main-title">ภาคผนวก 1: แผนภาพสถาปัตยกรรมระบบ PR4Fang AI (System Architecture Diagram)</text>
+    <text x="78" y="66" class="sub-title">ระบบผู้ช่วย AI อัจฉริยะและคลังองค์ความรู้ดิจิทัล วิทยาลัยการอาชีพฝาง — สถาปัตยกรรมแบบ 4 ชั้น (4-Tier Layered Architecture)</text>
+    
+    <rect x="1200" y="22" width="135" height="32" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="1267" y="43" font-size="12" font-weight="700" fill="#1d4ed8" text-anchor="middle">PR4Fang Phase 1-8</text>
+  </g>
+
+  <!-- LAYER 1: PRESENTATION & CLIENTS -->
+  <g transform="translate(40, 125)">
+    <rect width="1360" height="160" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="1360" height="38" rx="14" fill="#f8fafc" />
+    <line x1="0" y1="38" x2="1360" y2="38" stroke="#e2e8f0" stroke-width="1.5"/>
+    <circle cx="25" cy="19" r="6" fill="#0284c7" />
+    <text x="40" y="24" class="layer-badge" fill="#0369a1">1. ชั้นการนำเสนอและช่องทางผู้ใช้งาน (Presentation &amp; Client Channels Layer)</text>
+
+    <!-- Card 1.1: LINE OA -->
+    <g transform="translate(30, 52)">
+      <rect width="400" height="92" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#16a34a" />
+      <!-- Message / Chat Bubble Icon -->
+      <path d="M34 36 a10 8 0 0 1 20 0 c0 5 -5 8 -10 8 l-4 4 v-4 a10 8 0 0 1 -6 -8 z" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="86" y="38" class="card-title">LINE Official Account (LINE OA)</text>
+      <text x="86" y="58" class="card-desc">• ช่องทางบริการนักเรียน ผู้ปกครอง และประชาชน</text>
+      <text x="86" y="76" class="card-desc">• เมนูลัด Rich Menu, ระบบตอบข้อความอัตโนมัติ 24 ชม.</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#dcfce7" stroke="#86efac"/>
+      <text x="342" y="29" class="tag-text" fill="#15803d">LINE API</text>
+    </g>
+
+    <!-- Card 1.2: Web Admin Dashboard -->
+    <g transform="translate(480, 52)">
+      <rect width="400" height="92" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#2563eb" />
+      <!-- Laptop / Monitor Icon -->
+      <path d="M32 35 h24 v16 h-24 z M28 51 h32 v3 h-32 z" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="86" y="38" class="card-title">Web Management Portal (Admin)</text>
+      <text x="86" y="58" class="card-desc">• คลังจัดการความรู้ (Knowledge CMS), กำหนดสิทธิ์ RBAC</text>
+      <text x="86" y="76" class="card-desc">• แดชบอร์ดสรุปสถิติผู้ใช้งาน และประวัติ Audit Logs</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#dbeafe" stroke="#93c5fd"/>
+      <text x="342" y="29" class="tag-text" fill="#1e40af">Next.js 14</text>
+    </g>
+
+    <!-- Card 1.3: Reception Robot -->
+    <g transform="translate(930, 52)">
+      <rect width="400" height="92" rx="10" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#7c3aed" />
+      <!-- Robot Head Icon -->
+      <path d="M34 38 h20 v14 h-20 z M44 31 v7 M31 43 h-2 M57 43 h2 M39 43 a1.5 1.5 0 1 1 0 -0.1 M49 43 a1.5 1.5 0 1 1 0 -0.1" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="86" y="38" class="card-title">AI Reception Robot (หุ่นยนต์ต้อนรับ)</text>
+      <text x="86" y="58" class="card-desc">• จุดบริการประชาสัมพันธ์ ณ อาคารอำนวยการ</text>
+      <text x="86" y="76" class="card-desc">• รับคำสั่งด้วยเสียงพูด โต้ตอบภาษาไทยและคำเมือง</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#f3e8ff" stroke="#d8b4fe"/>
+      <text x="342" y="29" class="tag-text" fill="#6d28d9">Hardware</text>
+    </g>
+  </g>
+
+  <!-- Straight Connector 1 -> 2 -->
+  <path d="M 230 285 L 230 325" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+  <path d="M 680 285 L 680 325" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+  <path d="M 1130 285 L 1130 325" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+
+  <!-- LAYER 2: APPLICATION & GATEWAY -->
+  <g transform="translate(40, 325)">
+    <rect width="1360" height="160" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="1360" height="38" rx="14" fill="#f8fafc" />
+    <line x1="0" y1="38" x2="1360" y2="38" stroke="#e2e8f0" stroke-width="1.5"/>
+    <circle cx="25" cy="19" r="6" fill="#2563eb" />
+    <text x="40" y="24" class="layer-badge" fill="#1e40af">2. ชั้นแอปพลิเคชันและเกตเวย์ (Application &amp; API Gateway Layer)</text>
+
+    <!-- Card 2.1: Auth & Guard -->
+    <g transform="translate(30, 52)">
+      <rect width="400" height="92" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#0284c7" />
+      <!-- Shield / Security Icon -->
+      <path d="M44 28 l12 5 v10 c0 8 -6 14 -12 17 c-6 -3 -12 -9 -12 -17 v-10 z" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="86" y="38" class="card-title">API Authentication &amp; Security Guard</text>
+      <text x="86" y="58" class="card-desc">• ตรวจสอบความปลอดภัยผ่าน Header X-API-Key</text>
+      <text x="86" y="76" class="card-desc">• Session Management และระบบป้องกันการล็อกอินผิดพลาด</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#e0f2fe" stroke="#7dd3fc"/>
+      <text x="342" y="29" class="tag-text" fill="#0369a1">Security</text>
+    </g>
+
+    <!-- Card 2.2: Next.js Routes -->
+    <g transform="translate(480, 52)">
+      <rect width="400" height="92" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#4f46e5" />
+      <!-- Network Globe Icon -->
+      <circle cx="44" cy="46" r="14" stroke="#ffffff" stroke-width="2" fill="none"/>
+      <path d="M30 46 h28 M44 32 a18 18 0 0 1 0 28 M44 32 a18 18 0 0 0 0 28" stroke="#ffffff" stroke-width="1.5" fill="none"/>
+      <text x="86" y="38" class="card-title">Next.js App Router (REST APIs)</text>
+      <text x="86" y="58" class="card-desc">• Endpoints: /api/v1/n8n/verify-line-user</text>
+      <text x="86" y="76" class="card-desc">• จัดการคลังข้อมูล /api/knowledge, /api/dashboard</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#ede9fe" stroke="#c4b5fd"/>
+      <text x="342" y="29" class="tag-text" fill="#4338ca">REST API</text>
+    </g>
+
+    <!-- Card 2.3: Audio Engine -->
+    <g transform="translate(930, 52)">
+      <rect width="400" height="92" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#0d9488" />
+      <!-- Voice / Waves Icon -->
+      <path d="M36 46 a8 8 0 0 1 16 0 M40 40 a14 14 0 0 1 8 0 M44 34 v24" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="86" y="38" class="card-title">Audio &amp; Voice Synthesis Service</text>
+      <text x="86" y="58" class="card-desc">• ถอดความเสียงพูดคำถามของผู้ใช้ (Speech-to-Text)</text>
+      <text x="86" y="76" class="card-desc">• สังเคราะห์เสียงตอบรับ Neural TTS สำเนียงไทยธรรมชาติ</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#ccfbf1" stroke="#5eead4"/>
+      <text x="342" y="29" class="tag-text" fill="#0f766e">TTS / STT</text>
+    </g>
+  </g>
+
+  <!-- Straight Connector 2 -> 3 -->
+  <path d="M 230 485 L 230 525" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+  <path d="M 680 485 L 680 525" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+  <path d="M 1130 485 L 1130 525" stroke="#2563eb" stroke-width="2" marker-end="url(#arrBlue)" fill="none"/>
+
+  <!-- LAYER 3: AI & AUTOMATION ORCHESTRATION -->
+  <g transform="translate(40, 525)">
+    <rect width="1360" height="160" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="1360" height="38" rx="14" fill="#f8fafc" />
+    <line x1="0" y1="38" x2="1360" y2="38" stroke="#e2e8f0" stroke-width="1.5"/>
+    <circle cx="25" cy="19" r="6" fill="#7c3aed" />
+    <text x="40" y="24" class="layer-badge" fill="#6d28d9">3. ชั้นประมวลผลปัญญาประดิษฐ์และระบบอัตโนมัติ (AI &amp; Automation Layer)</text>
+
+    <!-- Card 3.1: n8n Workflow -->
+    <g transform="translate(30, 52)">
+      <rect width="400" height="92" rx="10" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#ea580c" />
+      <!-- Workflow / Cycle Nodes Icon -->
+      <circle cx="34" cy="38" r="4" fill="#ffffff"/>
+      <circle cx="54" cy="38" r="4" fill="#ffffff"/>
+      <circle cx="44" cy="54" r="4" fill="#ffffff"/>
+      <path d="M37 38 h14 M52 41 l-6 10 M36 41 l6 10" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+      <text x="86" y="38" class="card-title">n8n Workflow Automation</text>
+      <text x="86" y="58" class="card-desc">• รับสัญญาณ Webhook จาก LINE OA และแยก Intent</text>
+      <text x="86" y="76" class="card-desc">• ประสานงานระหว่าง LINE API, ฐานข้อมูล และ AI</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#ffedd5" stroke="#fed7aa"/>
+      <text x="342" y="29" class="tag-text" fill="#c2410c">Workflow</text>
+    </g>
+
+    <!-- Card 3.2: RAG Engine -->
+    <g transform="translate(480, 52)">
+      <rect width="400" height="92" rx="10" fill="#fdf4ff" stroke="#f5d0fe" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#c026d3" />
+      <!-- Brain / Neural Icon -->
+      <path d="M36 34 a6 6 0 0 1 8 0 a6 6 0 0 1 8 0 c2 6 -2 12 -4 16 h-8 c-2 -4 -6 -10 -4 -16 z" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="86" y="38" class="card-title">RAG Engine (Retrieval-Augmented)</text>
+      <text x="86" y="58" class="card-desc">• Semantic Search ค้นหาข้อมูลความรู้ที่ตรงประเด็น</text>
+      <text x="86" y="76" class="card-desc">• คำนวณค่า Confidence และระบบสลับภาษาคำเมือง</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#fae8ff" stroke="#f5d0fe"/>
+      <text x="342" y="29" class="tag-text" fill="#a21caf">RAG Core</text>
+    </g>
+
+    <!-- Card 3.3: LLM Cloud -->
+    <g transform="translate(930, 52)">
+      <rect width="400" height="92" rx="10" fill="#fefce8" stroke="#fef08a" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#ca8a04" />
+      <!-- Star / Generative AI Icon -->
+      <path d="M44 32 l2 8 l8 2 l-8 2 l-2 8 l-2 -8 l-8 -2 l8 -2 z" fill="#ffffff"/>
+      <text x="86" y="38" class="card-title">LLM Cloud Engine (Google Gemini)</text>
+      <text x="86" y="58" class="card-desc">• Gemini 1.5 Pro / Flash ประมวลผลภาษาธรรมชาติ</text>
+      <text x="86" y="76" class="card-desc">• ตอบคำถามถูกต้องตามเอกสาร (Zero Hallucination)</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#fef9c3" stroke="#fef08a"/>
+      <text x="342" y="29" class="tag-text" fill="#854d0e">LLM Cloud</text>
+    </g>
+  </g>
+
+  <!-- Straight Connector 3 -> 4 -->
+  <path d="M 230 685 L 230 725" stroke="#16a34a" stroke-width="2" marker-end="url(#arrGreen)" fill="none"/>
+  <path d="M 680 685 L 680 725" stroke="#16a34a" stroke-width="2" marker-end="url(#arrGreen)" fill="none"/>
+  <path d="M 1130 685 L 1130 725" stroke="#16a34a" stroke-width="2" marker-end="url(#arrGreen)" fill="none"/>
+
+  <!-- LAYER 4: DATA PERSISTENCE & STORAGE -->
+  <g transform="translate(40, 725)">
+    <rect width="1360" height="160" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="1360" height="38" rx="14" fill="#f8fafc" />
+    <line x1="0" y1="38" x2="1360" y2="38" stroke="#e2e8f0" stroke-width="1.5"/>
+    <circle cx="25" cy="19" r="6" fill="#16a34a" />
+    <text x="40" y="24" class="layer-badge" fill="#15803d">4. ชั้นจัดเก็บข้อมูลและคลังข้อมูล (Data Persistence &amp; Storage Layer)</text>
+
+    <!-- Card 4.1: Relational DB -->
+    <g transform="translate(30, 52)">
+      <rect width="400" height="92" rx="10" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#059669" />
+      <!-- Database Cylinder Icon -->
+      <ellipse cx="44" cy="34" rx="12" ry="5" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+      <path d="M32 34 v16 c0 3 5 5 12 5 s12 -2 12 -5 v-16 M32 42 c0 3 5 5 12 5 s12 -2 12 -5" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+      <text x="86" y="38" class="card-title">Relational Database (MySQL / SQLite)</text>
+      <text x="86" y="58" class="card-desc">• 35 ตารางครอบคลุมทั้งระบบ (Users, Knowledge, RBAC)</text>
+      <text x="86" y="76" class="card-desc">• ประวัติการสอบถาม ai_query_logs และ system_audit_logs</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#d1fae5" stroke="#a7f3d0"/>
+      <text x="342" y="29" class="tag-text" fill="#065f46">35 Tables</text>
+    </g>
+
+    <!-- Card 4.2: Vector DB -->
+    <g transform="translate(480, 52)">
+      <rect width="400" height="92" rx="10" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#0d9488" />
+      <!-- Vector Search / Nodes Icon -->
+      <circle cx="36" cy="36" r="3" fill="#ffffff"/>
+      <circle cx="52" cy="40" r="3" fill="#ffffff"/>
+      <circle cx="44" cy="54" r="3" fill="#ffffff"/>
+      <path d="M36 36 l16 4 l-8 14 z" stroke="#ffffff" stroke-width="1.5" fill="none"/>
+      <circle cx="44" cy="45" r="9" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" fill="none"/>
+      <text x="86" y="38" class="card-title">Vector Database &amp; Embeddings</text>
+      <text x="86" y="58" class="card-desc">• Supabase pgvector จัดเก็บ High-dim Embeddings</text>
+      <text x="86" y="76" class="card-desc">• Cosine Similarity สำหรับค้นหาบริบทใกล้เคียงความหมาย</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#ccfbf1" stroke="#99f6e4"/>
+      <text x="342" y="29" class="tag-text" fill="#115e59">pgvector</text>
+    </g>
+
+    <!-- Card 4.3: Google Sheets & Drive -->
+    <g transform="translate(930, 52)">
+      <rect width="400" height="92" rx="10" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.2" filter="url(#cardShadow)"/>
+      <rect x="16" y="18" width="56" height="56" rx="10" fill="#16a34a" />
+      <!-- Sheet Grid / File Icon -->
+      <path d="M34 30 h20 v26 h-20 z M34 38 h20 M34 46 h20 M44 30 v26" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <text x="86" y="38" class="card-title">Google Sheets &amp; Cloud Drive</text>
+      <text x="86" y="58" class="card-desc">• ซิงค์ข้อมูล Master Users และองค์ความรู้แบบเรียลไทม์</text>
+      <text x="86" y="76" class="card-desc">• จัดเก็บไฟล์เอกสารทางการ PDF และภาพประชาสัมพันธ์</text>
+      <rect x="300" y="14" width="85" height="22" rx="4" fill="#dcfce7" stroke="#bbf7d0"/>
+      <text x="342" y="29" class="tag-text" fill="#166534">Cloud Drive</text>
+    </g>
+  </g>
+</svg>

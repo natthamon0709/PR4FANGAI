@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Sarabun:wght@400;500;600;700&amp;display=swap');
+      .font-sans { font-family: 'Sarabun', sans-serif; }
+      .font-mono { font-family: 'Fira Code', monospace; }
+      .main-title { font-size: 24px; font-weight: 700; fill: #0f172a; }
+      .sub-title { font-size: 14px; fill: #64748b; }
+      .code-line { font-size: 13px; font-family: 'Fira Code', monospace; fill: #abb2bf; }
+      .kw { fill: #c678dd; font-weight: 600; }
+      .fn { fill: #61afef; }
+      .str { fill: #98c379; }
+      .cm { fill: #5c6370; font-style: italic; }
+      .num { fill: #d19a66; }
+      .typ { fill: #e5c07b; }
+      .card-header-title { font-size: 14px; font-weight: 700; }
+      .panel-body { font-size: 12px; fill: #334155; }
+    </style>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="1440" height="960" fill="#f8fafc" />
+
+  <!-- Top Title Banner -->
+  <g transform="translate(40, 30)">
+    <rect width="1360" height="75" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="8" height="75" rx="4" fill="#ea580c" />
+    
+    <!-- Title Icon (Key / Shield) -->
+    <rect x="25" y="18" width="40" height="40" rx="8" fill="#ffedd5" stroke="#fed7aa"/>
+    <circle cx="41" cy="34" r="5" stroke="#ea580c" stroke-width="1.8" fill="none"/>
+    <path d="M45 37 l9 9 M50 42 l3 -3 M52 44 l2 -2" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round"/>
+
+    <text x="78" y="44" class="main-title font-sans">ภาคผนวก 8: ตัวอย่างการเชื่อมต่อ API และ n8n Automation Webhook</text>
+    <text x="78" y="66" class="sub-title font-sans">การตรวจสอบ Header Key (X-API-Key), การตรวจสอบสิทธิ์ LINE User ID และการส่งข้อมูลขอบเขตสิทธิ์ (Role Scope)</text>
+  </g>
+
+  <!-- CODE EDITOR WINDOW (LEFT 64%) -->
+  <g transform="translate(40, 125)">
+    <rect width="860" height="800" rx="12" fill="#1e1e2e" filter="url(#cardShadow)" />
+    <!-- Titlebar -->
+    <rect width="860" height="40" rx="12" fill="#181825" />
+    <circle cx="20" cy="20" r="6" fill="#ff5f56" />
+    <circle cx="40" cy="20" r="6" fill="#ffbd2e" />
+    <circle cx="60" cy="20" r="6" fill="#27c93f" />
+    <text x="430" y="25" font-size="12" fill="#a6adc8" class="font-mono" text-anchor="middle">src/app/api/v1/n8n/verify-line-user/route.ts — LINE Auth Guard</text>
+
+    <!-- Code Content -->
+    <g transform="translate(25, 70)">
+      <text y="0" class="code-line"><tspan class="kw">import</tspan> { NextRequest, NextResponse } <tspan class="kw">from</tspan> <tspan class="str">'next/server'</tspan>;</text>
+      <text y="24" class="code-line"><tspan class="kw">import</tspan> getDb <tspan class="kw">from</tspan> <tspan class="str">'@/lib/db'</tspan>;</text>
+      <text y="48" class="code-line"></text>
+      <text y="72" class="code-line"><tspan class="kw">export async function</tspan> <tspan class="fn">POST</tspan>(req: <tspan class="typ">NextRequest</tspan>) {</text>
+      <text y="96" class="code-line">  <tspan class="cm">// 1. ตรวจสอบความปลอดภัยด้วย Header X-API-Key จาก n8n Workflow</tspan></text>
+      <text y="120" class="code-line">  <tspan class="kw">const</tspan> apiKey = req.headers.<tspan class="fn">get</tspan>(<tspan class="str">'X-API-Key'</tspan>);</text>
+      <text y="144" class="code-line">  <tspan class="kw">if</tspan> (apiKey !== process.env.<tspan class="typ">N8N_INTERNAL_API_KEY</tspan>) {</text>
+      <text y="168" class="code-line">    <tspan class="kw">return</tspan> NextResponse.<tspan class="fn">json</tspan>({ error: <tspan class="str">'Unauthorized'</tspan> }, { status: <tspan class="num">401</tspan> });</text>
+      <text y="192" class="code-line">  }</text>
+      <text y="216" class="code-line"></text>
+      <text y="240" class="code-line">  <tspan class="kw">const</tspan> { line_user_id } = <tspan class="kw">await</tspan> req.<tspan class="fn">json</tspan>();</text>
+      <text y="264" class="code-line">  <tspan class="kw">const</tspan> db = <tspan class="fn">getDb</tspan>();</text>
+      <text y="288" class="code-line"></text>
+      <text y="312" class="code-line">  <tspan class="cm">// 2. ค้นหาบัญชีผู้ใช้ในระบบ และแผนกที่สังกัด</tspan></text>
+      <text y="336" class="code-line">  <tspan class="kw">const</tspan> user = db.<tspan class="fn">prepare</tspan>(`</text>
+      <text y="360" class="code-line">    <tspan class="kw">SELECT</tspan> u.user_id, u.first_name, u.last_name, u.role, u.status, d.name <tspan class="kw">AS</tspan> dept_name</text>
+      <text y="384" class="code-line">    <tspan class="kw">FROM</tspan> master_users u <tspan class="kw">LEFT JOIN</tspan> departments d <tspan class="kw">USING</tspan>(department_id)</text>
+      <text y="408" class="code-line">    <tspan class="kw">WHERE</tspan> u.user_id <tspan class="kw">IN</tspan> (<tspan class="kw">SELECT</tspan> master_user_id <tspan class="kw">FROM</tspan> line_followers <tspan class="kw">WHERE</tspan> line_user_id = ?)</text>
+      <text y="432" class="code-line">  `).<tspan class="fn">get</tspan>(line_user_id) <tspan class="kw">as any</tspan>;</text>
+      <text y="456" class="code-line"></text>
+      <text y="480" class="code-line">  <tspan class="cm">// 3. หากเป็นบุคคลทั่วไป (ยังไม่ได้ผูก LINE กับบัญชีบุคลากร)</tspan></text>
+      <text y="504" class="code-line">  <tspan class="kw">if</tspan> (!user) {</text>
+      <text y="528" class="code-line">    <tspan class="kw">return</tspan> NextResponse.<tspan class="fn">json</tspan>({ verified: <tspan class="kw">false</tspan>, access_scope: <tspan class="str">'PUBLIC'</tspan> });</text>
+      <text y="552" class="code-line">  }</text>
+      <text y="576" class="code-line"></text>
+      <text y="600" class="code-line">  <tspan class="cm">// 4. ส่งกลับข้อมูลบุคลากร พร้อมสิทธิ์การเข้าถึงข้อมูลภายใน</tspan></text>
+      <text y="624" class="code-line">  <tspan class="kw">return</tspan> NextResponse.<tspan class="fn">json</tspan>({</text>
+      <text y="648" class="code-line">    verified: <tspan class="kw">true</tspan>, user: { name: `${user.first_name} ${user.last_name}`, role: user.role, dept: user.dept_name },</text>
+      <text y="672" class="code-line">    access_scope: user.role === <tspan class="str">'administrator'</tspan> ? <tspan class="str">'ADMIN_ALL'</tspan> : <tspan class="str">'STAFF_INTERNAL'</tspan></text>
+      <text y="696" class="code-line">  });</text>
+      <text y="720" class="code-line">}</text>
+    </g>
+  </g>
+
+  <!-- EXPLANATION PANEL (RIGHT 36%) -->
+  <g transform="translate(930, 125)">
+    <!-- Box 1 -->
+    <g transform="translate(0, 0)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#fff7ed" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#fed7aa" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#ea580c"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#c2410c">1. Header-based Security Guard</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• ป้องกัน API จากการถูกเรียกจากภายนอกที่ไม่ได้รับอนุญาต</text>
+      <text x="20" y="90" class="panel-body font-sans">• ตรวจสอบ Header X-API-Key ตรงกับ Environment Variable</text>
+      <text x="20" y="115" class="panel-body font-sans">• ตัดการเชื่อมต่อทันทีด้วย HTTP 401 Unauthorized หากไม่มี Key</text>
+      <text x="20" y="140" class="panel-body font-sans">• บันทึกประวัติการเรียก API ผิดปกติลงใน system_audit_logs</text>
+      <rect x="20" y="152" width="100" height="20" rx="4" fill="#ffedd5"/>
+      <text x="70" y="166" font-size="10" font-weight="700" fill="#9a3412" text-anchor="middle" class="font-sans">X-API-Key</text>
+    </g>
+
+    <!-- Box 2 -->
+    <g transform="translate(0, 205)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#eff6ff" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#bfdbfe" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#2563eb"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#1d4ed8">2. การจำแนกประเภทผู้ใช้งาน (3-Tier Scope)</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• PUBLIC: ประชาชน นักเรียน ถามข้อมูลทั่วไปและการรับสมัคร</text>
+      <text x="20" y="90" class="panel-body font-sans">• STAFF_INTERNAL: บุคลากร สอบถามเอกสารระเบียบภายในฝ่าย</text>
+      <text x="20" y="115" class="panel-body font-sans">• ADMIN_ALL: ผู้บริหารและแอดมิน เข้าถึงข้อมูลภาพรวมทั้งหมด</text>
+      <text x="20" y="140" class="panel-body font-sans">• เชื่อมโยงบัญชีผ่านตาราง line_account_link_requests</text>
+      <rect x="20" y="152" width="120" height="20" rx="4" fill="#dbeafe"/>
+      <text x="80" y="166" font-size="10" font-weight="700" fill="#1e40af" text-anchor="middle" class="font-sans">3-Tier Scoping</text>
+    </g>
+
+    <!-- Box 3 -->
+    <g transform="translate(0, 410)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#f0fdf4" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#bbf7d0" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#16a34a"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#15803d">3. การทำงานร่วมกับ n8n Flow</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• โหนด HTTP Request ใน n8n รับค่า JSON ตอบกลับทันที</text>
+      <text x="20" y="90" class="panel-body font-sans">• ใช้ Switch Node แยกเส้นทางประมวลผลตาม access_scope</text>
+      <text x="20" y="115" class="panel-body font-sans">• ดึงชื่อผู้ใช้มาทักทายแบบ Personalized Message ใน LINE</text>
+      <text x="20" y="140" class="panel-body font-sans">• มีไฟล์เทมเพลต n8n-workflow-pr4fang-ai.json ให้พร้อม Import</text>
+      <rect x="20" y="152" width="120" height="20" rx="4" fill="#dcfce7"/>
+      <text x="80" y="166" font-size="10" font-weight="700" fill="#166534" text-anchor="middle" class="font-sans">Low-Code Sync</text>
+    </g>
+
+    <!-- Box 4 -->
+    <g transform="translate(0, 615)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#faf5ff" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#f3e8ff" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#7c3aed"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#7e22ce">4. การตอบกลับแบบ Flex Message</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• แปลงข้อมูล JSON เป็นการ์ดแสดงผลสวยงามบนแอป LINE</text>
+      <text x="20" y="90" class="panel-body font-sans">• ใส่ปุ่มคลิกโทรออกไปยังเบอร์ภายในฝ่ายได้ทันที (tel:053...)</text>
+      <text x="20" y="115" class="panel-body font-sans">• แนบปุ่มเปิดอ่านไฟล์ PDF ระเบียบการ หรือเปิด Google Maps</text>
+      <text x="20" y="140" class="panel-body font-sans">• ตอบสนองรวดเร็วภายในระยะเวลาไม่เกิน 1.2 วินาที</text>
+      <rect x="20" y="152" width="125" height="20" rx="4" fill="#f3e8ff"/>
+      <text x="82" y="166" font-size="10" font-weight="700" fill="#6b21a8" text-anchor="middle" class="font-sans">Rich Flex Design</text>
+    </g>
+  </g>
+</svg>

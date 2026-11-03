@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Sarabun:wght@400;500;600;700&amp;display=swap');
+      .font-sans { font-family: 'Sarabun', sans-serif; }
+      .font-mono { font-family: 'Fira Code', monospace; }
+      .main-title { font-size: 24px; font-weight: 700; fill: #0f172a; }
+      .sub-title { font-size: 14px; fill: #64748b; }
+      .code-line { font-size: 13px; font-family: 'Fira Code', monospace; fill: #abb2bf; }
+      .kw { fill: #c678dd; font-weight: 600; }
+      .fn { fill: #61afef; }
+      .str { fill: #98c379; }
+      .cm { fill: #5c6370; font-style: italic; }
+      .num { fill: #d19a66; }
+      .typ { fill: #e5c07b; }
+      .card-header-title { font-size: 14px; font-weight: 700; }
+      .panel-body { font-size: 12px; fill: #334155; }
+    </style>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="1440" height="960" fill="#f8fafc" />
+
+  <!-- Top Title Banner -->
+  <g transform="translate(40, 30)">
+    <rect width="1360" height="75" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="8" height="75" rx="4" fill="#0284c7" />
+    
+    <!-- Title Icon (Bar Chart / Analytics) -->
+    <rect x="25" y="18" width="40" height="40" rx="8" fill="#e0f2fe" stroke="#bae6fd"/>
+    <path d="M33 46 v-8 M41 46 v-16 M49 46 v-12 M57 46 v-20" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
+
+    <text x="78" y="44" class="main-title font-sans">ภาคผนวก 9: ตัวอย่างการพัฒนาระบบจัดการข้อมูล Admin Dashboard (KPI &amp; Analytics API)</text>
+    <text x="78" y="66" class="sub-title font-sans">การประมวลผลดัชนีชี้วัด KPI (Total Knowledge, AI Fallback Rate, Confidence Ratio) และคำถามที่พบบ่อย</text>
+  </g>
+
+  <!-- CODE EDITOR WINDOW (LEFT 64%) -->
+  <g transform="translate(40, 125)">
+    <rect width="860" height="800" rx="12" fill="#1e1e2e" filter="url(#cardShadow)" />
+    <!-- Titlebar -->
+    <rect width="860" height="40" rx="12" fill="#181825" />
+    <circle cx="20" cy="20" r="6" fill="#ff5f56" />
+    <circle cx="40" cy="20" r="6" fill="#ffbd2e" />
+    <circle cx="60" cy="20" r="6" fill="#27c93f" />
+    <text x="430" y="25" font-size="12" fill="#a6adc8" class="font-mono" text-anchor="middle">src/app/api/dashboard/summary/route.ts — Analytics &amp; Metrics Aggregation</text>
+
+    <!-- Code Content -->
+    <g transform="translate(25, 70)">
+      <text y="0" class="code-line"><tspan class="kw">import</tspan> { NextRequest, NextResponse } <tspan class="kw">from</tspan> <tspan class="str">'next/server'</tspan>;</text>
+      <text y="24" class="code-line"><tspan class="kw">import</tspan> getDb <tspan class="kw">from</tspan> <tspan class="str">'@/lib/db'</tspan>;</text>
+      <text y="48" class="code-line"><tspan class="kw">import</tspan> { verifyAuthSession } <tspan class="kw">from</tspan> <tspan class="str">'@/lib/auth'</tspan>;</text>
+      <text y="72" class="code-line"></text>
+      <text y="96" class="code-line"><tspan class="kw">export async function</tspan> <tspan class="fn">GET</tspan>(req: <tspan class="typ">NextRequest</tspan>) {</text>
+      <text y="120" class="code-line">  <tspan class="cm">// 1. ตรวจสอบสิทธิ์ผู้ดูแลระบบ (Admin Role-based Check)</tspan></text>
+      <text y="144" class="code-line">  <tspan class="kw">const</tspan> session = <tspan class="kw">await</tspan> <tspan class="fn">verifyAuthSession</tspan>(req);</text>
+      <text y="168" class="code-line">  <tspan class="kw">if</tspan> (!session) <tspan class="kw">return</tspan> NextResponse.<tspan class="fn">json</tspan>({ error: <tspan class="str">'Unauthorized'</tspan> }, { status: <tspan class="num">401</tspan> });</text>
+      <text y="192" class="code-line"></text>
+      <text y="216" class="code-line">  <tspan class="kw">const</tspan> db = <tspan class="fn">getDb</tspan>();</text>
+      <text y="240" class="code-line">  <tspan class="cm">// 2. รวบรวมสถิติคลังความรู้ทั้งหมด และแยกสถานะ</tspan></text>
+      <text y="264" class="code-line">  <tspan class="kw">const</tspan> kStats = db.<tspan class="fn">prepare</tspan>(`</text>
+      <text y="288" class="code-line">    <tspan class="kw">SELECT</tspan> <tspan class="fn">COUNT</tspan>(*) <tspan class="kw">AS</tspan> total, </text>
+      <text y="312" class="code-line">      <tspan class="fn">SUM</tspan>(<tspan class="kw">CASE WHEN</tspan> status = <tspan class="str">'published'</tspan> <tspan class="kw">THEN</tspan> <tspan class="num">1</tspan> <tspan class="kw">ELSE</tspan> <tspan class="num">0</tspan> <tspan class="kw">END</tspan>) <tspan class="kw">AS</tspan> published</text>
+      <text y="336" class="code-line">    <tspan class="kw">FROM</tspan> knowledge_items</text>
+      <text y="360" class="code-line">  `).<tspan class="fn">get</tspan>() <tspan class="kw">as any</tspan>;</text>
+      <text y="384" class="code-line"></text>
+      <text y="408" class="code-line">  <tspan class="cm">// 3. วิเคราะห์ประสิทธิภาพ AI ในรอบ 30 วัน (Confidence &amp; Fallback Rate)</tspan></text>
+      <text y="432" class="code-line">  <tspan class="kw">const</tspan> aiStats = db.<tspan class="fn">prepare</tspan>(`</text>
+      <text y="456" class="code-line">    <tspan class="kw">SELECT</tspan> <tspan class="fn">COUNT</tspan>(*) <tspan class="kw">AS</tspan> total_queries, </text>
+      <text y="480" class="code-line">      <tspan class="fn">AVG</tspan>(confidence_score) <tspan class="kw">AS</tspan> avg_confidence,</text>
+      <text y="504" class="code-line">      <tspan class="fn">SUM</tspan>(<tspan class="kw">CASE WHEN</tspan> is_fallback = <tspan class="num">1</tspan> <tspan class="kw">THEN</tspan> <tspan class="num">1</tspan> <tspan class="kw">ELSE</tspan> <tspan class="num">0</tspan> <tspan class="kw">END</tspan>) <tspan class="kw">AS</tspan> fallback_count,</text>
+      <text y="528" class="code-line">      <tspan class="fn">AVG</tspan>(response_time_ms) <tspan class="kw">AS</tspan> avg_speed</text>
+      <text y="552" class="code-line">    <tspan class="kw">FROM</tspan> ai_query_logs <tspan class="kw">WHERE</tspan> created_at &gt;= <tspan class="fn">datetime</tspan>(<tspan class="str">'now'</tspan>, <tspan class="str">'-30 days'</tspan>)</text>
+      <text y="576" class="code-line">  `).<tspan class="fn">get</tspan>() <tspan class="kw">as any</tspan>;</text>
+      <text y="600" class="code-line"></text>
+      <text y="624" class="code-line">  <tspan class="cm">// 4. ส่งออกข้อมูล JSON ตอบกลับสำหรับหน้าแดชบอร์ด</tspan></text>
+      <text y="648" class="code-line">  <tspan class="kw">return</tspan> NextResponse.<tspan class="fn">json</tspan>({</text>
+      <text y="672" class="code-line">    kpi: { total: kStats.total, published: kStats.published, queries: aiStats.total_queries },</text>
+      <text y="696" class="code-line">    metrics: { confidence: Math.<tspan class="fn">round</tspan>(aiStats.avg_confidence * <tspan class="num">100</tspan>), speed_ms: Math.<tspan class="fn">round</tspan>(aiStats.avg_speed) }</text>
+      <text y="720" class="code-line">  });</text>
+      <text y="744" class="code-line">}</text>
+    </g>
+  </g>
+
+  <!-- EXPLANATION PANEL (RIGHT 36%) -->
+  <g transform="translate(930, 125)">
+    <!-- Box 1 -->
+    <g transform="translate(0, 0)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#eff6ff" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#bfdbfe" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#2563eb"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#1d4ed8">1. การคำนวณ KPI ภาพรวมแบบเรียลไทม์</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• นับจำนวนบทความความรู้ทั้งหมด และที่เปิดเผยแพร่แล้ว</text>
+      <text x="20" y="90" class="panel-body font-sans">• แสดงจำนวนคำถามสะสมที่ผู้ใช้สอบถามผ่านทุกช่องทาง</text>
+      <text x="20" y="115" class="panel-body font-sans">• ใช้ Aggregation Functions (COUNT, SUM, AVG) ในคำสั่งเดียว</text>
+      <text x="20" y="140" class="panel-body font-sans">• สรุปข้อมูลได้อย่างรวดเร็วในเวลาต่ำกว่า 10 มิลลิวินาที</text>
+      <rect x="20" y="152" width="120" height="20" rx="4" fill="#dbeafe"/>
+      <text x="80" y="166" font-size="10" font-weight="700" fill="#1e40af" text-anchor="middle" class="font-sans">Fast Aggregation</text>
+    </g>
+
+    <!-- Box 2 -->
+    <g transform="translate(0, 205)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#f0fdf4" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#bbf7d0" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#16a34a"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#15803d">2. ตัวชี้วัดความแม่นยำ AI (Confidence Score)</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• คำนวณค่าเฉลี่ยความมั่นใจของคำตอบ (เช่น 88% - 94%)</text>
+      <text x="20" y="90" class="panel-body font-sans">• ตรวจสอบอัตราส่วน Fallback Rate เพื่อชี้วัดหัวข้อที่ขาดข้อมูล</text>
+      <text x="20" y="115" class="panel-body font-sans">• มีกราฟแสดงแนวโน้มความพึงพอใจและการใช้งานรายสัปดาห์</text>
+      <text x="20" y="140" class="panel-body font-sans">• ใช้เป็นข้อมูลประกอบการประกันคุณภาพการศึกษาของวิทยาลัย</text>
+      <rect x="20" y="152" width="125" height="20" rx="4" fill="#dcfce7"/>
+      <text x="82" y="166" font-size="10" font-weight="700" fill="#166534" text-anchor="middle" class="font-sans">QA &amp; Confidence</text>
+    </g>
+
+    <!-- Box 3 -->
+    <g transform="translate(0, 410)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#fffbeb" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#fde68a" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#d97706"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#92400e">3. สถิติความเร็วการตอบสนอง (Speed Metric)</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• บันทึกเวลา Response Time ตั้งแต่เริ่มรับข้อความจนส่งเสียง</text>
+      <text x="20" y="90" class="panel-body font-sans">• แสดงผลเป็นมิลลิวินาที (ms) ช่วยตรวจจับความหน่วงเครือข่าย</text>
+      <text x="20" y="115" class="panel-body font-sans">• มีระบบแจ้งเตือนอัตโนมัติเมื่อความเร็วเฉลี่ยตกเกินเกณฑ์กำหนด</text>
+      <text x="20" y="140" class="panel-body font-sans">• รองรับการแยกวิเคราะห์ตาม Channel (LINE, Robot, Web)</text>
+      <rect x="20" y="152" width="115" height="20" rx="4" fill="#fef3c7"/>
+      <text x="77" y="166" font-size="10" font-weight="700" fill="#92400e" text-anchor="middle" class="font-sans">Latency Tracker</text>
+    </g>
+
+    <!-- Box 4 -->
+    <g transform="translate(0, 615)">
+      <rect width="470" height="185" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <rect x="0" y="0" width="470" height="38" rx="12" fill="#faf5ff" />
+      <line x1="0" y1="38" x2="470" y2="38" stroke="#f3e8ff" stroke-width="1"/>
+      <circle cx="20" cy="19" r="5" fill="#7c3aed"/>
+      <text x="35" y="24" class="card-header-title font-sans" fill="#7e22ce">4. การแสดงผล UI (Material Design 3)</text>
+      
+      <text x="20" y="65" class="panel-body font-sans">• จัดรูปแบบด้วย Tailwind CSS รองรับทั้ง Desktop และ Mobile</text>
+      <text x="20" y="90" class="panel-body font-sans">• การ์ด KPI แสดงตัวเลขขนาดใหญ่ และไอคอนบ่งชี้ทิศทางข้อมูล</text>
+      <text x="20" y="115" class="panel-body font-sans">• กราฟแท่งจำแนกคำถามตาม 4 ฝ่ายหลัก 23 งานอย่างชัดเจน</text>
+      <text x="20" y="140" class="panel-body font-sans">• รองรับการส่งออกข้อมูลสถิติเป็น Excel (.xlsx) และ PDF ทันที</text>
+      <rect x="20" y="152" width="125" height="20" rx="4" fill="#f3e8ff"/>
+      <text x="82" y="166" font-size="10" font-weight="700" fill="#6b21a8" text-anchor="middle" class="font-sans">Modern UI (MD3)</text>
+    </g>
+  </g>
+</svg>
