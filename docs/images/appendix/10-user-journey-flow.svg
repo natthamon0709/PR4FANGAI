@@ -85,7 +85,7 @@
       แผนผังการเดินทางของผู้ใช้งานทั้งระบบ PR4Fang AI (End-to-End User Journey Flow)
     </text>
     <text x="30" y="54" font-size="12.5" font-weight="500" fill="#64748b">
-      วิทยาลัยการอาชีพฝาง • 4 ฝ่าย 23 งาน • หุ่นยนต์ต้อนรับ Kiosk (โถงอาคาร) ➔ ระบบ RAG AI ➔ LINE Official Account ➔ Google Sheets CMS
+      วิทยาลัยการอาชีพฝาง • 4 ฝ่าย 23 งาน • หุ่นยนต์ต้อนรับ Kiosk (โถงอาคาร) ➔ ระบบ RAG AI ➔ LINE Official Account ➔ Web Management Portal
     </text>
   </g>
 
@@ -108,8 +108,8 @@
   <!-- Curved Feedback Loop between Node 6 and Node 7 (Orange Dashed) -->
   <path d="M 645 390 C 585 340, 525 340, 465 390" class="loop-arrow" marker-end="url(#arrowLoopOrange)" />
   <g transform="translate(560, 340)">
-    <rect x="-65" y="-12" width="130" height="22" rx="11" fill="#fff7ed" stroke="#ea580c" stroke-width="1.2" />
-    <text x="0" y="3" font-size="10.5" font-weight="700" fill="#c2410c" text-anchor="middle">วนถาม-ขอข้อมูลเพิ่มใน LINE</text>
+    <rect x="-75" y="-12" width="150" height="22" rx="11" fill="#fff7ed" stroke="#ea580c" stroke-width="1.2" />
+    <text x="0" y="3" font-size="10.5" font-weight="700" fill="#c2410c" text-anchor="middle">ถามต่อใน LINE ได้ตลอด 24 ชม.</text>
   </g>
 
   <!-- Curve from Row 2 (Node 8) to Row 3 (Node 9) on the left -->
@@ -127,7 +127,7 @@
 
   <!-- ==================== ROW 1 ==================== -->
 
-  <!-- NODE 1: หุ่นยนต์ต้อนรับ (Green) -->
+  <!-- NODE 1: หุ่นยนต์ต้อนรับ (Green) - No ? because it's automated greeting -->
   <g transform="translate(185, 185)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#059669">หุ่นยนต์ต้อนรับ</text>
@@ -144,9 +144,6 @@
     <!-- Badge: Number 1 -->
     <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
     <text x="-28" y="-28" class="node-badge-num">1</text>
-    <!-- Badge: Question Mark -->
-    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
-    <text x="28" y="-28" class="node-badge-q">?</text>
     <!-- Description & Channel -->
     <text x="0" y="65" class="step-title">ตรวจจับและทักทาย</text>
     <text x="0" y="85" class="step-desc">กล้องตรวจจับใบหน้าผู้มาติดต่อ</text>
@@ -154,7 +151,7 @@
     <text x="0" y="120" class="step-channel" fill="#059669">อยู่ที่ โถงอาคารอำนวยการ</text>
   </g>
 
-  <!-- NODE 2: ผู้ปกครอง/นักเรียน (Orange) -->
+  <!-- NODE 2: ผู้ปกครอง/นักเรียน (Orange) - Has ? because user chooses a topic/question -->
   <g transform="translate(435, 185)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#ea580c">ผู้ปกครอง / นักเรียน</text>
@@ -168,6 +165,9 @@
     <!-- Badge: Number 2 -->
     <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
     <text x="-28" y="-28" class="node-badge-num">2</text>
+    <!-- Badge: Question Mark (Has question) -->
+    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
+    <text x="28" y="-28" class="node-badge-q">?</text>
     <!-- Description & Channel -->
     <text x="0" y="65" class="step-title">เลือกหัวข้อคำถาม</text>
     <text x="0" y="85" class="step-desc">แตะเลือก 6 ปุ่มหัวข้อยอดนิยม</text>
@@ -175,7 +175,7 @@
     <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ จอสัมผัสหุ่นยนต์</text>
   </g>
 
-  <!-- NODE 3: ผู้ปกครอง/นักเรียน (Orange) -->
+  <!-- NODE 3: ผู้ปกครอง/นักเรียน (Orange) - Has ? because user speaks a question -->
   <g transform="translate(685, 185)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#ea580c">ผู้ปกครอง / นักเรียน</text>
@@ -190,6 +190,9 @@
     <!-- Badge: Number 3 -->
     <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
     <text x="-28" y="-28" class="node-badge-num">3</text>
+    <!-- Badge: Question Mark (Has question) -->
+    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
+    <text x="28" y="-28" class="node-badge-q">?</text>
     <!-- Description & Channel -->
     <text x="0" y="65" class="step-title">ถามคำถามด้วยเสียง</text>
     <text x="0" y="85" class="step-desc">พูดภาษาถิ่นเหนือ เช่น</text>
@@ -197,7 +200,7 @@
     <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ ไมโครโฟนหุ่นยนต์</text>
   </g>
 
-  <!-- NODE 4: AI ประมวลผล (Purple Dashed) -->
+  <!-- NODE 4: AI ประมวลผล (Purple Dashed) - No ? because internal processing -->
   <g transform="translate(935, 185)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#7c3aed">AI RAG Engine</text>
@@ -211,19 +214,16 @@
     <!-- Badge: Number 4 -->
     <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
     <text x="-28" y="-28" class="node-badge-num">4</text>
-    <!-- Badge: Question Mark -->
-    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
-    <text x="28" y="-28" class="node-badge-q">?</text>
     <!-- Description & Channel -->
     <text x="0" y="65" class="step-title">ค้นหาและคำนวณคำตอบ</text>
     <text x="0" y="85" class="step-desc">ตรวจจับภาษาถิ่น RAG Search</text>
-    <text x="0" y="100" class="step-desc">83 ความรู้ และวัด Confidence</text>
+    <text x="0" y="100" class="step-desc">83 คลังความรู้ และวัด Confidence</text>
     <text x="0" y="120" class="step-channel" fill="#7c3aed">เบื้องหลัง • Gemini RAG</text>
   </g>
 
   <!-- ==================== ROW 2 ==================== -->
 
-  <!-- NODE 5: หุ่นยนต์ต้อนรับ (Green) -->
+  <!-- NODE 5: หุ่นยนต์ต้อนรับ (Green) - No ? because outputting answer -->
   <g transform="translate(935, 425)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#059669">หุ่นยนต์ต้อนรับ</text>
@@ -242,10 +242,10 @@
     <text x="0" y="65" class="step-title">พากย์เสียง + แผนผัง</text>
     <text x="0" y="85" class="step-desc">เสียง Edge TTS ภาษาถิ่นเหนือ</text>
     <text x="0" y="100" class="step-desc">แสดงการ์ดสรุปและแผนที่อาคาร</text>
-    <text x="0" y="120" class="step-channel" fill="#059669">อยู่ที่ หน้าจอและลำโพง</text>
+    <text x="0" y="120" class="step-channel" fill="#059669">อยู่ที่ จอหุ่นยนต์และลำโพง</text>
   </g>
 
-  <!-- NODE 6: หุ่นยนต์ต้อนรับ (Green) -->
+  <!-- NODE 6: หุ่นยนต์ต้อนรับ (Green) - No ? because generating QR Code -->
   <g transform="translate(685, 425)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#059669">หุ่นยนต์ต้อนรับ</text>
@@ -268,7 +268,7 @@
     <text x="0" y="120" class="step-channel" fill="#059669">อยู่ที่ จอสัมผัสหุ่นยนต์</text>
   </g>
 
-  <!-- NODE 7: ผู้ปกครอง/นักเรียน (Orange) -->
+  <!-- NODE 7: ผู้ปกครอง/นักเรียน (Orange) - Has ? because user can inquire further in LINE -->
   <g transform="translate(435, 425)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#ea580c">ผู้ปกครอง / นักเรียน</text>
@@ -282,14 +282,17 @@
     <!-- Badge: Number 7 -->
     <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
     <text x="-28" y="-28" class="node-badge-num">7</text>
+    <!-- Badge: Question Mark (Has inquiry/question) -->
+    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
+    <text x="28" y="-28" class="node-badge-q">?</text>
     <!-- Description & Channel -->
     <text x="0" y="65" class="step-title">สแกนอ่านต่อใน LINE</text>
     <text x="0" y="85" class="step-desc">เปิดดู Flex Message สรุปเอกสาร</text>
-    <text x="0" y="100" class="step-desc">และดาวน์โหลดระเบียบการ PDF</text>
+    <text x="0" y="100" class="step-desc">และแชทสอบถามต่อได้ตลอด 24 ชม.</text>
     <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ LINE (@fang_ai)</text>
   </g>
 
-  <!-- NODE 8: ผู้ปกครอง/นักเรียน (Orange) -->
+  <!-- NODE 8: ผู้ปกครอง/นักเรียน (Orange) - No ? because it's action/submission -->
   <g transform="translate(185, 425)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#ea580c">ผู้ปกครอง / นักเรียน</text>
@@ -307,19 +310,16 @@
     <!-- Badge: Number 8 -->
     <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
     <text x="-28" y="-28" class="node-badge-num">8</text>
-    <!-- Badge: Question Mark -->
-    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
-    <text x="28" y="-28" class="node-badge-q">?</text>
     <!-- Description & Channel -->
     <text x="0" y="65" class="step-title">ติดต่อแผนก / ยืนยันสมัคร</text>
     <text x="0" y="85" class="step-desc">เดินไปตึกตามแผนที่แนะนำ</text>
     <text x="0" y="100" class="step-desc">หรือกดยื่นสมัครออนไลน์ผ่านมือถือ</text>
-    <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ งานแนะแนว/ทะเบียน</text>
+    <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ จุดรับสมัคร / ฝ่ายวิชาการ</text>
   </g>
 
   <!-- ==================== ROW 3 ==================== -->
 
-  <!-- NODE 9: ระบบฐานข้อมูล (Blue Dashed) -->
+  <!-- NODE 9: ระบบฐานข้อมูล (Blue Dashed) - No ? because system logging -->
   <g transform="translate(185, 665)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#2563eb">ระบบ PR4Fang DB</text>
@@ -334,9 +334,6 @@
     <!-- Badge: Number 9 -->
     <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
     <text x="-28" y="-28" class="node-badge-num">9</text>
-    <!-- Badge: Question Mark -->
-    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
-    <text x="28" y="-28" class="node-badge-q">?</text>
     <!-- Description & Channel -->
     <text x="0" y="65" class="step-title">บันทึก Log และ Gap</text>
     <text x="0" y="85" class="step-desc">จัดเก็บสถิติคำถามลงระบบ</text>
@@ -344,7 +341,7 @@
     <text x="0" y="120" class="step-channel" fill="#2563eb">เบื้องหลัง • SQLite / Supabase</text>
   </g>
 
-  <!-- NODE 10: ครูฝ่ายงาน/Admin (Slate) -->
+  <!-- NODE 10: ครูฝ่ายงาน/Admin (Slate) - No Google Sheets, uses Web Management Portal -->
   <g transform="translate(435, 665)">
     <!-- Role Header -->
     <text x="0" y="-55" class="role-label" fill="#475569">ครูฝ่ายงาน / Admin</text>
@@ -360,10 +357,10 @@
     <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
     <text x="-28" y="-28" class="node-badge-num">10</text>
     <!-- Description & Channel -->
-    <text x="0" y="65" class="step-title">อัปเดตคำตอบลง Sheets</text>
+    <text x="0" y="65" class="step-title">อัปเดตคำตอบผ่าน Web CMS</text>
     <text x="0" y="85" class="step-desc">ตรวจสอบ Knowledge Gaps</text>
-    <text x="0" y="100" class="step-desc">เติมคำตอบใหม่ซิงค์ทันที</text>
-    <text x="0" y="120" class="step-channel" fill="#475569">อยู่ที่ Google Sheets &amp; Web CMS</text>
+    <text x="0" y="100" class="step-desc">เติมคำตอบใหม่ผ่าน Web Portal</text>
+    <text x="0" y="120" class="step-channel" fill="#475569">อยู่ที่ Web Management Portal</text>
   </g>
 
   <!-- ==================== END NODE ==================== -->

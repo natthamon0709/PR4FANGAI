@@ -3,30 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ภาคผนวกรูปภาพระบบ PR4Fang AI (Technical Appendix Gallery)</title>
+  <title>PR4Fang AI — แกลเลอรีระบบและแผนผังผู้ใช้งาน (Technical Documentation &amp; User Journey)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Sarabun', sans-serif;
+      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     body {
-      background: #f1f5f9;
+      background: #f8fafc;
       color: #1e293b;
-      padding: 30px 20px 80px;
+      padding: 24px 20px 80px;
     }
     .header-container {
       max-width: 1440px;
-      margin: 0 auto 30px;
+      margin: 0 auto 20px;
       background: #ffffff;
-      padding: 24px 30px;
+      padding: 22px 28px;
       border-radius: 16px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-      border-left: 8px solid #2563eb;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      border-left: 8px solid #059669;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -34,22 +34,24 @@
       gap: 15px;
     }
     .header-text h1 {
-      font-size: 24px;
+      font-size: 22px;
+      font-weight: 800;
       color: #0f172a;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     .header-text p {
       color: #64748b;
-      font-size: 14px;
+      font-size: 13.5px;
     }
     .action-btns {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
     }
     .btn {
-      padding: 10px 18px;
+      padding: 9px 16px;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       border: none;
@@ -60,32 +62,100 @@
       text-decoration: none;
     }
     .btn-primary {
-      background: #2563eb;
+      background: #059669;
       color: #ffffff;
     }
     .btn-primary:hover {
-      background: #1d4ed8;
+      background: #047857;
     }
     .btn-outline {
-      background: #f8fafc;
+      background: #ffffff;
       color: #334155;
       border: 1px solid #cbd5e1;
     }
     .btn-outline:hover {
-      background: #e2e8f0;
+      background: #f1f5f9;
     }
-    .gallery-grid {
+
+    /* Tabs Bar */
+    .tabs-wrapper {
+      max-width: 1440px;
+      margin: 0 auto 24px;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+      border: 1px solid #e2e8f0;
+      overflow-x: auto;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      min-width: max-content;
+    }
+    .tab-btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #475569;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .tab-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .tab-btn.active {
+      background: #ecfdf5;
+      color: #047857;
+      border-color: #a7f3d0;
+      box-shadow: 0 2px 8px rgba(5, 150, 105, 0.08);
+    }
+    .tab-icon {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .tab-badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #475569;
+      font-weight: 700;
+    }
+    .tab-btn.active .tab-badge {
+      background: #059669;
+      color: #ffffff;
+    }
+
+    /* Main Container */
+    .content-container {
       max-width: 1440px;
       margin: 0 auto;
+    }
+
+    /* Card Layouts */
+    .gallery-grid {
       display: flex;
       flex-direction: column;
-      gap: 40px;
+      gap: 32px;
     }
     .item-card {
       background: #ffffff;
       border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
       border: 1px solid #e2e8f0;
     }
     .item-header {
@@ -100,20 +170,24 @@
     }
     .item-title {
       font-size: 16px;
-      font-weight: 700;
-      color: #1e293b;
+      font-weight: 800;
+      color: #0f172a;
     }
     .item-badge {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11.5px;
+      font-weight: 700;
       padding: 4px 10px;
       border-radius: 20px;
       background: #eff6ff;
       color: #1d4ed8;
     }
+    .item-badge.journey {
+      background: #ecfdf5;
+      color: #047857;
+    }
     .image-preview-wrapper {
-      padding: 20px;
-      background: #f8fafc;
+      padding: 24px;
+      background: #ffffff;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -122,10 +196,9 @@
     .image-preview-wrapper img {
       width: 100%;
       height: auto;
-      max-height: 900px;
+      max-height: 950px;
       object-fit: contain;
       border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
       background: #ffffff;
     }
     .item-footer {
@@ -134,18 +207,109 @@
       justify-content: space-between;
       align-items: center;
       border-top: 1px solid #f1f5f9;
-      background: #ffffff;
+      background: #fafafa;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .item-desc {
       font-size: 13px;
       color: #64748b;
     }
+
+    /* Specific Journey Tab Styles */
+    .journey-overview-box {
+      background: linear-gradient(135deg, #065f46 0%, #047857 50%, #0f766e 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 26px 30px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(4, 120, 87, 0.15);
+    }
+    .journey-overview-box h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .journey-overview-box p {
+      font-size: 13.5px;
+      color: #d1fae5;
+      max-width: 900px;
+      line-height: 1.6;
+    }
+    .journey-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .step-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 18px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      position: relative;
+    }
+    .step-card-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .step-card.green { border-top: 4px solid #10b981; }
+    .step-card.orange { border-top: 4px solid #f97316; }
+    .step-card.purple { border-top: 4px solid #8b5cf6; }
+    .step-card.blue { border-top: 4px solid #3b82f6; }
+    .step-card.slate { border-top: 4px solid #64748b; }
+
+    .step-card-role {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .step-card.green .step-card-role { color: #059669; }
+    .step-card.orange .step-card-role { color: #ea580c; }
+    .step-card.purple .step-card-role { color: #7c3aed; }
+    .step-card.blue .step-card-role { color: #2563eb; }
+    .step-card.slate .step-card-role { color: #475569; }
+
+    .step-card-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .step-card-desc {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .step-card-channel {
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #f1f5f9;
+    }
+
+    /* Print rules */
     @media print {
       body {
         background: #ffffff;
         padding: 0;
       }
-      .header-container, .btn, .item-footer {
+      .header-container, .tabs-wrapper, .btn, .item-footer {
         display: none !important;
       }
       .gallery-grid {
@@ -156,10 +320,10 @@
         border: none;
         page-break-after: always;
         margin-bottom: 0;
+        display: block !important;
       }
       .image-preview-wrapper {
         padding: 0;
-        background: #ffffff;
       }
       .image-preview-wrapper img {
         box-shadow: none;
@@ -173,170 +337,393 @@
   <!-- Top Controls -->
   <div class="header-container">
     <div class="header-text">
-      <h1>ภาคผนวกรูปภาพและแผนภาพระบบ (PR4Fang AI Appendix Gallery)</h1>
-      <p>คลังภาพแผนภาพสถาปัตยกรรม, ผังฮาร์ดแวร์หุ่นยนต์, ER Diagram ครบทั้ง 35 ตาราง และการ์ดโค้ด (Vector SVG ความละเอียดสูง ไร้ Emoji)</p>
+      <h1>ภาคผนวกและแผนภาพระบบ PR4Fang AI (Technical Documentation &amp; User Journey)</h1>
+      <p>วิทยาลัยการอาชีพฝาง • รวมแผนผัง User Journey 10 ขั้นตอน, สถาปัตยกรรมระบบ, วงจรฮาร์ดแวร์, ERD 35 ตาราง และซอร์สโค้ด</p>
     </div>
     <div class="action-btns">
-      <button class="btn btn-outline" onclick="window.print()">พิมพ์หรือบันทึก PDF ทันที</button>
-      <a href="APPENDIX_TECHNICAL_DOCUMENTATION.md" class="btn btn-primary">เปิดดูเอกสาร Markdown</a>
+      <button class="btn btn-outline" onclick="window.print()">พิมพ์ / บันทึก PDF</button>
+      <a href="APPENDIX_TECHNICAL_DOCUMENTATION.md" class="btn btn-outline">เอกสารทางเทคนิค (MD)</a>
+      <a href="USER_JOURNEY_PR4FANG_AI_DRAFT1.md" class="btn btn-primary">เอกสาร Journey Draft 1</a>
     </div>
   </div>
 
-  <!-- Images Gallery List -->
-  <div class="gallery-grid">
+  <!-- Navigation Tabs (#journey, #architecture, #ai-rag, #database, #integration, #dashboard, #all) -->
+  <div class="tabs-wrapper">
+    <nav class="nav-tabs">
+      <a href="#journey" class="tab-btn active" data-tab="journey">
+        <svg class="tab-icon" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+        <span>เส้นทางผู้ใช้ (User Journey)</span>
+        <span class="tab-badge">10 ขั้นตอน</span>
+      </a>
+      <a href="#architecture" class="tab-btn" data-tab="architecture">
+        <svg class="tab-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span>สถาปัตยกรรม &amp; ฮาร์ดแวร์</span>
+        <span class="tab-badge">2 รูป</span>
+      </a>
+      <a href="#ai-rag" class="tab-btn" data-tab="ai-rag">
+        <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 3.37 2.1 6.27 5.09 7.43L9 20h6l-.09-2.57C17.9 16.27 20 13.37 20 10a8 8 0 0 0-8-8z"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
+        <span>AI RAG &amp; ภาษาถิ่น</span>
+        <span class="tab-badge">2 รูป</span>
+      </a>
+      <a href="#database" class="tab-btn" data-tab="database">
+        <svg class="tab-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        <span>ฐานข้อมูล 35 ตาราง</span>
+        <span class="tab-badge">2 รูป</span>
+      </a>
+      <a href="#integration" class="tab-btn" data-tab="integration">
+        <svg class="tab-icon" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span>LINE OA &amp; n8n</span>
+        <span class="tab-badge">2 รูป</span>
+      </a>
+      <a href="#dashboard" class="tab-btn" data-tab="dashboard">
+        <svg class="tab-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Admin Dashboard</span>
+        <span class="tab-badge">1 รูป</span>
+      </a>
+      <a href="#all" class="tab-btn" data-tab="all">
+        <svg class="tab-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>ดูภาพทั้งหมด</span>
+        <span class="tab-badge">10 รูป</span>
+      </a>
+    </nav>
+  </div>
 
-    <!-- 1. System Architecture -->
-    <div class="item-card" id="img-01">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 1: แผนภาพสถาปัตยกรรมระบบ PR4Fang AI (System Architecture Diagram)</span>
-        <span class="item-badge">สถาปัตยกรรม 4-Layer</span>
+  <!-- Main Content Container -->
+  <div class="content-container">
+
+    <!-- ==================== TAB: JOURNEY (#journey) ==================== -->
+    <div id="tab-content-journey" class="tab-pane">
+      
+      <!-- Journey Intro Banner -->
+      <div class="journey-overview-box">
+        <h2>แผนผังการเดินทางของผู้ใช้งานทั้งระบบ (End-to-End User Journey)</h2>
+        <p>
+          ออกแบบเพื่อเชื่อมโยงผู้ใช้งานหน้างาน (ผู้ปกครอง/นักเรียน/ประชาชน) เข้ากับหุ่นยนต์ประชาสัมพันธ์อัจฉริยะ (Robot Kiosk),
+          ระบบ AI Retrieval-Augmented Generation (Gemini RAG), การส่งต่อข้อมูลข้ามช่องทางสู่ LINE Official Account ผ่าน Dynamic QR Code
+          และการปิดวงจรการเรียนรู้ของระบบด้วยการดักจับ Knowledge Gaps เข้าสู่ Web Management Portal ของ 4 ฝ่าย 23 งาน
+        </p>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/01-system-architecture.svg" alt="PR4Fang System Architecture">
+
+      <!-- Main S-Curve Diagram Card (Image 10) -->
+      <div class="item-card" id="img-10" style="margin-bottom: 28px;">
+        <div class="item-header">
+          <div>
+            <span class="item-title">ภาพที่ 10: แผนผังการเดินทางของผู้ใช้งานทั้งระบบ PR4Fang AI (End-to-End User Journey Flow)</span>
+            <div style="font-size:12px; color:#64748b; margin-top:2px;">Infographic 10 ขั้นตอนแบบ S-Curve พร้อมจุดเชื่อมโยงข้ามช่องทาง (Omnichannel Flow)</div>
+          </div>
+          <span class="item-badge journey">Featured Journey Map</span>
+        </div>
+        <div class="image-preview-wrapper" style="padding: 16px;">
+          <img src="images/appendix/10-user-journey-flow.svg" alt="User Journey Flow 10 Steps S-Curve" style="max-height: 850px;">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">แผนภาพความละเอียดสูง 100% Vector SVG — คมชัดทุกขนาดตัวอักษร เหมาะสำหรับแทรกในเล่มรายงานและสไลด์นำเสนอ</span>
+          <div style="display:flex; gap:10px;">
+            <a href="images/appendix/10-user-journey-flow.svg" target="_blank" class="btn btn-outline">เปิดไฟล์ต้นฉบับ SVG</a>
+            <a href="images/appendix/10-user-journey-flow.svg" download class="btn btn-primary">ดาวน์โหลดภาพ SVG</a>
+          </div>
+        </div>
       </div>
-      <div class="item-footer">
-        <span class="item-desc">แสดงการแบ่งชั้น Presentation, Gateway, AI Integration และ Database Storage</span>
-        <a href="images/appendix/01-system-architecture.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+
+      <!-- 10 Step Detailed Cards Grid -->
+      <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 14px;">
+        คำอธิบายรายละเอียด 10 ขั้นตอนตามผังการเดินทาง
+      </h3>
+      <div class="journey-steps-grid">
+        
+        <div class="step-card green">
+          <div class="step-card-num">1</div>
+          <div class="step-card-role">หุ่นยนต์ต้อนรับ (Bot)</div>
+          <div class="step-card-title">ตรวจจับและทักทาย</div>
+          <div class="step-card-desc">กล้องตรวจจับใบหน้าผู้มาติดต่อในระยะ 1.5 เมตร ทักทายด้วยเสียงคำเมือง "สวัสดีเจ้า ยินดีต้อนฮับสู่วิทยาลัยการอาชีพฝาง"</div>
+          <span class="step-card-channel" style="color:#059669; background:#ecfdf5;">ช่องทาง: โถงอาคารอำนวยการ</span>
+        </div>
+
+        <div class="step-card orange">
+          <div class="step-card-num">2</div>
+          <div class="step-card-role">ผู้ปกครอง / นักเรียน</div>
+          <div class="step-card-title">เลือกหัวข้อคำถาม</div>
+          <div class="step-card-desc">แตะเลือก 6 ปุ่มหัวข้อยอดนิยม (เช่น การรับสมัคร, สาขาวิชา, ค่าเทอม, แผนที่) เพื่อเริ่มต้นการซักถามอย่างรวดเร็ว</div>
+          <span class="step-card-channel" style="color:#ea580c; background:#fff7ed;">ช่องทาง: จอสัมผัสหุ่นยนต์</span>
+        </div>
+
+        <div class="step-card orange">
+          <div class="step-card-num">3</div>
+          <div class="step-card-role">ผู้ปกครอง / นักเรียน</div>
+          <div class="step-card-title">ถามคำถามด้วยเสียง</div>
+          <div class="step-card-desc">กดไมค์แล้วพูดภาษาถิ่นเหนือ เช่น "ค่าเทอม ปวช. จ่ายตี้ไหนและเต้าใดเจ้า" ระบบขึ้น Waveform รับเสียง</div>
+          <span class="step-card-channel" style="color:#ea580c; background:#fff7ed;">ช่องทาง: ไมโครโฟนหุ่นยนต์</span>
+        </div>
+
+        <div class="step-card purple">
+          <div class="step-card-num">4</div>
+          <div class="step-card-role">AI RAG Engine</div>
+          <div class="step-card-title">ค้นหาและคำนวณคำตอบ</div>
+          <div class="step-card-desc">ถอดเสียง STT ตรวจจับไวยากรณ์คำเมือง ค้นหาจาก 83 เอกสารความรู้ คำนวณ Confidence Score และตัดสินใจสร้างคำตอบ</div>
+          <span class="step-card-channel" style="color:#7c3aed; background:#f5f3ff;">ระบบ: Gemini 1.5 RAG</span>
+        </div>
+
+        <div class="step-card green">
+          <div class="step-card-num">5</div>
+          <div class="step-card-role">หุ่นยนต์ต้อนรับ (Bot)</div>
+          <div class="step-card-title">พากย์เสียง + แผนผัง</div>
+          <div class="step-card-desc">สังเคราะห์เสียง Edge TTS สำเนียงภาษาเหนือ พร้อมแสดงการ์ดสรุปประเด็นสำคัญ และแผนผังนำทางไปยังตึก/ห้องทะเบียน</div>
+          <span class="step-card-channel" style="color:#059669; background:#ecfdf5;">ช่องทาง: ลำโพงและจอแสดงผล</span>
+        </div>
+
+        <div class="step-card green">
+          <div class="step-card-num">6</div>
+          <div class="step-card-role">หุ่นยนต์ต้อนรับ (Bot)</div>
+          <div class="step-card-title">สร้าง Dynamic QR</div>
+          <div class="step-card-desc">แสดง QR Code เชิญชวนให้สแกนนำข้อมูลสรุปและระเบียบการทั้งหมดเข้าสมาร์ทโฟนเพื่อนำกลับไปอ่านต่อที่บ้าน</div>
+          <span class="step-card-channel" style="color:#059669; background:#ecfdf5;">ช่องทาง: Dynamic QR บนจอ</span>
+        </div>
+
+        <div class="step-card orange">
+          <div class="step-card-num">7</div>
+          <div class="step-card-role">ผู้ปกครอง / นักเรียน</div>
+          <div class="step-card-title">สแกนอ่านต่อใน LINE</div>
+          <div class="step-card-desc">เปิดดู Flex Message สรุปเอกสารใน LINE OA (@fang_ai) และสามารถแชทพิมพ์ถามคำถามเพิ่มเติมได้ตลอด 24 ชั่วโมง</div>
+          <span class="step-card-channel" style="color:#ea580c; background:#fff7ed;">ช่องทาง: LINE Official Account</span>
+        </div>
+
+        <div class="step-card orange">
+          <div class="step-card-num">8</div>
+          <div class="step-card-role">ผู้ปกครอง / นักเรียน</div>
+          <div class="step-card-title">ติดต่อแผนก / ยืนยันสมัคร</div>
+          <div class="step-card-desc">เดินไปติดต่อห้องงานแนะแนว/ทะเบียนตามแผนที่ที่ได้รับ หรือกดปุ่มยื่นใบสมัครออนไลน์ผ่านลิงก์ใน LINE Chat</div>
+          <span class="step-card-channel" style="color:#ea580c; background:#fff7ed;">ช่องทาง: จุดรับสมัคร / ทะเบียน</span>
+        </div>
+
+        <div class="step-card blue">
+          <div class="step-card-num">9</div>
+          <div class="step-card-role">ระบบ PR4Fang DB</div>
+          <div class="step-card-title">บันทึก Log และ Gap</div>
+          <div class="step-card-desc">บันทึกสถิติคำถามลง ai_query_logs หากเป็นคำถามที่ AI ไม่มั่นใจ (Confidence &lt; 0.70) ระบบจะบันทึกลง knowledge_gap_logs อัตโนมัติ</div>
+          <span class="step-card-channel" style="color:#2563eb; background:#eff6ff;">ระบบ: SQLite และ Supabase</span>
+        </div>
+
+        <div class="step-card slate">
+          <div class="step-card-num">10</div>
+          <div class="step-card-role">ครูฝ่ายงาน / Admin</div>
+          <div class="step-card-title">อัปเดตคำตอบผ่าน Web CMS</div>
+          <div class="step-card-desc">เจ้าหน้าที่ตรวจสอบคำถามที่ตกหล่นในหน้า Gap Analytics และพิมพ์เติมคำตอบใหม่ผ่าน Web Portal ข้อมูลซิงค์ทันทีทั้งระบบ</div>
+          <span class="step-card-channel" style="color:#475569; background:#f8fafc;">ช่องทาง: Web Management Portal</span>
+        </div>
+
       </div>
     </div>
 
-    <!-- 2. Hardware Diagram -->
-    <div class="item-card" id="img-02">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 2: แผนภาพการเชื่อมต่ออุปกรณ์ฮาร์ดแวร์หุ่นยนต์ (Hardware Architecture)</span>
-        <span class="item-badge">AI Reception Robot (Orthogonal Wiring)</span>
-      </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/02-hardware-diagram.svg" alt="Hardware Architecture Diagram">
-      </div>
-      <div class="item-footer">
-        <span class="item-desc">เส้นตรงตั้งฉาก ไม่ทับตัวหนังสือ พร้อมไอคอนเวกเตอร์ Mini PC, จอสัมผัส, ไมค์, ลำโพง, ESP32</span>
-        <a href="images/appendix/02-hardware-diagram.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
-      </div>
-    </div>
+    <!-- ==================== TAB: ALL OTHER DIAGRAMS ==================== -->
+    <div id="tab-content-gallery" class="gallery-grid" style="display: none;">
 
-    <!-- 3. AI RAG Flowchart -->
-    <div class="item-card" id="img-03">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 3: แผนภาพขั้นตอนการทำงานของระบบ AI Assistant (RAG Pipeline Flowchart)</span>
-        <span class="item-badge">AI Workflow</span>
+      <!-- 1. System Architecture -->
+      <div class="item-card" id="img-01" data-category="architecture">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 1: แผนภาพสถาปัตยกรรมระบบ PR4Fang AI (System Architecture Diagram)</span>
+          <span class="item-badge">สถาปัตยกรรม 4-Layer</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/01-system-architecture.svg" alt="PR4Fang System Architecture">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">แสดงการแบ่งชั้น Presentation, Gateway, AI Integration และ Database Storage</span>
+          <a href="images/appendix/01-system-architecture.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/03-ai-rag-flowchart.svg" alt="AI RAG Pipeline Flowchart">
-      </div>
-      <div class="item-footer">
-        <span class="item-desc">ขั้นตอนรับคำถาม, ตรวจจับคำเมือง, ค้นหา Context, ตรวจสอบ Confidence และ Fallback</span>
-        <a href="images/appendix/03-ai-rag-flowchart.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
-      </div>
-    </div>
 
-    <!-- 4. MySQL ER Diagram (35 TABLES) -->
-    <div class="item-card" id="img-04">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 4: แผนภาพความสัมพันธ์ฐานข้อมูลระบบจริง 35 ตาราง (Full System ER Diagram)</span>
-        <span class="item-badge">35 Tables ครบทั้งระบบ</span>
+      <!-- 2. Hardware Diagram -->
+      <div class="item-card" id="img-02" data-category="architecture">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 2: แผนภาพการเชื่อมต่ออุปกรณ์ฮาร์ดแวร์หุ่นยนต์ (Hardware Architecture)</span>
+          <span class="item-badge">AI Reception Robot</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/02-hardware-diagram.svg" alt="Hardware Architecture Diagram">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">เส้นตรงตั้งฉาก ไม่ทับตัวหนังสือ พร้อมไอคอนเวกเตอร์ Mini PC, จอสัมผัส, ไมค์, ลำโพง, ESP32</span>
+          <a href="images/appendix/02-hardware-diagram.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/04-database-er-diagram.svg" alt="MySQL ER Diagram 35 Tables">
-      </div>
-      <div class="item-footer">
-        <span class="item-desc">โครงสร้าง 35 ตาราง 6 กลุ่มโมดูล (Users, Knowledge, Sheets CMS, RAG AI, LINE OA, Reports, Audit)</span>
-        <a href="images/appendix/04-database-er-diagram.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
-      </div>
-    </div>
 
-    <!-- 5. LINE & n8n Sequence -->
-    <div class="item-card" id="img-05">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 5: แผนภาพการเชื่อมต่อ LINE Messaging API และ n8n (Interaction Sequence)</span>
-        <span class="item-badge">Webhook & Automation</span>
+      <!-- 3. AI RAG Flowchart -->
+      <div class="item-card" id="img-03" data-category="ai-rag">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 3: แผนภาพขั้นตอนการทำงานของระบบ AI Assistant (RAG Pipeline Flowchart)</span>
+          <span class="item-badge">AI Workflow</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/03-ai-rag-flowchart.svg" alt="AI RAG Pipeline Flowchart">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">ขั้นตอนรับคำถาม, ตรวจจับคำเมือง, ค้นหา Context, ตรวจสอบ Confidence และ Fallback</span>
+          <a href="images/appendix/03-ai-rag-flowchart.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/05-line-n8n-sequence.svg" alt="LINE n8n Interaction Sequence">
-      </div>
-      <div class="item-footer">
-        <span class="item-desc">ลำดับ 10 ขั้นตอนการแลกเปลี่ยนข้อมูลระหว่าง LINE OA, n8n, Next.js API และ Gemini Cloud</span>
-        <a href="images/appendix/05-line-n8n-sequence.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
-      </div>
-    </div>
 
-    <!-- 6. Code AI Assistant -->
-    <div class="item-card" id="img-06">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 6: ตัวอย่างการพัฒนาระบบ AI Assistant (RAG Engine & Semantic Search)</span>
-        <span class="item-badge">Source Code Snapshot</span>
+      <!-- 4. MySQL ER Diagram (35 TABLES) -->
+      <div class="item-card" id="img-04" data-category="database">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 4: แผนภาพความสัมพันธ์ฐานข้อมูลระบบจริง 35 ตาราง (Full System ER Diagram)</span>
+          <span class="item-badge">35 Tables ครบทั้งระบบ</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/04-database-er-diagram.svg" alt="MySQL ER Diagram 35 Tables">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">โครงสร้าง 35 ตาราง 6 กลุ่มโมดูล (Users, Knowledge, System CMS, RAG AI, LINE OA, Reports, Audit)</span>
+          <a href="images/appendix/04-database-er-diagram.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/06-code-ai-rag.svg" alt="Code AI Assistant">
-      </div>
-      <div class="item-footer">
-        <span class="item-desc">ซอร์สโค้ด src/lib/rag-engine.ts พร้อม 4 คำอธิบายเทคนิคและผลการทดสอบ Benchmark</span>
-        <a href="images/appendix/06-code-ai-rag.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
-      </div>
-    </div>
 
-    <!-- 7. Code MySQL Database -->
-    <div class="item-card" id="img-07">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 7: ตัวอย่างการจัดการฐานข้อมูล MySQL / SQLite (Database Layer & Migration)</span>
-        <span class="item-badge">Source Code Snapshot</span>
+      <!-- 5. LINE & n8n Sequence -->
+      <div class="item-card" id="img-05" data-category="integration">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 5: แผนภาพการเชื่อมต่อ LINE Messaging API และ n8n (Interaction Sequence)</span>
+          <span class="item-badge">Interaction Sequence Flow</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/05-line-n8n-sequence.svg" alt="LINE n8n Interaction Sequence">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">กระบวนการแลกเปลี่ยนข้อความ 10 ขั้นตอน ระหว่างผู้ใช้ LINE, Webhook, n8n, Next.js และ Gemini AI</span>
+          <a href="images/appendix/05-line-n8n-sequence.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/07-code-database-mysql.svg" alt="Code Database">
-      </div>
-      <div class="item-footer">
-        <span class="item-desc">ซอร์สโค้ด src/lib/db.ts: Singleton Pattern, WAL Optimization และ Bcrypt Cost 12</span>
-        <a href="images/appendix/07-code-database-mysql.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
-      </div>
-    </div>
 
-    <!-- 8. Code API & n8n -->
-    <div class="item-card" id="img-08">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 8: ตัวอย่างการเชื่อมต่อ API และ n8n Automation Webhook</span>
-        <span class="item-badge">Source Code Snapshot</span>
+      <!-- 6. Code AI Assistant RAG -->
+      <div class="item-card" id="img-06" data-category="ai-rag">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 6: ตัวอย่างการพัฒนาระบบ AI Assistant (RAG Engine &amp; Semantic Search)</span>
+          <span class="item-badge">Source Code Snapshot</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/06-code-ai-rag.svg" alt="Code AI Assistant">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">ซอร์สโค้ด src/lib/rag-engine.ts พร้อม 4 คำอธิบายเทคนิคและผลการทดสอบ Benchmark</span>
+          <a href="images/appendix/06-code-ai-rag.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/08-code-api-n8n.svg" alt="Code API & n8n">
-      </div>
-      <div class="item-footer">
-        <span class="item-desc">ซอร์สโค้ด verify-line-user/route.ts: ตรวจสอบ X-API-Key และแยก Scope สิทธิ์บุคลากร</span>
-        <a href="images/appendix/08-code-api-n8n.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
-      </div>
-    </div>
 
-    <!-- 9. Code Admin Dashboard -->
-    <div class="item-card" id="img-09">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 9: ตัวอย่างการพัฒนาระบบจัดการข้อมูล Admin Dashboard (KPI & Metrics API)</span>
-        <span class="item-badge">Source Code Snapshot</span>
+      <!-- 7. Code MySQL Database -->
+      <div class="item-card" id="img-07" data-category="database">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 7: ตัวอย่างการจัดการฐานข้อมูล MySQL / SQLite (Database Layer &amp; Migration)</span>
+          <span class="item-badge">Source Code Snapshot</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/07-code-database-mysql.svg" alt="Code Database">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">ซอร์สโค้ด src/lib/db.ts: Singleton Pattern, WAL Optimization และ Bcrypt Cost 12</span>
+          <a href="images/appendix/07-code-database-mysql.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/09-code-admin-dashboard.svg" alt="Code Admin Dashboard">
-      </div>
-      <div class="item-footer">
-        <span class="item-desc">ซอร์สโค้ด dashboard/summary/route.ts: คำนวณความแม่นยำ AI และสถิติรวม 30 วัน</span>
-        <a href="images/appendix/09-code-admin-dashboard.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
-      </div>
-    </div>
 
-    <!-- 10. End-to-End User Journey Flow -->
-    <div class="item-card" id="img-10">
-      <div class="item-header">
-        <span class="item-title">ภาพที่ 10: แผนผังการเดินทางของผู้ใช้งานทั้งระบบ PR4Fang AI (End-to-End User Journey Flow)</span>
-        <span class="item-badge" style="background:#10b981; color:#fff;">User Journey</span>
+      <!-- 8. Code API & n8n -->
+      <div class="item-card" id="img-08" data-category="integration">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 8: ตัวอย่างการเชื่อมต่อ API และ n8n Automation Webhook</span>
+          <span class="item-badge">Source Code Snapshot</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/08-code-api-n8n.svg" alt="Code API &amp; n8n">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">ซอร์สโค้ด verify-line-user/route.ts: ตรวจสอบ X-API-Key และแยก Scope สิทธิ์บุคลากร</span>
+          <a href="images/appendix/08-code-api-n8n.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="image-preview-wrapper">
-        <img src="images/appendix/10-user-journey-flow.svg" alt="User Journey Flow">
+
+      <!-- 9. Code Admin Dashboard -->
+      <div class="item-card" id="img-09" data-category="dashboard">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 9: ตัวอย่างการพัฒนาระบบจัดการข้อมูล Admin Dashboard (KPI &amp; Metrics API)</span>
+          <span class="item-badge">Source Code Snapshot</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/09-code-admin-dashboard.svg" alt="Code Admin Dashboard">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">ซอร์สโค้ด dashboard/summary/route.ts: คำนวณความแม่นยำ AI และสถิติรวม 30 วัน</span>
+          <a href="images/appendix/09-code-admin-dashboard.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
-      <div class="item-footer">
-        <span class="item-desc">แผนภาพ 10 ขั้นตอนแบบ S-Curve ครอบคลุม หุ่นยนต์ Kiosk, AI RAG, LINE OA, ระบบฐานข้อมูล และ Google Sheets CMS</span>
-        <a href="images/appendix/10-user-journey-flow.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+
+      <!-- 10. End-to-End User Journey Flow (Also available in gallery view) -->
+      <div class="item-card" id="img-10-gal" data-category="journey">
+        <div class="item-header">
+          <span class="item-title">ภาพที่ 10: แผนผังการเดินทางของผู้ใช้งานทั้งระบบ PR4Fang AI (End-to-End User Journey Flow)</span>
+          <span class="item-badge journey">User Journey</span>
+        </div>
+        <div class="image-preview-wrapper">
+          <img src="images/appendix/10-user-journey-flow.svg" alt="User Journey Flow">
+        </div>
+        <div class="item-footer">
+          <span class="item-desc">แผนภาพ 10 ขั้นตอนแบบ S-Curve ครอบคลุม หุ่นยนต์ Kiosk, AI RAG, LINE OA, และ Web Management Portal</span>
+          <a href="images/appendix/10-user-journey-flow.svg" download class="btn btn-outline">ดาวน์โหลดภาพ SVG</a>
+        </div>
       </div>
+
     </div>
 
   </div>
 
-<div style="max-width:1440px;margin:40px auto;background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e8f0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);"><h2 style="font-size:20px;font-weight:700;margin-bottom:8px;">ภาคผนวก 10: แผนภาพสถาปัตยกรรมการเรียนรู้และสังเคราะห์ภาษาถิ่นเหนือ (Lanna Dialect AI Pipeline)</h2><p style="color:#64748b;font-size:14px;margin-bottom:16px;">กระบวนการวิเคราะห์สำเนียงคำเมือง, การแปลงคิวรี, Few-Shot In-Context Grounding และการปรับแต่งเสียงสังเคราะห์ล้านนา</p><img src="images/appendix/10-lanna-dialect-pipeline.svg" style="width:100%;height:auto;border-radius:8px;border:1px solid #e2e8f0;" /></div></body>
+  <!-- Tab Switcher Script -->
+  <script>
+    function switchTab(tabId) {
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const journeyPane = document.getElementById('tab-content-journey');
+      const galleryPane = document.getElementById('tab-content-gallery');
+      const cards = document.querySelectorAll('#tab-content-gallery .item-card');
+
+      // Update Active Tab Button
+      tabBtns.forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      if (tabId === 'journey') {
+        journeyPane.style.display = 'block';
+        galleryPane.style.display = 'none';
+      } else {
+        journeyPane.style.display = 'none';
+        galleryPane.style.display = 'flex';
+
+        // Filter cards in gallery
+        cards.forEach(card => {
+          const category = card.getAttribute('data-category');
+          if (tabId === 'all' || category === tabId) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      }
+    }
+
+    // Hash Handler
+    function handleHash() {
+      const hash = window.location.hash.replace('#', '') || 'journey';
+      switchTab(hash);
+    }
+
+    // Attach click listeners
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tab = btn.getAttribute('data-tab');
+        window.location.hash = tab;
+      });
+    });
+
+    window.addEventListener('hashchange', handleHash);
+    window.addEventListener('DOMContentLoaded', handleHash);
+  </script>
+
+</body>
 </html>
-<!-- Append 10th item to gallery if exists -->
