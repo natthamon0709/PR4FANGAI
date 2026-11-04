@@ -48,11 +48,11 @@
     <ellipse cx="45" cy="32" rx="10" ry="4" stroke="#059669" stroke-width="1.8" fill="none"/>
     <path d="M35 32 v14 c0 2.5 4.5 4 10 4 s10 -1.5 10 -4 v-14" stroke="#059669" stroke-width="1.8" fill="none"/>
 
-    <text x="78" y="44" class="main-title">ภาคผนวก 4: แผนภาพความสัมพันธ์ฐานข้อมูลระบบจริง 35 ตาราง (Full Entity-Relationship Diagram — Zero Overlap)</text>
-    <text x="78" y="66" class="sub-title">โครงสร้างฐานข้อมูล PR4Fang AI ครอบคลุม 35 ตารางตามสเปก dbdiagram.io — เดินสายสัมพันธ์ชัดเจน ไร้เส้นตัดผ่านกล่อง 100%</text>
+    <text x="78" y="44" class="main-title">ภาคผนวก 4: แผนภาพความสัมพันธ์ฐานข้อมูลระบบจริง 35 ตาราง (Full Entity-Relationship Diagram)</text>
+    <text x="78" y="66" class="sub-title">โครงสร้างฐานข้อมูล PR4Fang AI ครอบคลุม 35 ตารางตามสเปก dbdiagram.io พร้อมระบบเชื่อมโยงความสัมพันธ์ระดับโมดูล</text>
     
     <rect x="1820" y="22" width="240" height="32" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
-    <text x="1940" y="43" font-size="12" font-weight="700" fill="#065f46" text-anchor="middle">ตรงตาม dbdiagram.io (Zero Overlap)</text>
+    <text x="1940" y="43" font-size="12" font-weight="700" fill="#065f46" text-anchor="middle">ตรงตามสเปก dbdiagram.io (35 ตาราง)</text>
   </g>
 
   <!-- ============================================================ -->

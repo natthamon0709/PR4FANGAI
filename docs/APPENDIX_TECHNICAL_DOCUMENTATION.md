@@ -16,6 +16,7 @@
   - [ภาพที่ 3: แผนภาพขั้นตอนการทำงานของระบบ AI Assistant (RAG Pipeline Flowchart)](#ภาพที่-3-แผนภาพขั้นตอนการทำงานของระบบ-ai-assistant-rag-pipeline-flowchart)
   - [ภาพที่ 4: แผนภาพความสัมพันธ์ฐานข้อมูลระบบจริง 35 ตาราง (Full System ER Diagram)](#ภาพที่-4-แผนภาพความสัมพันธ์ฐานข้อมูลระบบจริง-35-ตาราง-full-system-er-diagram)
   - [ภาพที่ 5: แผนภาพการเชื่อมต่อ LINE Messaging API และ n8n (Interaction Sequence)](#ภาพที่-5-แผนภาพการเชื่อมต่อ-line-messaging-api-และ-n8n-interaction-sequence)
+  - [ภาพที่ 10: แผนผังการเดินทางของผู้ใช้งานทั้งระบบ (End-to-End User Journey Flow)](#ภาพที่-10-แผนผังการเดินทางของผู้ใช้งานทั้งระบบ-end-to-end-user-journey-flow)
 - [ส่วนที่ 2: เอกสารประกอบการพัฒนาระบบและตัวอย่าง Source Code](#ส่วนที่-2-เอกสารประกอบการพัฒนาระบบและตัวอย่าง-source-code)
   - [ภาพที่ 6: ตัวอย่างการพัฒนาระบบ AI Assistant (RAG Engine & Semantic Search)](#ภาพที่-6-ตัวอย่างการพัฒนาระบบ-ai-assistant-rag-engine--semantic-search)
   - [ภาพที่ 7: ตัวอย่างการจัดการฐานข้อมูล MySQL / SQLite (Database Connection & WAL)](#ภาพที่-7-ตัวอย่างการจัดการฐานข้อมูล-mysql--sqlite-database-connection--wal)
@@ -70,6 +71,14 @@
 แผนภาพลำดับการแลกเปลี่ยนข้อความ (Sequence Flow) 10 ขั้นตอน ระหว่างผู้ใช้งาน LINE, LINE Platform Webhook, n8n Automation Engine, Next.js Backend และ Google Gemini AI
 
 ![ลำดับการเชื่อมต่อ LINE และ n8n](images/appendix/05-line-n8n-sequence.svg)
+
+---
+
+### ภาพที่ 10: แผนผังการเดินทางของผู้ใช้งานทั้งระบบ (End-to-End User Journey Flow)
+
+แผนภาพ 10 ขั้นตอนแบบ S-Curve แสดงเส้นทางปฏิสัมพันธ์ข้ามช่องทาง (Omnichannel Flow) ตามมาตรฐาน Infographic Workflow: เริ่มจากตรวจจับผู้มาติดต่อหน้าหุ่นยนต์ Kiosk, ถามด้วยเสียงภาษาคำเมือง, AI RAG ประมวลผล, ตอบพร้อมพากย์เสียง Edge TTS, ส่ง Dynamic QR Code เข้ามือถือ, อ่านสรุปใน LINE OA, เดินทางติดต่อแผนก, บันทึก Log และดักจับ Gap อัตโนมัติ จนถึงเจ้าหน้าที่เติมข้อมูลใหม่ลง Google Sheets CMS
+
+![แผนผังการเดินทางของผู้ใช้งานทั้งระบบ](images/appendix/10-user-journey-flow.svg)
 
 ---
 

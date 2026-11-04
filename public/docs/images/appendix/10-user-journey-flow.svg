@@ -1,0 +1,376 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 860" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&amp;display=swap');
+      * {
+        font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .flow-arrow {
+        stroke: #64748b;
+        stroke-width: 2.5;
+        fill: none;
+      }
+      .loop-arrow {
+        stroke: #ea580c;
+        stroke-width: 2.2;
+        stroke-dasharray: 6 5;
+        fill: none;
+      }
+      .node-badge-num {
+        font-size: 13px;
+        font-weight: 800;
+        fill: #ffffff;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+      .node-badge-q {
+        font-size: 12px;
+        font-weight: 800;
+        fill: #ffffff;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+      .role-label {
+        font-size: 13px;
+        font-weight: 700;
+        text-anchor: middle;
+      }
+      .step-title {
+        font-size: 15px;
+        font-weight: 800;
+        fill: #0f172a;
+        text-anchor: middle;
+      }
+      .step-desc {
+        font-size: 11.5px;
+        font-weight: 400;
+        fill: #475569;
+        text-anchor: middle;
+      }
+      .step-channel {
+        font-size: 11.5px;
+        font-weight: 700;
+        text-anchor: middle;
+      }
+    </style>
+
+    <!-- Drop Shadow Filters -->
+    <filter id="shadow" x="-8%" y="-8%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+    <filter id="badgeShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+
+    <!-- Arrow Markers -->
+    <marker id="arrowRight" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 2 L 8 5 L 0 8 z" fill="#64748b" />
+    </marker>
+    <marker id="arrowLeft" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 2 L 8 5 L 0 8 z" fill="#64748b" />
+    </marker>
+    <marker id="arrowLoopOrange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 2 L 8 5 L 0 8 z" fill="#ea580c" />
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1200" height="860" fill="#ffffff" />
+
+  <!-- ==================== HEADER BANNER ==================== -->
+  <g transform="translate(50, 20)">
+    <rect width="1100" height="68" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="0" y="0" width="8" height="68" rx="4" fill="#059669" />
+    <text x="30" y="32" font-size="20" font-weight="800" fill="#0f172a">
+      แผนผังการเดินทางของผู้ใช้งานทั้งระบบ PR4Fang AI (End-to-End User Journey Flow)
+    </text>
+    <text x="30" y="54" font-size="12.5" font-weight="500" fill="#64748b">
+      วิทยาลัยการอาชีพฝาง • 4 ฝ่าย 23 งาน • หุ่นยนต์ต้อนรับ Kiosk (โถงอาคาร) ➔ ระบบ RAG AI ➔ LINE Official Account ➔ Google Sheets CMS
+    </text>
+  </g>
+
+  <!-- ==================== CONNECTING ARROWS ==================== -->
+
+  <!-- Row 1: Start -> Node 1 -> Node 2 -> Node 3 -> Node 4 -->
+  <path d="M 105 185 L 140 185" class="flow-arrow" marker-end="url(#arrowRight)" />
+  <path d="M 230 185 L 390 185" class="flow-arrow" marker-end="url(#arrowRight)" />
+  <path d="M 480 185 L 640 185" class="flow-arrow" marker-end="url(#arrowRight)" />
+  <path d="M 730 185 L 890 185" class="flow-arrow" marker-end="url(#arrowRight)" />
+
+  <!-- Curve from Row 1 (Node 4) to Row 2 (Node 5) on the right -->
+  <path d="M 980 185 C 1070 185, 1070 425, 980 425" class="flow-arrow" marker-end="url(#arrowRight)" />
+
+  <!-- Row 2: Node 5 -> Node 6 -> Node 7 -> Node 8 (RIGHT to LEFT) -->
+  <path d="M 890 425 L 730 425" class="flow-arrow" marker-end="url(#arrowRight)" />
+  <path d="M 640 425 L 480 425" class="flow-arrow" marker-end="url(#arrowRight)" />
+  <path d="M 390 425 L 230 425" class="flow-arrow" marker-end="url(#arrowRight)" />
+
+  <!-- Curved Feedback Loop between Node 6 and Node 7 (Orange Dashed) -->
+  <path d="M 645 390 C 585 340, 525 340, 465 390" class="loop-arrow" marker-end="url(#arrowLoopOrange)" />
+  <g transform="translate(560, 340)">
+    <rect x="-65" y="-12" width="130" height="22" rx="11" fill="#fff7ed" stroke="#ea580c" stroke-width="1.2" />
+    <text x="0" y="3" font-size="10.5" font-weight="700" fill="#c2410c" text-anchor="middle">วนถาม-ขอข้อมูลเพิ่มใน LINE</text>
+  </g>
+
+  <!-- Curve from Row 2 (Node 8) to Row 3 (Node 9) on the left -->
+  <path d="M 140 425 C 50 425, 50 665, 140 665" class="flow-arrow" marker-end="url(#arrowRight)" />
+
+  <!-- Row 3: Node 9 -> Node 10 -> End -->
+  <path d="M 230 665 L 390 665" class="flow-arrow" marker-end="url(#arrowRight)" />
+  <path d="M 480 665 L 610 665" class="flow-arrow" marker-end="url(#arrowRight)" />
+
+  <!-- ==================== START NODE ==================== -->
+  <g transform="translate(60, 185)">
+    <rect x="-35" y="-20" width="70" height="40" rx="20" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#shadow)"/>
+    <text x="0" y="5" font-size="15" font-weight="800" fill="#0f172a" text-anchor="middle">เริ่ม</text>
+  </g>
+
+  <!-- ==================== ROW 1 ==================== -->
+
+  <!-- NODE 1: หุ่นยนต์ต้อนรับ (Green) -->
+  <g transform="translate(185, 185)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#059669">หุ่นยนต์ต้อนรับ</text>
+    <!-- Circle Node -->
+    <circle cx="0" cy="0" r="42" fill="#ecfdf5" stroke="#10b981" stroke-width="3" filter="url(#shadow)"/>
+    <!-- Robot Head Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="10" rx="2" fill="#d1fae5"/>
+      <circle cx="12" cy="5" r="2"/>
+      <path d="M12 7v4"/>
+      <line x1="8" y1="16" x2="8.01" y2="16"/>
+      <line x1="16" y1="16" x2="16.01" y2="16"/>
+    </g>
+    <!-- Badge: Number 1 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">1</text>
+    <!-- Badge: Question Mark -->
+    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
+    <text x="28" y="-28" class="node-badge-q">?</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">ตรวจจับและทักทาย</text>
+    <text x="0" y="85" class="step-desc">กล้องตรวจจับใบหน้าผู้มาติดต่อ</text>
+    <text x="0" y="100" class="step-desc">ส่งเสียงทักทายภาษาคำเมือง</text>
+    <text x="0" y="120" class="step-channel" fill="#059669">อยู่ที่ โถงอาคารอำนวยการ</text>
+  </g>
+
+  <!-- NODE 2: ผู้ปกครอง/นักเรียน (Orange) -->
+  <g transform="translate(435, 185)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#ea580c">ผู้ปกครอง / นักเรียน</text>
+    <!-- Circle Node -->
+    <circle cx="0" cy="0" r="42" fill="#fff7ed" stroke="#f97316" stroke-width="3" filter="url(#shadow)"/>
+    <!-- User Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4" fill="#ffedd5"/>
+    </g>
+    <!-- Badge: Number 2 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">2</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">เลือกหัวข้อคำถาม</text>
+    <text x="0" y="85" class="step-desc">แตะเลือก 6 ปุ่มหัวข้อยอดนิยม</text>
+    <text x="0" y="100" class="step-desc">หรือเตรียมสอบถามเรื่องสมัครเรียน</text>
+    <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ จอสัมผัสหุ่นยนต์</text>
+  </g>
+
+  <!-- NODE 3: ผู้ปกครอง/นักเรียน (Orange) -->
+  <g transform="translate(685, 185)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#ea580c">ผู้ปกครอง / นักเรียน</text>
+    <!-- Circle Node -->
+    <circle cx="0" cy="0" r="42" fill="#fff7ed" stroke="#f97316" stroke-width="3" filter="url(#shadow)"/>
+    <!-- Microphone Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" fill="#ffedd5"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="22"/>
+    </g>
+    <!-- Badge: Number 3 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">3</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">ถามคำถามด้วยเสียง</text>
+    <text x="0" y="85" class="step-desc">พูดภาษาถิ่นเหนือ เช่น</text>
+    <text x="0" y="100" class="step-desc">"ค่าเทอมจ่ายตี้ไหนและเต้าใดเจ้า"</text>
+    <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ ไมโครโฟนหุ่นยนต์</text>
+  </g>
+
+  <!-- NODE 4: AI ประมวลผล (Purple Dashed) -->
+  <g transform="translate(935, 185)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#7c3aed">AI RAG Engine</text>
+    <!-- Circle Node (Dashed) -->
+    <circle cx="0" cy="0" r="42" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="6 4" filter="url(#shadow)"/>
+    <!-- Sparkles AI Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" fill="#ede9fe"/>
+      <path d="M19 5l.5 1.5L21 7l-1.5.5L19 9l-.5-1.5L17 7l1.5-.5Z"/>
+    </g>
+    <!-- Badge: Number 4 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">4</text>
+    <!-- Badge: Question Mark -->
+    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
+    <text x="28" y="-28" class="node-badge-q">?</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">ค้นหาและคำนวณคำตอบ</text>
+    <text x="0" y="85" class="step-desc">ตรวจจับภาษาถิ่น RAG Search</text>
+    <text x="0" y="100" class="step-desc">83 ความรู้ และวัด Confidence</text>
+    <text x="0" y="120" class="step-channel" fill="#7c3aed">เบื้องหลัง • Gemini RAG</text>
+  </g>
+
+  <!-- ==================== ROW 2 ==================== -->
+
+  <!-- NODE 5: หุ่นยนต์ต้อนรับ (Green) -->
+  <g transform="translate(935, 425)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#059669">หุ่นยนต์ต้อนรับ</text>
+    <!-- Circle Node -->
+    <circle cx="0" cy="0" r="42" fill="#ecfdf5" stroke="#10b981" stroke-width="3" filter="url(#shadow)"/>
+    <!-- Speaker Audio Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#d1fae5"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+    </g>
+    <!-- Badge: Number 5 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">5</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">พากย์เสียง + แผนผัง</text>
+    <text x="0" y="85" class="step-desc">เสียง Edge TTS ภาษาถิ่นเหนือ</text>
+    <text x="0" y="100" class="step-desc">แสดงการ์ดสรุปและแผนที่อาคาร</text>
+    <text x="0" y="120" class="step-channel" fill="#059669">อยู่ที่ หน้าจอและลำโพง</text>
+  </g>
+
+  <!-- NODE 6: หุ่นยนต์ต้อนรับ (Green) -->
+  <g transform="translate(685, 425)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#059669">หุ่นยนต์ต้อนรับ</text>
+    <!-- Circle Node -->
+    <circle cx="0" cy="0" r="42" fill="#ecfdf5" stroke="#10b981" stroke-width="3" filter="url(#shadow)"/>
+    <!-- QR Code Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+    </g>
+    <!-- Badge: Number 6 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">6</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">สร้าง Dynamic QR</text>
+    <text x="0" y="85" class="step-desc">ขึ้น QR Code บนหน้าจอ</text>
+    <text x="0" y="100" class="step-desc">ดึงข้อมูลกลับไปอ่านในมือถือ</text>
+    <text x="0" y="120" class="step-channel" fill="#059669">อยู่ที่ จอสัมผัสหุ่นยนต์</text>
+  </g>
+
+  <!-- NODE 7: ผู้ปกครอง/นักเรียน (Orange) -->
+  <g transform="translate(435, 425)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#ea580c">ผู้ปกครอง / นักเรียน</text>
+    <!-- Circle Node -->
+    <circle cx="0" cy="0" r="42" fill="#fff7ed" stroke="#f97316" stroke-width="3" filter="url(#shadow)"/>
+    <!-- Mobile Chat Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="5" y="2" width="14" height="20" rx="2" fill="#ffedd5"/>
+      <line x1="12" y1="18" x2="12.01" y2="18"/>
+    </g>
+    <!-- Badge: Number 7 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">7</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">สแกนอ่านต่อใน LINE</text>
+    <text x="0" y="85" class="step-desc">เปิดดู Flex Message สรุปเอกสาร</text>
+    <text x="0" y="100" class="step-desc">และดาวน์โหลดระเบียบการ PDF</text>
+    <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ LINE (@fang_ai)</text>
+  </g>
+
+  <!-- NODE 8: ผู้ปกครอง/นักเรียน (Orange) -->
+  <g transform="translate(185, 425)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#ea580c">ผู้ปกครอง / นักเรียน</text>
+    <!-- Circle Node -->
+    <circle cx="0" cy="0" r="42" fill="#fff7ed" stroke="#f97316" stroke-width="3" filter="url(#shadow)"/>
+    <!-- Building / Checkmark Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 21h18"/>
+      <path d="M5 21V7l8-4v18" fill="#ffedd5"/>
+      <path d="M19 21V11l-6-3"/>
+      <line x1="9" y1="9" x2="9" y2="9.01"/>
+      <line x1="9" y1="13" x2="9" y2="13.01"/>
+      <line x1="9" y1="17" x2="9" y2="17.01"/>
+    </g>
+    <!-- Badge: Number 8 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">8</text>
+    <!-- Badge: Question Mark -->
+    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
+    <text x="28" y="-28" class="node-badge-q">?</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">ติดต่อแผนก / ยืนยันสมัคร</text>
+    <text x="0" y="85" class="step-desc">เดินไปตึกตามแผนที่แนะนำ</text>
+    <text x="0" y="100" class="step-desc">หรือกดยื่นสมัครออนไลน์ผ่านมือถือ</text>
+    <text x="0" y="120" class="step-channel" fill="#ea580c">อยู่ที่ งานแนะแนว/ทะเบียน</text>
+  </g>
+
+  <!-- ==================== ROW 3 ==================== -->
+
+  <!-- NODE 9: ระบบฐานข้อมูล (Blue Dashed) -->
+  <g transform="translate(185, 665)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#2563eb">ระบบ PR4Fang DB</text>
+    <!-- Circle Node (Dashed) -->
+    <circle cx="0" cy="0" r="42" fill="#eff6ff" stroke="#3b82f6" stroke-width="3" stroke-dasharray="6 4" filter="url(#shadow)"/>
+    <!-- Database Cylinder Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="12" cy="5" rx="9" ry="3" fill="#dbeafe"/>
+      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+    </g>
+    <!-- Badge: Number 9 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">9</text>
+    <!-- Badge: Question Mark -->
+    <circle cx="28" cy="-28" r="10" fill="#f59e0b" filter="url(#badgeShadow)"/>
+    <text x="28" y="-28" class="node-badge-q">?</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">บันทึก Log และ Gap</text>
+    <text x="0" y="85" class="step-desc">จัดเก็บสถิติคำถามลงระบบ</text>
+    <text x="0" y="100" class="step-desc">หากไร้คำตอบส่งเข้า Gap Log</text>
+    <text x="0" y="120" class="step-channel" fill="#2563eb">เบื้องหลัง • SQLite / Supabase</text>
+  </g>
+
+  <!-- NODE 10: ครูฝ่ายงาน/Admin (Slate) -->
+  <g transform="translate(435, 665)">
+    <!-- Role Header -->
+    <text x="0" y="-55" class="role-label" fill="#475569">ครูฝ่ายงาน / Admin</text>
+    <!-- Circle Node -->
+    <circle cx="0" cy="0" r="42" fill="#f8fafc" stroke="#64748b" stroke-width="3" filter="url(#shadow)"/>
+    <!-- Staff / Manager Icon -->
+    <g transform="translate(-18, -18) scale(1.5)" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4" fill="#e2e8f0"/>
+      <polyline points="16 11 18 13 22 9"/>
+    </g>
+    <!-- Badge: Number 10 -->
+    <circle cx="-28" cy="-28" r="12" fill="#0f172a" filter="url(#badgeShadow)"/>
+    <text x="-28" y="-28" class="node-badge-num">10</text>
+    <!-- Description & Channel -->
+    <text x="0" y="65" class="step-title">อัปเดตคำตอบลง Sheets</text>
+    <text x="0" y="85" class="step-desc">ตรวจสอบ Knowledge Gaps</text>
+    <text x="0" y="100" class="step-desc">เติมคำตอบใหม่ซิงค์ทันที</text>
+    <text x="0" y="120" class="step-channel" fill="#475569">อยู่ที่ Google Sheets &amp; Web CMS</text>
+  </g>
+
+  <!-- ==================== END NODE ==================== -->
+  <g transform="translate(730, 665)">
+    <rect x="-100" y="-28" width="200" height="56" rx="28" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#shadow)"/>
+    <text x="0" y="-2" font-size="16" font-weight="800" fill="#0f172a" text-anchor="middle">จบ</text>
+    <text x="0" y="16" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">ข้อมูลขึ้น Dashboard ใน PR4Fang AI</text>
+  </g>
+
+</svg>

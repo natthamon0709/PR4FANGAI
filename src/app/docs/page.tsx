@@ -69,6 +69,13 @@ const appendixItems = [
     desc: 'ซอร์สโค้ดหน้าแดชบอร์ดจัดการคลังความรู้ การซิงค์ Google Sheets CMS และการควบคุมระบบความปลอดภัย',
     image: '/docs/images/appendix/09-code-admin-dashboard.svg',
     tag: 'Source Code'
+  },
+  {
+    id: 10,
+    title: 'ภาคผนวก 10: แผนผังการเดินทางของผู้ใช้งานทั้งระบบ (End-to-End User Journey Flow)',
+    desc: 'แผนภาพ 10 ขั้นตอนแบบ S-Curve ครอบคลุมการตรวจจับผู้มาติดต่อหน้าหุ่นยนต์ Kiosk, AI RAG, LINE OA, และการอัปเดต Google Sheets CMS',
+    image: '/docs/images/appendix/10-user-journey-flow.svg',
+    tag: 'User Journey'
   }
 ];
 

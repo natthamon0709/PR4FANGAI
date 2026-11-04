@@ -39,7 +39,7 @@
     <path d="M40 26 v4 M50 26 v4 M40 46 v4 M50 46 v4 M30 36 h4 M30 42 h4 M56 36 h4 M56 42 h4 M34 30 h22 v16 h-22 z M40 35 h10 v6 h-10 z" stroke="#7c3aed" stroke-width="2" fill="none" stroke-linecap="round"/>
 
     <text x="78" y="44" class="main-title">ภาคผนวก 2: แผนภาพการเชื่อมต่ออุปกรณ์ฮาร์ดแวร์ (Hardware Architecture Diagram)</text>
-    <text x="78" y="66" class="sub-title">สถาปัตยกรรมการเชื่อมต่อของชุดหุ่นยนต์ต้อนรับประชาสัมพันธ์ AI Reception Robot วิทยาลัยการอาชีพฝาง (ผังสะอาด เส้นไม่ทับซ้อน 100%)</text>
+    <text x="78" y="66" class="sub-title">สถาปัตยกรรมการเชื่อมต่อของชุดหุ่นยนต์ต้อนรับประชาสัมพันธ์ AI Reception Robot วิทยาลัยการอาชีพฝาง</text>
   </g>
 
   <!-- ========================================== -->
