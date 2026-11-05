@@ -1134,18 +1134,18 @@ ${isDialect
         ],
         generationConfig: {
           temperature: config.temperature,
-          maxOutputTokens: 1024
+          maxOutputTokens: 4096
         }
       };
 
       // Map official Google Gemini models resiliently (prioritizing fast and high-availability models)
-      const primaryModel = config.model_name || 'gemini-3.5-flash-lite';
+      const primaryModel = config.model_name || 'gemini-3.1-flash-lite';
       const candidateModels = Array.from(new Set([
         primaryModel,
+        'gemini-3.1-flash-lite',
+        'gemini-flash-latest',
         'gemini-3.5-flash-lite',
-        'gemini-flash-lite-latest',
-        'gemini-3-flash-preview',
-        'gemini-3.1-flash-lite'
+        'gemini-3-flash-preview'
       ])).filter(Boolean);
 
       for (const modelId of candidateModels) {
@@ -1154,12 +1154,20 @@ ${isDialect
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(promptPayload),
-            signal: AbortSignal.timeout(8000)
+            signal: AbortSignal.timeout(15000)
           });
 
           if (res.ok) {
             const data = await res.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const cand = data.candidates?.[0];
+            const text = cand?.content?.parts?.[0]?.text;
+
+            // Reject truncated output if model ran out of tokens
+            if (cand?.finishReason === 'MAX_TOKENS') {
+              console.warn(`Gemini API (${modelId}) output was truncated by MAX_TOKENS limit, trying next candidate`);
+              continue;
+            }
+
             if (text && text.trim().length > 0) return cleanFaqArtifacts(text.trim());
           } else if (res.status === 404 || res.status === 503 || res.status === 429) {
             continue;
@@ -1344,7 +1352,34 @@ ${isDialect
   if (bestFaqAnswer && bestFaqAnswer.length > 5 && !answerBody) {
     answerBody = bestFaqAnswer;
   } else if (!answerBody) {
-    if (primarySource.content) {
+    // 3.1 Format curriculum / branches query comprehensively without truncation
+    if (qAnalysis.isCurriculumQuery && primarySource.content) {
+      const curriculumLines = primarySource.content
+        .split(/###\s*(?:คำถามที่พบบ่อย|รายการคำถาม)/i)[0]
+        .split('\n')
+        .map((l: string) => l.trim())
+        .filter(Boolean);
+
+      const formattedCurriculum: string[] = [];
+      for (const line of curriculumLines) {
+        if (/^(?:[12]\.\s*)?ระดับประกาศนียบัตร/i.test(line) || /^จำนวน\s*[\d๑-๙]+\s*ประเภทวิชา/i.test(line)) {
+          formattedCurriculum.push(`\n${line.replace(/^[-•*]\s*/, '')}`);
+        } else if (/^ประเภทวิชา/i.test(line)) {
+          formattedCurriculum.push(`\n• ${line.replace(/^[-•*]\s*/, '')}:`);
+        } else if (/^[-•]?\s*สาขาวิชา/i.test(line)) {
+          formattedCurriculum.push(`  - ${line.replace(/^[-•*]\s*/, '')}`);
+        }
+      }
+      if (formattedCurriculum.length >= 4) {
+        const isMale = config.voice_gender === 'male';
+        const introParticle = isDialect
+          ? (isMale ? 'มีข้อมูลหลักสูตรและสาขาวิชาตี้เปิดสอนดังนี้เน้อครับ:' : 'มีข้อมูลหลักสูตรและสาขาวิชาตี้เปิดสอนดังนี้เน้อเจ้า:')
+          : (isMale ? 'มีข้อมูลหลักสูตรและสาขาวิชาที่เปิดสอนดังนี้ครับ:' : 'มีข้อมูลหลักสูตรและสาขาวิชาที่เปิดสอนดังนี้ค่ะ:');
+        answerBody = `วิทยาลัยการอาชีพฝาง ${introParticle}\n` + formattedCurriculum.join('\n');
+      }
+    }
+
+    if (!answerBody && primarySource.content) {
       const lines = primarySource.content.split('\n').map((l: string) => l.trim()).filter(Boolean);
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -1548,17 +1583,17 @@ export async function transcribeAndProcessAudio(
       ],
       generationConfig: {
         temperature: 0.1,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
         responseMimeType: 'application/json'
       }
     };
 
     const candidateModels = Array.from(new Set([
-      config.model_name || 'gemini-3.5-flash-lite',
+      config.model_name || 'gemini-3.1-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-flash-latest',
       'gemini-3.5-flash-lite',
-      'gemini-flash-lite-latest',
-      'gemini-3-flash-preview',
-      'gemini-3.1-flash-lite'
+      'gemini-3-flash-preview'
     ])).filter(Boolean);
 
     for (const modelId of candidateModels) {
@@ -1567,7 +1602,7 @@ export async function transcribeAndProcessAudio(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(promptPayload),
-          signal: AbortSignal.timeout(10000)
+          signal: AbortSignal.timeout(15000)
         });
 
         if (res.ok) {
